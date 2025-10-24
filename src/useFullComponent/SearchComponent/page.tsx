@@ -7,9 +7,9 @@ export default function SearchCom() {
         <input
           type="text"
           placeholder="Search..."
-          className="border mt-5 border-gray-300 rounded-l-md px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="border mt-5 border-gray-300 rounded-l-md px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <button className="bg-orange-500 text-white rounded-r-md px-4 py-2 hover:bg-orange-600 transition-colors duration-200">
+        <button className="bg-blue-500 text-white rounded-r-md px-4 py-2 hover:bg-blue-600 transition-colors duration-200">
           Search
         </button>
       </div>

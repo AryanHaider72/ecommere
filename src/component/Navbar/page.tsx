@@ -63,11 +63,17 @@ export default function Navbar({
       {/* 🔹 Topbar */}
       <div className="w-full bg-gray-700 py-2 px-6 flex justify-around items-center">
         <div className="flex gap-4 items-center">
-          <p className="text-sm text-gray-200">Welcome To Our Platform</p>
-          <div className="flex items-center">
-            <Phone className="w-4 h-4 text-white mr-2" color="orange" />
+          <div className="hidden lg:flex items-center">
             <p className="text-white text-sm">Call-Us: +12-345-67890</p>
           </div>
+        </div>
+        <div>
+          <p className="text-sm text-gray-200">
+            Welcome To Our Platform{" "}
+            <a href="#" className="text-blue-400">
+              Sign In
+            </a>{" "}
+          </p>
         </div>
 
         {/* 🔹 Language & Currency */}
@@ -81,7 +87,7 @@ export default function Navbar({
               }}
               className="flex items-center text-white text-xs gap-1 focus:outline-none"
             >
-              <span className="text-sm md:text-lg">{selectedLang}</span>
+              <span className="text-sm md:text-sm">{selectedLang}</span>
               <ChevronDown
                 className={`w-4 h-4 transform transition-transform duration-300 ${
                   isOpenLang ? "rotate-180" : "rotate-0"
@@ -102,8 +108,8 @@ export default function Navbar({
                         setSelectedLang(lang);
                         setIsOpenLang(false);
                       }}
-                      className={`px-3 py-2 cursor-pointer hover:bg-orange-500 hover:text-white transition-colors ${
-                        selectedLang === lang ? "bg-orange-100" : ""
+                      className={`px-3 py-2 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${
+                        selectedLang === lang ? "bg-blue-100" : ""
                       }`}
                     >
                       <span className="text-sm">{lang}</span>
@@ -123,7 +129,7 @@ export default function Navbar({
               }}
               className="flex items-center text-white text-xs gap-1 focus:outline-none"
             >
-              <span className="text-sm md:text-lg">{selectedCurrency}</span>
+              <span className="text-sm md:text-sm">{selectedCurrency}</span>
               <ChevronDown
                 className={`w-4 h-4 transform transition-transform duration-300 ${
                   isOpenCurrency ? "rotate-180" : "rotate-0"
@@ -144,8 +150,8 @@ export default function Navbar({
                         setSelectedCurrency(currency);
                         setIsOpenCurrency(false);
                       }}
-                      className={`px-3 py-2 cursor-pointer hover:bg-orange-500 hover:text-white transition-colors ${
-                        selectedCurrency === currency ? "bg-orange-100" : ""
+                      className={`px-3 py-2 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${
+                        selectedCurrency === currency ? "bg-blue-100" : ""
                       }`}
                     >
                       {currency}
@@ -158,7 +164,7 @@ export default function Navbar({
         </div>
       </div>
 
-      <nav className="bg-white p-4 flex justify-between items-center px-6 relative shadow">
+      <nav className="bg-white p-4 flex justify-around items-center px-6 relative shadow ">
         <h1 className="text-xl font-extrabold">N.</h1>
 
         <div className="hidden md:flex items-center gap-6">
@@ -166,29 +172,29 @@ export default function Navbar({
             <li>
               <a
                 href="#"
-                className="text-gray-800 hover:text-orange-500"
+                className="text-gray-800 hover:text-blue-500"
                 onClick={() => onPageChange("home")}
               >
                 Home
               </a>
             </li>
             <li>
-              <a href="#" className="text-gray-800 hover:text-orange-500">
+              <a href="#" className="text-gray-800 hover:text-blue-500">
                 Shop
               </a>
             </li>
             <li>
-              <a href="#" className="text-gray-800 hover:text-orange-500">
+              <a href="#" className="text-gray-800 hover:text-blue-500">
                 Blogs
               </a>
             </li>
             <li>
-              <a href="#" className="text-gray-800 hover:text-orange-500">
+              <a href="#" className="text-gray-800 hover:text-blue-500">
                 About Us
               </a>
             </li>
             <li>
-              <a href="#" className="text-gray-800 hover:text-orange-500">
+              <a href="#" className="text-gray-800 hover:text-blue-500">
                 Contact Us
               </a>
             </li>
@@ -197,7 +203,7 @@ export default function Navbar({
         <div className="hidden md:flex items-center gap-6">
           <div className="flex gap-3">
             <button className="group" title="Search" onClick={openSearch}>
-              <Search className="w-5 h-5 group-hover:text-orange-500 transition" />
+              <Search className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
 
             <button
@@ -205,19 +211,19 @@ export default function Navbar({
               title="User"
               onClick={() => onPageChange("login")}
             >
-              <User className="w-5 h-5 group-hover:text-orange-500 transition" />
+              <User className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
 
             <button className="relative group" title="Wishlist">
-              <Heart className="w-5 h-5 group-hover:text-orange-500 transition" />
-              <span className="absolute -top-2 -right-1 bg-orange-500 text-white px-1.5 rounded-full text-[10px]">
+              <Heart className="w-5 h-5 group-hover:text-blue-500 transition" />
+              <span className="absolute -top-2 -right-1 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
                 0
               </span>
             </button>
 
             <button className="relative group" title="Cart" onClick={openCart}>
-              <ShoppingCart className="w-5 h-5 group-hover:text-orange-500 transition" />
-              <span className="absolute -top-2 -right-2 bg-orange-500 text-white px-1.5 rounded-full text-[10px]">
+              <ShoppingCart className="w-5 h-5 group-hover:text-blue-500 transition" />
+              <span className="absolute -top-2 -right-2 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
                 1
               </span>
             </button>
@@ -255,7 +261,7 @@ export default function Navbar({
                     onPageChange(item.toLowerCase().replace(" ", ""));
                     setMenuOpen(false);
                   }}
-                  className="block text-gray-700 hover:text-orange-500"
+                  className="block text-gray-700 hover:text-blue-500"
                 >
                   {item}
                 </a>
@@ -265,7 +271,7 @@ export default function Navbar({
 
           <div className="flex gap-4 mt-6">
             <button className="group" title="Search" onClick={openSearch}>
-              <Search className="w-5 h-5 group-hover:text-orange-500 transition" />
+              <Search className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
 
             <button
@@ -273,19 +279,19 @@ export default function Navbar({
               title="User"
               onClick={() => onPageChange("login")}
             >
-              <User className="w-5 h-5 group-hover:text-orange-500 transition" />
+              <User className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
 
             <button className="relative group" title="Wishlist">
-              <Heart className="w-5 h-5 group-hover:text-orange-500 transition" />
-              <span className="absolute -top-2 -right-1 bg-orange-500 text-white px-1.5 rounded-full text-[10px]">
+              <Heart className="w-5 h-5 group-hover:text-blue-500 transition" />
+              <span className="absolute -top-2 -right-1 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
                 0
               </span>
             </button>
 
             <button className="relative group" title="Cart" onClick={openCart}>
-              <ShoppingCart className="w-5 h-5 group-hover:text-orange-500 transition" />
-              <span className="absolute -top-2 -right-2 bg-orange-500 text-white px-1.5 rounded-full text-[10px]">
+              <ShoppingCart className="w-5 h-5 group-hover:text-blue-500 transition" />
+              <span className="absolute -top-2 -right-2 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
                 1
               </span>
             </button>
