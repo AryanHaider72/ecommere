@@ -12,6 +12,7 @@ import {
 import { useState, useEffect } from "react";
 import SearchCom from "@/useFullComponent/SearchComponent/page";
 import CartComponent from "@/useFullComponent/CartComponent/page";
+import { useRouter } from "next/navigation";
 
 export default function Navbar({
   onPageChange,
@@ -24,10 +25,7 @@ export default function Navbar({
   const [showOverlay2, setShowOverlay2] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const [selectedLang, setSelectedLang] = useState("English");
-  const [selectedCurrency, setSelectedCurrency] = useState("Dollor");
-  const [isOpenLang, setIsOpenLang] = useState(false);
-  const [isOpenCurrency, setIsOpenCurrency] = useState(false);
+  const router = useRouter();
 
   // ✅ Automatically close mobile menu when resizing to desktop
   useEffect(() => {
@@ -60,111 +58,7 @@ export default function Navbar({
 
   return (
     <>
-      {/* 🔹 Topbar */}
-      <div className="w-full bg-gray-700 py-2 px-6 flex justify-around items-center">
-        <div className="flex gap-4 items-center">
-          <div className="hidden lg:flex items-center">
-            <p className="text-white text-sm">Call-Us: +12-345-67890</p>
-          </div>
-        </div>
-        <div>
-          <p className="text-sm text-gray-200">
-            Welcome To Our Platform{" "}
-            <a href="#" className="text-blue-400">
-              Sign In
-            </a>{" "}
-          </p>
-        </div>
-
-        {/* 🔹 Language & Currency */}
-        <div className="flex gap-3">
-          {/* Language */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setIsOpenLang(!isOpenLang);
-                setIsOpenCurrency(false);
-              }}
-              className="flex items-center text-white text-xs gap-1 focus:outline-none"
-            >
-              <span className="text-sm md:text-sm">{selectedLang}</span>
-              <ChevronDown
-                className={`w-4 h-4 transform transition-transform duration-300 ${
-                  isOpenLang ? "rotate-180" : "rotate-0"
-                }`}
-              />
-            </button>
-
-            {isOpenLang && (
-              <div
-                className="absolute right-0 mt-2 w-28 bg-white text-gray-700 rounded-md shadow-lg origin-top z-50"
-                onMouseLeave={() => setIsOpenLang(false)}
-              >
-                <ul className="py-1 text-xs">
-                  {["English", "Urdu", "Hindi"].map((lang) => (
-                    <li
-                      key={lang}
-                      onClick={() => {
-                        setSelectedLang(lang);
-                        setIsOpenLang(false);
-                      }}
-                      className={`px-3 py-2 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${
-                        selectedLang === lang ? "bg-blue-100" : ""
-                      }`}
-                    >
-                      <span className="text-sm">{lang}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Currency */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setIsOpenCurrency(!isOpenCurrency);
-                setIsOpenLang(false);
-              }}
-              className="flex items-center text-white text-xs gap-1 focus:outline-none"
-            >
-              <span className="text-sm md:text-sm">{selectedCurrency}</span>
-              <ChevronDown
-                className={`w-4 h-4 transform transition-transform duration-300 ${
-                  isOpenCurrency ? "rotate-180" : "rotate-0"
-                }`}
-              />
-            </button>
-
-            {isOpenCurrency && (
-              <div
-                className="absolute right-0 mt-2 w-28 bg-white text-gray-700 rounded-md shadow-lg origin-top z-50"
-                onMouseLeave={() => setIsOpenCurrency(false)}
-              >
-                <ul className="py-1 text-sm">
-                  {["Rupees", "Dollor"].map((currency) => (
-                    <li
-                      key={currency}
-                      onClick={() => {
-                        setSelectedCurrency(currency);
-                        setIsOpenCurrency(false);
-                      }}
-                      className={`px-3 py-2 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${
-                        selectedCurrency === currency ? "bg-blue-100" : ""
-                      }`}
-                    >
-                      {currency}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <nav className="bg-white p-4 flex justify-around items-center px-6 relative shadow ">
+      <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
         <h1 className="text-xl font-extrabold">N.</h1>
 
         <div className="hidden md:flex items-center gap-6">
@@ -173,7 +67,7 @@ export default function Navbar({
               <a
                 href="#"
                 className="text-gray-800 hover:text-blue-500"
-                onClick={() => onPageChange("home")}
+                onClick={() => router.push("/")}
               >
                 Home
               </a>
@@ -209,7 +103,10 @@ export default function Navbar({
             <button
               className="group"
               title="User"
-              onClick={() => onPageChange("login")}
+              onClick={() => {
+                onPageChange("login");
+                router.push("/login");
+              }}
             >
               <User className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
