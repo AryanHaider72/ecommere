@@ -55,45 +55,125 @@ export default function Navbar({
     setCartComponentVisible(false);
     setTimeout(() => setShowOverlay2(false), 500);
   };
-
+  const wishlist = () => {
+    window.location.href = "/WishList";
+  };
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
-        <h1 className="text-xl font-extrabold">N.</h1>
+        <a href="/" className="text-xl font-extrabold">
+          N.
+        </a>
 
-        <div className="hidden md:flex items-center gap-6">
+        {/* --- Main Navbar Links (Desktop) --- */}
+        <div className="hidden md:flex items-center gap-6 relative">
           <ul className="flex gap-6">
-            <li>
-              <a
-                href="#"
-                className="text-gray-800 hover:text-blue-500"
-                onClick={() => router.push("/")}
-              >
-                Home
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-blue-500">
-                Shop
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-blue-500">
-                Blogs
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-blue-500">
-                About Us
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-blue-500">
-                Contact Us
-              </a>
-            </li>
+            {[
+              {
+                label: "Men",
+                subcategories: [
+                  {
+                    title: "Clothing",
+                    items: ["Shirts", "Jeans", "Jackets", "Trousers"],
+                  },
+                  {
+                    title: "Accessories",
+                    items: ["Watches", "Wallets", "Belts"],
+                  },
+                  {
+                    title: "Footwear",
+                    items: ["Sneakers", "Loafers", "Sandals"],
+                  },
+                ],
+              },
+              {
+                label: "Women",
+                subcategories: [
+                  {
+                    title: "Clothing",
+                    items: ["Dresses", "Tops", "Skirts", "Jeans"],
+                  },
+                  {
+                    title: "Jewelry",
+                    items: ["Necklaces", "Earrings", "Bracelets"],
+                  },
+                  { title: "Footwear", items: ["Heels", "Flats", "Sneakers"] },
+                ],
+              },
+              {
+                label: "Children",
+                subcategories: [
+                  { title: "Boys", items: ["T-Shirts", "Shorts", "Jackets"] },
+                  { title: "Girls", items: ["Frocks", "Leggings", "Sweaters"] },
+                  { title: "Accessories", items: ["Bags", "Caps", "Shoes"] },
+                ],
+              },
+              {
+                label: "Teen",
+                subcategories: [
+                  {
+                    title: "Trendy",
+                    items: ["Hoodies", "Graphic Tees", "Joggers"],
+                  },
+                  {
+                    title: "Essentials",
+                    items: ["Denim", "Sneakers", "Backpacks"],
+                  },
+                ],
+              },
+              { label: "Shop", href: "/shop" }, // 👈 Now it’s a real link
+            ].map((category, idx) => (
+              <li key={idx} className="relative group">
+                {/* If it has href => Link, else button */}
+                {category.href ? (
+                  <a
+                    href={category.href}
+                    className="text-gray-800 font-bold hover:text-blue-500 transition"
+                  >
+                    {category.label}
+                  </a>
+                ) : (
+                  <button className="text-gray-800 font-bold hover:text-blue-500 transition">
+                    {category.label}
+                  </button>
+                )}
+
+                {/* --- Dropdown (only if it has subcategories) --- */}
+                {category.subcategories &&
+                  category.subcategories.length > 0 && (
+                    <div
+                      className="absolute left-0 top-full mt-2 w-[700px] bg-white shadow-lg rounded-md p-6 
+                       opacity-0 group-hover:opacity-100 group-hover:visible invisible
+                       transition-all duration-300 ease-in-out transform group-hover:translate-y-0 translate-y-3 z-50"
+                    >
+                      <div className="grid grid-cols-3 gap-6">
+                        {category.subcategories.map((sub, subIdx) => (
+                          <div key={subIdx}>
+                            <h3 className="text-gray-900 font-semibold mb-2 border-b border-gray-200 pb-1">
+                              {sub.title}
+                            </h3>
+                            <ul className="space-y-1">
+                              {sub.items.map((item, i) => (
+                                <li key={i}>
+                                  <a
+                                    href="#"
+                                    className="text-sm text-gray-600 hover:text-blue-500 transition"
+                                  >
+                                    {item}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </li>
+            ))}
           </ul>
         </div>
+
         <div className="hidden md:flex items-center gap-6">
           <div className="flex gap-3">
             <button className="group" title="Search" onClick={openSearch}>
@@ -111,7 +191,11 @@ export default function Navbar({
               <User className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
 
-            <button className="relative group" title="Wishlist">
+            <button
+              className="relative group"
+              title="Wishlist"
+              onClick={wishlist}
+            >
               <Heart className="w-5 h-5 group-hover:text-blue-500 transition" />
               <span className="absolute -top-2 -right-1 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
                 0
@@ -150,10 +234,10 @@ export default function Navbar({
           </div>
 
           <ul className="flex flex-col gap-4">
-            {["Home", "Shop", "Blogs", "About Us", "Contact Us"].map((item) => (
+            {["Home", "Men", "Women", "Children", "Shop"].map((item) => (
               <li key={item}>
                 <a
-                  href="#"
+                  href="/"
                   onClick={() => {
                     onPageChange(item.toLowerCase().replace(" ", ""));
                     setMenuOpen(false);

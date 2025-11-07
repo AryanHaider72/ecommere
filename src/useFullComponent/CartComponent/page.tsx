@@ -1,6 +1,9 @@
 import { CreditCard, ShoppingCart, Trash } from "lucide-react";
 
 export default function CartComponent() {
+  const checkOut = () => {
+    window.location.href = "/checkOut";
+  };
   return (
     <div className="w-full h-[100vh] bg-white p-4 flex flex-col">
       <h1 className="text-xl font-bold">My Cart (3)</h1>
@@ -105,7 +108,10 @@ export default function CartComponent() {
                 <span>View Cart</span>
               </div>
             </button>
-            <button className="w-3/5 bg-black border border-black-400 text-white py-3 rounded hover:bg-white hover:text-black transition-all duration-300">
+            <button
+              onClick={checkOut}
+              className="w-3/5 bg-black border border-black-400 text-white py-3 rounded hover:bg-white hover:text-black transition-all duration-300"
+            >
               <div className="flex justify-center items-center gap-2">
                 <CreditCard />
                 <span>CheckOut</span>
