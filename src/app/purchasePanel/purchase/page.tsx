@@ -24,7 +24,7 @@ interface Item {
   qty: number;
   price: number;
 }
-export default function SaleForm() {
+export default function PurchaseForm() {
   const [showList, setShowList] = useState(true);
   const [showModel, setShowModel] = useState(false);
 
@@ -38,23 +38,25 @@ export default function SaleForm() {
 
   return (
     <div className="w-full relative">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Sale Management</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Purchase Management
+      </h1>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
         {showList ? (
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex text-white rounded-md gap-2 items-center mb-2"
+            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
           >
-            <ChevronRight className="text-gray-600 hover:text-gray-900" />{" "}
-            <span className="text-gray-600 hover:text-gray-900">Add New</span>
+            <ChevronRight className="text-white " />{" "}
+            <span className="text-white ">Add New</span>
           </button>
         ) : (
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex text-white rounded-md gap-2 items-center mb-2"
+            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
           >
-            <ChevronLeft className="text-gray-600 hover:text-gray-900" />{" "}
-            <span className="text-gray-600 hover:text-gray-900">Show List</span>
+            <ChevronLeft className="text-white " />{" "}
+            <span className="text-white ">Show List</span>
           </button>
         )}
         {showList ? (
@@ -85,7 +87,7 @@ export default function SaleForm() {
             {/* Product Name */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Sale Date
+                Purchase Date
               </label>
               <div className="flex items-center gap-2">
                 <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
@@ -99,28 +101,42 @@ export default function SaleForm() {
                 </div>
               </div>
             </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Invoice No
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <NotepadText className="text-gray-400 mr-2" size={18} />
+                <input
+                  type="text"
+                  name="supplierName"
+                  placeholder="Enter Invoice No"
+                  className="w-full bg-transparent outline-none text-gray-900"
+                />
+              </div>
+            </div>
             {/* Supplier Name */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Customer Name
+                Supplier Name
               </label>
               <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                 <User className="text-gray-400 mr-2" size={18} />
                 <input
                   type="text"
-                  name="CustomerName"
-                  placeholder="Enter Customer name"
+                  name="supplierName"
+                  placeholder="Enter Supplier name"
                   className="w-full bg-transparent outline-none text-gray-900"
                 />
               </div>
             </div>
 
             {/* Product Name */}
-            <div className="w-full">
+            <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Product Name
               </label>
-              <div className=" flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                   <Tag className="text-gray-400 mr-2" size={18} />
                   <input
@@ -162,14 +178,14 @@ export default function SaleForm() {
                 {/* Adjustment */}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
-                    Discount
+                    Adjustment
                   </label>
                   <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
                       type="number"
-                      name="Discount"
-                      placeholder="Enter Discount"
+                      name="adjustment"
+                      placeholder="Enter Adjustment"
                       className="w-full bg-transparent outline-none text-gray-900"
                     />
                   </div>
@@ -203,6 +219,22 @@ export default function SaleForm() {
                       name="remainingBalance"
                       placeholder="Auto Calculated"
                       readOnly
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Total Payable */}
+                <div className="    ">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Total Payable
+                  </label>
+                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <Coins className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="number"
+                      name="totalPayable"
+                      placeholder="Enter Total Payable"
                       className="w-full bg-transparent outline-none text-gray-900"
                     />
                   </div>

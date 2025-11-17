@@ -26,18 +26,18 @@ export default function CustomerledgerForm() {
         {showList ? (
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex text-white rounded-md gap-2 items-center mb-2"
+            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
           >
-            <ChevronRight className="text-gray-600 hover:text-gray-900" />{" "}
-            <span className="text-gray-600 hover:text-gray-900">Add New</span>
+            <ChevronRight className="text-white " />{" "}
+            <span className="text-white ">Add New</span>
           </button>
         ) : (
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex text-white rounded-md gap-2 items-center mb-2"
+            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
           >
-            <ChevronLeft className="text-gray-600 hover:text-gray-900" />{" "}
-            <span className="text-gray-600 hover:text-gray-900">Show List</span>
+            <ChevronLeft className="text-white " />{" "}
+            <span className="text-white ">Show List</span>
           </button>
         )}
         {showList ? (

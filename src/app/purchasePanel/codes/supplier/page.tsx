@@ -16,30 +16,30 @@ import {
   Coins,
 } from "lucide-react";
 
-export default function CustomerForm() {
+export default function SupplierForm() {
   const [showList, setShowList] = useState(true);
 
   return (
     <div className="w-full relative">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Customer Management
+        Supplier Management
       </h1>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
         {showList ? (
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex text-white rounded-md gap-2 items-center mb-2"
+            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
           >
-            <ChevronRight className="text-gray-600 hover:text-gray-900" />{" "}
-            <span className="text-gray-600 hover:text-gray-900">Add New</span>
+            <ChevronRight className="text-white " />{" "}
+            <span className="text-white ">Add New</span>
           </button>
         ) : (
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex text-white rounded-md gap-2 items-center mb-2"
+            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
           >
-            <ChevronLeft className="text-gray-600 hover:text-gray-900" />{" "}
-            <span className="text-gray-600 hover:text-gray-900">Show List</span>
+            <ChevronLeft className="text-white " />{" "}
+            <span className="text-white ">Show List</span>
           </button>
         )}
         {showList ? (
@@ -70,7 +70,7 @@ export default function CustomerForm() {
             {/* Name */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Customer Name
+                Supplier Name *
               </label>
               <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                 <User className="text-gray-400 mr-2" size={18} />
@@ -78,6 +78,22 @@ export default function CustomerForm() {
                   type="text"
                   name="name"
                   placeholder="Enter supplier name"
+                  className="w-full bg-transparent outline-none text-gray-900"
+                />
+              </div>
+            </div>
+
+            {/* Company */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Company Name *
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <Building2 className="text-gray-400 mr-2" size={18} />
+                <input
+                  type="text"
+                  name="company"
+                  placeholder="Enter company name"
                   className="w-full bg-transparent outline-none text-gray-900"
                 />
               </div>
@@ -126,6 +142,24 @@ export default function CustomerForm() {
                   placeholder="Enter Opening Balance"
                   className="w-full bg-transparent outline-none text-gray-900 resize-none"
                 />
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Category
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <Tag className="text-gray-400 mr-2" size={18} />
+                <select
+                  name="category"
+                  className="w-full p-1 bg-transparent outline-none text-gray-900"
+                >
+                  <option value="">Select category</option>
+                  <option value="Clothing">Clothing</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Food">Food</option>
+                  <option value="Accessories">Accessories</option>
+                </select>
               </div>
             </div>
 

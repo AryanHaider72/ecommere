@@ -61,8 +61,12 @@ export default function Navbar({
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
-        <a href="/" className="text-xl font-extrabold">
-          N.
+        <a href="/" className="flex items-center">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-8 w-auto object-contain"
+          />
         </a>
 
         {/* --- Main Navbar Links (Desktop) --- */}

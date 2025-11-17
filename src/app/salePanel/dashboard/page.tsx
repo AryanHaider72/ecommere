@@ -15,12 +15,12 @@ import {
   FileText,
   ScanEyeIcon,
 } from "lucide-react";
-import SupplierForm from "../codes/supplier/page";
+
 import CustomerForm from "../codes/customer/page";
-import PurchaseForm from "../purchase/page";
+
 import SaleForm from "../sale/page";
-import ProductForm from "../codes/product/page";
-import SupplierledgerForm from "../ledger/supplierledger/page";
+import SaleReturnModule from "../saleReturn/page";
+
 import CustomerledgerForm from "../ledger/customerledger/page";
 
 export default function CustomerPanel() {
@@ -32,8 +32,9 @@ export default function CustomerPanel() {
   const navItems = [
     { id: "Code", label: "Code", icon: Plus },
     { id: "Ledger", label: "Ledger", icon: BookOpen }, // <-- new dropdown
-    { id: "purchase", label: "Purchase", icon: ShoppingBag },
+    // { id: "sale", label: "Purchase", icon: ShoppingBag },
     { id: "sale", label: "Sale", icon: ShoppingCart },
+    { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },
   ];
 
   return (
@@ -58,7 +59,7 @@ export default function CustomerPanel() {
       >
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl font-bold text-gray-900 hidden lg:block">
-            Seller Panel
+            Sale Panel
           </h2>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -95,27 +96,25 @@ export default function CustomerPanel() {
 
                   {dropDown && (
                     <div className="ml-6 mt-2 space-y-1">
-                      {[
-                        { id: "supplier", label: "Supplier", icon: Briefcase },
-                        { id: "customer", label: "Customer", icon: User },
-                        { id: "product", label: "Product", icon: ShoppingCart },
-                      ].map((subItem) => (
-                        <button
-                          key={subItem.id}
-                          onClick={() => {
-                            setActiveTab(subItem.id);
-                            setSidebarOpen(false);
-                          }}
-                          className={`flex items-center w-full gap-2 px-3 py-2 text-sm rounded-lg transition ${
-                            activeTab === subItem.id
-                              ? "bg-gray-900 text-white"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          <subItem.icon className="w-4 h-4" />
-                          <span>{subItem.label}</span>
-                        </button>
-                      ))}
+                      {[{ id: "customer", label: "Customer", icon: User }].map(
+                        (subItem) => (
+                          <button
+                            key={subItem.id}
+                            onClick={() => {
+                              setActiveTab(subItem.id);
+                              setSidebarOpen(false);
+                            }}
+                            className={`flex items-center w-full gap-2 px-3 py-2 text-sm rounded-lg transition ${
+                              activeTab === subItem.id
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            <subItem.icon className="w-4 h-4" />
+                            <span>{subItem.label}</span>
+                          </button>
+                        )
+                      )}
                     </div>
                   )}
                 </>
@@ -144,11 +143,11 @@ export default function CustomerPanel() {
                   {ledgerDrop && (
                     <div className="ml-6 mt-2 space-y-1">
                       {[
-                        {
-                          id: "supplierLedger",
-                          label: "Supplier Ledger",
-                          icon: FileText,
-                        },
+                        // {
+                        //   id: "supplierLedger",
+                        //   label: "Supplier Ledger",
+                        //   icon: FileText,
+                        // },
                         {
                           id: "customerLedger",
                           label: "Customer Ledger",
@@ -212,12 +211,10 @@ export default function CustomerPanel() {
 
       {/* === Main Content === */}
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
-        {activeTab === "supplier" && <SupplierForm />}
         {activeTab === "customer" && <CustomerForm />}
-        {activeTab === "product" && <ProductForm />}
-        {activeTab === "purchase" && <PurchaseForm />}
+
         {activeTab === "sale" && <SaleForm />}
-        {activeTab === "supplierLedger" && <SupplierledgerForm />}
+        {activeTab === "saleReturn" && <SaleReturnModule />}
         {activeTab === "customerLedger" && <CustomerledgerForm />}
       </main>
     </div>
