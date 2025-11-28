@@ -54,6 +54,7 @@ export default function AccountSettings() {
   const [showlist, setShowList] = useState(false);
   const [selectedMain, setSelectedMain] = useState("");
   const [selectedSub, setSelectedSub] = useState("");
+  const [selectedOption, setSelectedOption] = useState("no");
   const [selectedSubSub, setSelectedSubSub] = useState("");
   const [Quantity, setQuantity] = useState(0);
   const [sizes, setSizes] = useState<{ size: string; price: string }[]>([
@@ -304,6 +305,71 @@ export default function AccountSettings() {
                     className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+                <div className="p-3 rounded-xl max-w-md">
+                  <h2 className="text-md text-gray-800 mb-4">Offline Store</h2>
+
+                  <div className="flex flex-wrap gap-4 ">
+                    {/* Option 1 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="yes"
+                        checked={selectedOption === "yes"}
+                        onChange={(e) => setSelectedOption(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Yes
+                      </span>
+                    </label>
+
+                    {/* Option 2 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="no"
+                        checked={selectedOption === "no"}
+                        onChange={(e) => setSelectedOption(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        No
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {selectedOption === "yes" && (
+                  <>
+                    <h2 className="text-md font-semibold text-gray-800 mb-4">
+                      Fix Ratio
+                    </h2>
+                    <div className="flex gap-2">
+                      <div className="w-full">
+                        <label className="text-gray-600 font-medium mb-2 block">
+                          Sold Online
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter Quantity Sold Online"
+                          className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                      <div className="w-full">
+                        <label className="text-gray-600 font-medium mb-2 block">
+                          Sold Offline
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter Quantity Sold Offline"
+                          className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Description */}
                 <div>

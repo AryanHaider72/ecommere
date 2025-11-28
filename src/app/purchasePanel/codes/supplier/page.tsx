@@ -21,27 +21,26 @@ export default function SupplierForm() {
 
   return (
     <div className="w-full relative">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Supplier Management
-      </h1>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
-        {showList ? (
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Supplier Management
+          </h2>
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
           >
-            <ChevronRight className="text-white " />{" "}
-            <span className="text-white ">Add New</span>
+            {showList ? (
+              <>
+                <ChevronRight size={18} /> Add New
+              </>
+            ) : (
+              <>
+                <ChevronLeft size={18} /> Show List
+              </>
+            )}
           </button>
-        ) : (
-          <button
-            onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
-          >
-            <ChevronLeft className="text-white " />{" "}
-            <span className="text-white ">Show List</span>
-          </button>
-        )}
+        </div>
         {showList ? (
           <div className="p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center">
             <div>
@@ -183,7 +182,8 @@ export default function SupplierForm() {
             <div className="md:col-span-2 flex justify-end mt-3">
               <button
                 type="button"
-                className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg hover:bg-gray-900 transition"
+                // onClick={insertCapital}
+                className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
               >
                 Save
               </button>

@@ -18,7 +18,7 @@ import {
 import SupplierForm from "../codes/supplier/page";
 import PurchaseForm from "../purchase/page";
 import PurchaseReturnForm from "../purchaseReturn/page";
-import ProductForm from "../codes/product/page";
+
 import SupplierledgerForm from "../ledger/supplierledger/page";
 
 export default function CustomerPanel() {
@@ -74,10 +74,13 @@ export default function CustomerPanel() {
               {item.id === "Code" ? (
                 <>
                   <button
-                    onClick={() => setDropDown(!dropDown)}
+                    onClick={() => {
+                      setDropDown(!dropDown);
+                      setLedgerDrop(false);
+                    }}
                     className={`flex items-center w-full justify-between px-4 py-3 rounded-xl transition font-medium ${
                       dropDown
-                        ? "bg-black text-white shadow"
+                        ? "bg-gray-100  shadow"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
@@ -97,7 +100,7 @@ export default function CustomerPanel() {
                       {[
                         { id: "supplier", label: "Supplier", icon: Briefcase },
                         // { id: "customer", label: "Customer", icon: User },
-                        { id: "product", label: "Product", icon: ShoppingCart },
+                        // { id: "product", label: "Product", icon: ShoppingCart },
                       ].map((subItem) => (
                         <button
                           key={subItem.id}
@@ -122,10 +125,13 @@ export default function CustomerPanel() {
                 <>
                   {/* === Ledger Dropdown === */}
                   <button
-                    onClick={() => setLedgerDrop(!ledgerDrop)}
+                    onClick={() => {
+                      setDropDown(false);
+                      setLedgerDrop(!ledgerDrop);
+                    }}
                     className={`flex items-center w-full justify-between px-4 py-3 rounded-xl transition font-medium ${
                       ledgerDrop
-                        ? "bg-black text-white shadow"
+                        ? "bg-gray-100  shadow"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
@@ -213,7 +219,7 @@ export default function CustomerPanel() {
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
         {activeTab === "supplier" && <SupplierForm />}
         {/* {activeTab === "customer" && <CustomerForm />} */}
-        {activeTab === "product" && <ProductForm />}
+        {/* {activeTab === "product" && <ProductForm />} */}
         {activeTab === "purchase" && <PurchaseForm />}
         {/* {activeTab === "sale" && <SaleForm />} */}
         {activeTab === "supplierLedger" && <SupplierledgerForm />}

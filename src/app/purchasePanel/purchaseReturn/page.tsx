@@ -48,7 +48,16 @@ export default function PurchaseReturnModule() {
       alert("Please select a valid purchase invoice.");
     }
   };
-
+  function handleQtyChange(id: number, value: string) {
+    const qty = parseInt(value);
+    if (!isNaN(qty) && qty >= 0) {
+      setReturnItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, qty, total: qty * item.price } : item
+        )
+      );
+    }
+  }
   const handleAddReturn = (item: PurchaseItem) => {
     if (!returnItems.find((i) => i.id === item.id)) {
       setReturnItems((prev) => [...prev, item]);
@@ -253,7 +262,19 @@ export default function PurchaseReturnModule() {
                         className="border-b hover:bg-gray-100 transition"
                       >
                         <td className="py-2">{item.name}</td>
-                        <td className="text-center">{item.qty}</td>
+                        <td className="text-center">
+                          <input
+                            type="number"
+                            min={0}
+                            value={item.qty}
+                            onChange={(e) =>
+                              handleQtyChange(item.id, e.target.value)
+                            }
+                            className="focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
+                            placeholder="Qty"
+                            required
+                          />
+                        </td>
                         <td className="text-center">{item.price}</td>
                         <td className="text-center">{item.total}</td>
                         <td className="text-center">
@@ -436,9 +457,9 @@ export default function PurchaseReturnModule() {
                     <td className="text-center">
                       <button
                         onClick={() => handleAddReturn(item)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 justify-center"
+                        className="text-blue-600 hover:text-blue-800 "
                       >
-                        <Plus size={14} /> Add
+                        <Plus size={14} />
                       </button>
                     </td>
                   </tr>

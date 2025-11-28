@@ -38,25 +38,26 @@ export default function SaleForm() {
 
   return (
     <div className="w-full relative">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Sale Management</h1>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
-        {showList ? (
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Sale Management
+          </h2>
           <button
             onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
           >
-            <ChevronRight className="text-white " />{" "}
-            <span className="text-white ">Add New</span>
+            {showList ? (
+              <>
+                <ChevronRight size={18} /> Add New
+              </>
+            ) : (
+              <>
+                <ChevronLeft size={18} /> Show List
+              </>
+            )}
           </button>
-        ) : (
-          <button
-            onClick={() => setShowList(!showList)}
-            className="px-2 py-2 flex gap-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-white rounded-md  items-center mb-2"
-          >
-            <ChevronLeft className="text-white " />{" "}
-            <span className="text-white ">Show List</span>
-          </button>
-        )}
+        </div>
         {showList ? (
           <div className="p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center">
             <div>
@@ -81,46 +82,47 @@ export default function SaleForm() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
-            {/* Product Name */}
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Sale Date
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                  <Calendar className="text-gray-400 mr-2" size={18} />
+          <div className="flex flex-col flex-wrap md:flex-row gap-5 mt-2">
+            {/* Sale Date */}
+            <div className="w-full flex-col gap-2 md:flex-row flex">
+              <div className="w-full ">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Sale Date
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                    <Calendar className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="date"
+                      name="productName"
+                      placeholder="Enter PurchaseDate"
+                      className="flex-1 bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="w-full ">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Customer Name
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <User className="text-gray-400 mr-2" size={18} />
                   <input
-                    type="date"
-                    name="productName"
-                    placeholder="Enter PurchaseDate"
-                    className="flex-1 bg-transparent outline-none text-gray-900"
+                    type="text"
+                    name="CustomerName"
+                    placeholder="Enter Customer name"
+                    className="w-full bg-transparent outline-none text-gray-900"
                   />
                 </div>
               </div>
             </div>
-            {/* Supplier Name */}
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Customer Name
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <User className="text-gray-400 mr-2" size={18} />
-                <input
-                  type="text"
-                  name="CustomerName"
-                  placeholder="Enter Customer name"
-                  className="w-full bg-transparent outline-none text-gray-900"
-                />
-              </div>
-            </div>
+            <div className="w-full flex-col gap-2 md:flex-row flex">
+              {/* Customer Name */}
 
-            {/* Product Name */}
-            <div className="w-full">
-              <label className="block text-gray-700 font-medium mb-2">
-                Product Name
-              </label>
-              <div className=" w-full flex items-center gap-2">
+              <div className="w-full ">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Product Name
+                </label>
                 <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                   <Tag className="text-gray-400 mr-2" size={18} />
                   <input
@@ -130,37 +132,195 @@ export default function SaleForm() {
                     className="flex-1 bg-transparent outline-none text-gray-900"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowModel(true)}
-                  className="p-2 bg-yellow-400 hover:bg-yellow-500 rounded-md text-white"
-                >
-                  <Plus size={18} />
-                </button>
+              </div>
+              <div className="w-full ">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Quantity
+                </label>
+                <div className="w-full flex items-center gap-2">
+                  <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                    <Tag className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="text"
+                      name="productName"
+                      placeholder="Enter Quantity"
+                      className="flex-1 bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                  {/* <button
+                    type="button"
+                    onClick={() => setShowModel(true)}
+                    className="p-2 bg-yellow-400 hover:bg-yellow-500 rounded-md text-white"
+                  >
+                    <Plus size={18} />
+                  </button> */}
+                </div>
               </div>
             </div>
 
-            {/* === Payment Summary Section === */}
-            <div className="md:col-span-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                {/* Total Bill */}
-                <div>
+            {/* Product Name */}
+
+            {/* Quantity */}
+
+            {/* Table */}
+            <div className="w-full overflow-x-auto">
+              <table className="w-full border border-gray-200 rounded-lg overflow-hidden ">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                      Product Name
+                    </th>
+                    <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                      Price / Unit
+                    </th>
+                    <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                      Total
+                    </th>
+                    <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, index) => (
+                    <tr
+                      key={index}
+                      className="border-t hover:bg-gray-50 transition"
+                    >
+                      <td className="px-4 py-2">New Pants</td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) => {
+                            const newItems = [...items];
+                            newItems[index].qty = Number(e.target.value);
+                            setItems(newItems);
+                          }}
+                          className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="number"
+                          value={item.price}
+                          onChange={(e) => {
+                            const newItems = [...items];
+                            newItems[index].price = Number(e.target.value);
+                            setItems(newItems);
+                          }}
+                          className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center text-gray-800 font-medium">
+                        {(
+                          Number(item.qty || 0) * Number(item.price || 0)
+                        ).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() =>
+                            setItems(items.filter((_, i) => i !== index))
+                          }
+                          className="text-red-500 hover:text-red-700"
+                          title="Delete Item"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Row to Add New Item */}
+                  <tr className="border-t bg-gray-50">
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        value={newItem.name || ""}
+                        onChange={(e) =>
+                          setNewItem({ ...newItem, name: e.target.value })
+                        }
+                        className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                        placeholder="New Product Name"
+                      />
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <input
+                        type="number"
+                        value={newItem.qty || ""}
+                        onChange={(e) =>
+                          setNewItem({
+                            ...newItem,
+                            qty: Number(e.target.value),
+                          })
+                        }
+                        className="w-20 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                        placeholder="0"
+                      />
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <input
+                        type="number"
+                        value={newItem.price || ""}
+                        onChange={(e) =>
+                          setNewItem({
+                            ...newItem,
+                            price: Number(e.target.value),
+                          })
+                        }
+                        className="w-24 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                        placeholder="0"
+                      />
+                    </td>
+                    <td className="px-4 py-2 text-center font-medium text-gray-800">
+                      {(
+                        Number(newItem.qty || 0) * Number(newItem.price || 0)
+                      ).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <button
+                        onClick={() => {
+                          if (newItem.name && newItem.qty && newItem.price) {
+                            setItems([...items, newItem]);
+                            setNewItem({ name: "", qty: 0, price: 0 });
+                          }
+                        }}
+                        className="text-green-600 hover:text-green-800 font-medium"
+                      >
+                        ➕
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Payment Summary Section */}
+            <div className="w-full md:w-full">
+              <div className="flex flex-wrap md:flex-nowrap gap-4 mt-3">
+                {/* Amount Paid */}
+                <div className="w-full md:w-1/3">
                   <label className="block text-gray-700 font-medium mb-2">
-                    Total Bill
+                    Amount Paid
                   </label>
                   <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
                       type="number"
                       name="totalBill"
-                      placeholder="Enter Total Bill"
+                      placeholder="Enter Amount Paid"
                       className="w-full bg-transparent outline-none text-gray-900"
                     />
                   </div>
                 </div>
 
-                {/* Adjustment */}
-                <div>
+                {/* Discount */}
+                <div className="w-full md:w-1/3">
                   <label className="block text-gray-700 font-medium mb-2">
                     Discount
                   </label>
@@ -175,24 +335,24 @@ export default function SaleForm() {
                   </div>
                 </div>
 
-                {/* Amount Paid */}
-                <div>
+                {/* Total Bill */}
+                <div className="w-full md:w-1/3">
                   <label className="block text-gray-700 font-medium mb-2">
-                    Amount Paid
+                    Total Bill
                   </label>
                   <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
                       type="number"
                       name="amountPaid"
-                      placeholder="Enter Amount Paid"
+                      placeholder="Enter Total Bill"
                       className="w-full bg-transparent outline-none text-gray-900"
                     />
                   </div>
                 </div>
 
                 {/* Remaining Balance */}
-                <div>
+                <div className="w-full md:w-1/3">
                   <label className="block text-gray-700 font-medium mb-2">
                     Remaining Balance
                   </label>
@@ -211,7 +371,7 @@ export default function SaleForm() {
             </div>
 
             {/* Description */}
-            <div className="md:col-span-2">
+            <div className="w-full">
               <label className="block text-gray-700 font-medium mb-2">
                 Description
               </label>
@@ -227,10 +387,10 @@ export default function SaleForm() {
             </div>
 
             {/* Save Button */}
-            <div className="md:col-span-2 flex justify-end mt-4">
+            <div className="w-full flex justify-end mt-4">
               <button
                 type="button"
-                className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-lg hover:bg-gray-900 transition"
+                className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
               >
                 Save
               </button>

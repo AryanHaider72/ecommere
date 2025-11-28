@@ -14,6 +14,7 @@ import {
   BookOpen,
   FileText,
   ScanEyeIcon,
+  Coins,
 } from "lucide-react";
 
 import CustomerForm from "../codes/customer/page";
@@ -22,6 +23,7 @@ import SaleForm from "../sale/page";
 import SaleReturnModule from "../saleReturn/page";
 
 import CustomerledgerForm from "../ledger/customerledger/page";
+import ExpenseForm from "../GeneralExpense/page";
 
 export default function CustomerPanel() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -32,7 +34,7 @@ export default function CustomerPanel() {
   const navItems = [
     { id: "Code", label: "Code", icon: Plus },
     { id: "Ledger", label: "Ledger", icon: BookOpen }, // <-- new dropdown
-    // { id: "sale", label: "Purchase", icon: ShoppingBag },
+    { id: "expense", label: "Expense", icon: Coins },
     { id: "sale", label: "Sale", icon: ShoppingCart },
     { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },
   ];
@@ -76,10 +78,13 @@ export default function CustomerPanel() {
               {item.id === "Code" ? (
                 <>
                   <button
-                    onClick={() => setDropDown(!dropDown)}
-                    className={`flex items-center w-full justify-between px-4 py-3 rounded-xl transition font-medium ${
+                    onClick={() => {
+                      setDropDown(!dropDown);
+                      setLedgerDrop(false);
+                    }}
+                    className={`flex items-center w-full justify-between px-4 py-3 rounded-xl transition font-medium text-gray-700 hover:bg-gray-100 ${
                       dropDown
-                        ? "bg-black text-white shadow"
+                        ? "bg-gray-100  shadow"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
@@ -122,10 +127,13 @@ export default function CustomerPanel() {
                 <>
                   {/* === Ledger Dropdown === */}
                   <button
-                    onClick={() => setLedgerDrop(!ledgerDrop)}
+                    onClick={() => {
+                      setLedgerDrop(!ledgerDrop);
+                      setDropDown(false);
+                    }}
                     className={`flex items-center w-full justify-between px-4 py-3 rounded-xl transition font-medium ${
                       ledgerDrop
-                        ? "bg-black text-white shadow"
+                        ? "bg-gray-100  shadow"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
@@ -212,7 +220,7 @@ export default function CustomerPanel() {
       {/* === Main Content === */}
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
         {activeTab === "customer" && <CustomerForm />}
-
+        {activeTab === "expense" && <ExpenseForm />}
         {activeTab === "sale" && <SaleForm />}
         {activeTab === "saleReturn" && <SaleReturnModule />}
         {activeTab === "customerLedger" && <CustomerledgerForm />}

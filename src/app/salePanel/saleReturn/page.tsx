@@ -13,7 +13,7 @@ interface SaleItem {
 export default function SaleReturnModule() {
   const [invoiceNo, setInvoiceNo] = useState("");
   const [returnType, setReturnType] = useState("refund");
-  const [selectedOption, setSelectedOption] = useState("invoice ");
+  const [selectedOption, setSelectedOption] = useState("product");
 
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [returnItems, setReturnItems] = useState<SaleItem[]>([]);
@@ -72,6 +72,16 @@ export default function SaleReturnModule() {
   const handleRemoveExchange = (id: number) => {
     setExchangeItems((prev) => prev.filter((i) => i.id !== id));
   };
+  function handleQtyChange(id: number, value: string) {
+    const qty = parseInt(value);
+    if (!isNaN(qty) && qty >= 0) {
+      setReturnItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, qty, total: qty * item.price } : item
+        )
+      );
+    }
+  }
 
   const totalReturn = returnItems.reduce((sum, i) => sum + i.total, 0);
   const totalExchange = exchangeItems.reduce((sum, i) => sum + i.total, 0);
@@ -251,13 +261,26 @@ export default function SaleReturnModule() {
                         className="border-b hover:bg-gray-100 transition"
                       >
                         <td className="py-2">{item.name}</td>
-                        <td className="text-center">{item.qty}</td>
+                        <td className=" py-2  text-center w-[1/2]">
+                          <input
+                            type="number"
+                            min={0}
+                            value={item.qty}
+                            onChange={(e) =>
+                              handleQtyChange(item.id, e.target.value)
+                            }
+                            className="focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
+                            placeholder="Qty"
+                            required
+                          />
+                        </td>
                         <td className="text-center">{item.price}</td>
                         <td className="text-center">{item.total}</td>
                         <td className="text-center">
                           <button
                             onClick={() => handleRemoveReturn(item.id)}
                             className="text-red-600 hover:text-red-800"
+                            aria-label={`Remove ${item.name}`}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -434,9 +457,9 @@ export default function SaleReturnModule() {
                     <td className="text-center">
                       <button
                         onClick={() => handleAddReturn(item)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1 justify-center"
+                        className="text-blue-600 hover:text-blue-800 "
                       >
-                        <Plus size={14} /> Add
+                        <Plus size={14} />
                       </button>
                     </td>
                   </tr>
