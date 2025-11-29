@@ -6,6 +6,11 @@ import LoginApi from "@/api/authentication/login";
 import { useRouter } from "next/navigation";
 import { create } from "domain";
 import SignUpApi from "@/api/authentication/signup";
+import CheckAuth from "@/api/authentication/checkAuth";
+import LogoutApi from "@/api/authentication/logout";
+import SellerVerificationApi from "@/api/authentication/sellerVerification";
+import VerifyOtpPage from "./otpVerification/page";
+import OtpSend from "@/api/authentication/OtpSend";
 
 export default function Login() {
   const router = useRouter();
@@ -23,38 +28,104 @@ export default function Login() {
 
   const [responseBack, setResponseBack] = useState(0);
   const [createAccount, setCreateAccount] = useState(false);
+  const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
 
   //Login Function
   const Login = async () => {
     const formData = { Email, password };
     const response = await LoginApi(formData);
     console.log("Response from Login API:", response);
+    if (response?.status === 200 || response?.status === 201) {
+      setEmail("");
+      setPassword("");
+      setResponseBack(3);
+      const token = response.data?.token;
+      localStorage.setItem("token", token as string);
+      verfiedSeller(String(token));
+    }
     if (response?.status === 400 || response?.status === 401) {
       setResponseBack(1);
     }
   };
 
+  const verfiy = async () => {
+    const token = localStorage.getItem("token");
+    const response = await OtpSend(token as string);
+    console.log("Response from VerifySeller API:", response);
+  };
+
+  const verfiedSeller = async (token: string) => {
+    const response = await SellerVerificationApi(token as string);
+    console.log("Response from SellerVerification API:", response.data);
+    if (response.data === "UnVerified Seller") {
+      verfiy();
+      localStorage.setItem("userEmail", Email.toLowerCase());
+
+      router.push("./otpVerification");
+    } else {
+      router.push("/admin/dashboard");
+    }
+  };
   //SignUp Function
   const SignUp = async () => {
     var data = {
-      UserNameSeller,
-      EmailSeller,
-      phoneNo,
-      passwordSeller,
+      userName: UserNameSeller,
+      email: EmailSeller,
+      phoneNo: phoneNo,
+      password: passwordSeller,
     };
     const response = await SignUpApi(data);
     console.log("Response from SignUp API:", response);
+    if (response?.status === 200 || response?.status === 201) {
+      setUserNameSeller("");
+      setEmailSeller("");
+      setphoneNo("");
+      setPasswordSeller("");
+      setPasswordConfirm("");
+      setResponseBack(4);
+      setCreateAccount(false);
+    }
     if (response?.status === 400 || response?.status === 401) {
       setResponseBack(1);
     } else setResponseBack(2);
   };
 
+  const checkAuth = async () => {
+    const token = localStorage.getItem("token");
+    const response = await CheckAuth(token as string);
+    console.log("Response from CheckAuth API:", response);
+    if (response?.status === 400 || response?.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+
+  const validate = () => {
+    let newErrors: { [key: string]: string } = {};
+
+    if (phoneNo.length < 11) {
+      newErrors.phoneNo = "Phone No must be at least 11 characters";
+    }
+    if (passwordSeller.length < 8) {
+      newErrors.passwordSeller = "Password must be at least 8 characters";
+    }
+    if (passwordSeller !== passwordConfirm) {
+      newErrors.passwordConfirm = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      SignUp();
+    }
+    return newErrors;
+  };
+
   useEffect(() => {
-    if (responseBack === 1 || responseBack === 2) {
+    if (responseBack === 1 || responseBack === 2 || responseBack === 3) {
       setTimeout(() => {
         setResponseBack(0);
       }, 2000);
     }
+    checkAuth();
   }, [responseBack]);
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -112,8 +183,12 @@ export default function Login() {
                   onChange={(e) => setphoneNo(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Phone No"
+                  minLength={11}
                   required
                 />
+                {errors.phoneNo && (
+                  <p className="text-red-500 text-sm">{errors.phoneNo}</p>
+                )}
               </div>
 
               {/* Password Field with Toggle */}
@@ -132,8 +207,10 @@ export default function Login() {
                     id="password"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                     placeholder="Password"
+                    minLength={8}
                     required
                   />
+
                   <button
                     type="button"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
@@ -142,6 +219,11 @@ export default function Login() {
                   >
                     {showPassword ? <Eye /> : <EyeClosed />}
                   </button>
+                  {errors.passwordSeller && (
+                    <p className="text-red-500 text-sm">
+                      {errors.passwordSeller}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="mb-6">
@@ -155,7 +237,7 @@ export default function Login() {
                   <input
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword1 ? "text" : "password"}
                     id="password"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                     placeholder="Confirm Password"
@@ -171,6 +253,9 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+              {errors.passwordConfirm && (
+                <p className="text-red-500 text-sm">{errors.passwordConfirm}</p>
+              )}
               {responseBack === 1 && (
                 <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
                   Invalid Email/password
@@ -181,26 +266,30 @@ export default function Login() {
                   Network Error
                 </div>
               )}
+              {responseBack === 4 && (
+                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                  SignUp Successful! Please Login.
+                </div>
+              )}
               {passwordSeller !== passwordConfirm ? (
                 <button
-                  type="submit"
-                  // onClick={Login}
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-not-allowed"
+                  type="button"
                   disabled
+                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-not-allowed"
                 >
                   SignUp
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={SignUp}
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-not-allowed"
-                  disabled
+                  onClick={() => {
+                    validate();
+                  }}
+                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-pointer"
                 >
                   SignUp
                 </button>
               )}
-
               <div
                 onClick={() => setCreateAccount(!createAccount)}
                 className="text-blue-500 text-sm hover:underline mt-2 cursor-pointer"
@@ -261,6 +350,11 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+              {responseBack === 3 && (
+                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
+                  UserLogin Successful
+                </div>
+              )}
               {responseBack === 1 && (
                 <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
                   Invalid Email/password

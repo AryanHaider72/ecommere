@@ -1,50 +1,73 @@
 "use server";
-import axios from "axios";
-import { postRequest } from "./api";
-import { LoginData } from "../types/login";
+import { RequestLoginData, ResponseLoginData } from "../types/login";
+import { postRequest } from "./main";
 
-export default async function LoginApi(data: LoginData) {
-  const response = await postRequest(`/api/Seller/Login`, data);
+export default async function LoginApi(data: RequestLoginData, token?: string) {
+  const customHeader: Record<string, string> = {};
+  if (token) customHeader.Authorization = `Bearer ${token}`;
 
+  const response = await postRequest(`/api/Seller/Login`, data, customHeader);
   if (response.success) {
     return {
-      data: response.data,
+      data: response.data as ResponseLoginData,
+      status: response.status,
       message: "Login successful",
     };
   }
 
-  // Handle error object
-  if (response.error) {
-    if (axios.isAxiosError(response.error)) {
-      const status = response.error.response?.status;
+  const status = response.status;
 
-      if (status === 400 || status === 401) {
-        return {
-          data: null,
-          message: "Invalid credentials",
-        };
-      }
-
-      // Other specific status codes can be handled here
-
-      // Fallback for known axios errors
-      return {
-        data: null,
-        message:
-          response.error.response?.data || "An error occurred during login.",
-      };
-    }
-
-    // For unknown error types
+  if (status === 400 || status === 401) {
     return {
       data: null,
-      message: "An unexpected error occurred during login.",
+      message: "Invalid credentials",
+      status,
     };
   }
 
-  // If no error info, generic fallback
   return {
     data: null,
-    message: "An unexpected error occurred during login.",
+    message: response.message || "Login failed due to an unexpected error.",
+    status: response.status,
   };
+
+  // const response = await postRequest(`/api/Seller/Login`, data);
+
+  // if (response.success) {
+  //   return {
+  //     data: response.data,
+  //     message: "Login successful",
+  //   };
+  // }
+
+  // // Handle error object
+  // if (response.error) {
+  //   if (axios.isAxiosError(response.error)) {
+  //     const status = response.error.response?.status;
+
+  //     if (status === 400 || status === 401) {
+  //       return {
+  //         data: null,
+  //         message: "Invalid credentials",
+  //       };
+  //     }
+  //     return {
+  //       data: null,
+  //       message:
+  //         response.error.response?.data || "An error occurred during login.",
+  //     };
+  //   }
+
+  //   // For unknown error types
+  //   return {
+  //     data: null,
+  //     message: "An unexpected error occurred during login.",
+  //   };
+  // }
+
+  // // If no error info, generic fallback
+  // return {
+  //   data: null,
+  //   message: "An unexpected error occurred during login.",
+  // };
 }

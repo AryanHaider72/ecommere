@@ -1,6 +1,6 @@
 export interface SignUpData {
-  UserNameSeller: string;
-  EmailSeller: string;
+  userName: string;
+  email: string;
   phoneNo: string;
-  passwordSeller: string;
+  password: string;
 }
