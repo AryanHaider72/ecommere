@@ -15,14 +15,22 @@ import {
   ChevronDown,
   User,
   Briefcase,
+  ListCollapse,
+  Weight,
+  ListChecksIcon,
 } from "lucide-react";
 import Overview from "../overview/page";
 import AccountSettings from "../Codes/category/page";
 import SellerOrders from "../order/page";
-import SupplierForm from "../Codes/supplier/page";
+import SupplierForm from "../Codes/FurtherSubCat/page";
 import CustomerForm from "../Codes/customer/page";
 import PurchaseForm from "../purchase/page";
+import UnitForm from "../Codes/Unit/page";
+import FurtherSubCategory from "../Codes/FurtherSubCat/page";
+import CheckAuth from "@/api/authentication/checkAuth";
+import { useRouter } from "next/navigation";
 export default function CustomerPanel() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropDown, setDropDown] = useState(false);
@@ -31,7 +39,17 @@ export default function CustomerPanel() {
     { id: "Code", label: "Code", icon: Plus },
     { id: "orders", label: "Orders", icon: ShoppingCart },
   ];
-
+  const checkAuth = async () => {
+    const token = localStorage.getItem("token");
+    const response = await CheckAuth(token as string);
+    console.log("Response from CheckAuth API:", response);
+    if (response?.status === 200 || response?.status === 201) {
+      router.push("/admin/dashboard");
+    }
+    if (response?.status === 400 || response?.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen bg-gray-50 relative">
       {/* === Mobile Header === */}
@@ -98,6 +116,21 @@ export default function CustomerPanel() {
                           label: "Product",
                           icon: ShoppingCart,
                         },
+                        {
+                          id: "customer",
+                          label: "Category",
+                          icon: ListCollapse,
+                        },
+                        {
+                          id: "unit",
+                          label: "Units",
+                          icon: Weight,
+                        },
+                        {
+                          id: "SubCategory",
+                          label: "Sub Category",
+                          icon: ListChecksIcon,
+                        },
                       ].map((subItem) => (
                         <button
                           key={subItem.id}
@@ -156,9 +189,11 @@ export default function CustomerPanel() {
       {/* === Main Content === */}
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
         {activeTab === "dashboard" && <Overview />}
+        {activeTab === "SubCategory" && <FurtherSubCategory />}
         {/* {activeTab === "reviews" && <Review />}
         {activeTab === "orders" && <Order />} */}
         {activeTab === "settings" && <AccountSettings />}
+        {activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "supplier" && <SupplierForm />}
         {activeTab === "customer" && <CustomerForm />}

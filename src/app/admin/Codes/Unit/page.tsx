@@ -16,8 +16,13 @@ import {
 import Spinner from "@/component/spinner/page";
 import UpdateSubCategory from "@/api/lib/category/updateCategorySub/updateSub";
 import DeleteSubCategory from "@/api/lib/category/deleteCategorySub/subCategeoryDelete";
+import AddUnits from "@/api/lib/unit/addUnit/page";
+import GetUnit from "@/api/lib/unit/getUnit/page";
+import { UnitApiResponse, UnitList } from "@/api/types/unit/getUnit";
+import UpdateUnit from "@/api/lib/unit/updateUnit/page";
+import DeleteUnits from "@/api/lib/unit/deleteUnit/page";
 
-export default function CustomerForm() {
+export default function UnitForm() {
   const router = useRouter();
 
   const [showList, setShowList] = useState(true);
@@ -25,45 +30,31 @@ export default function CustomerForm() {
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const [CategoryMainID, setCategoryMainID] = useState("");
-  const [subCatName, setsubCatName] = useState("");
+  const [UnitName, setUnitName] = useState("");
+  const [abbreviation, setabbreviation] = useState("");
   const [description, setdescription] = useState("");
   const [ID, setID] = useState("");
   const [responseBack, setResponseBack] = useState(0);
 
-  const [catgeoryMainList, setCatgeoryMainList] = useState<CategoryMain[]>([]);
-  const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
+  const [UnitList, setUnitList] = useState<UnitList[]>([]);
 
-  const getCategroyMain = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetCategoryMain(String(token));
-
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as CategoryMainApiResponse;
-      setCatgeoryMainList(data.categoryList);
-      setCategoryMainID(data.categoryList[0].categoryID);
-    }
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
-  };
-
-  const addCatgeorySub = async () => {
-    if (!subCatName || !CategoryMainID) return setResponseBack(2);
+  const addUnit = async () => {
+    if (!UnitName) return setResponseBack(2);
     else {
       const token = localStorage.getItem("token");
       const formData = {
-        categoryID: CategoryMainID,
-        subCategoryName: subCatName,
+        abbreviation: abbreviation,
+        unitName: UnitName,
         description: description,
       };
-      const response = await AddSubCategory(formData, String(token));
+      const response = await AddUnits(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         console.log(response);
         setResponseBack(1);
-        setsubCatName("");
-        getCategorySub();
+        setUnitName("");
+        setabbreviation("");
         setdescription("");
+        getUnit();
       }
       if (response.status === 401) {
         router.push("/sellerlogin");
@@ -71,15 +62,15 @@ export default function CustomerForm() {
     }
   };
 
-  const getCategorySub = async () => {
+  const getUnit = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetCategorySub(String(token));
+      const response = await GetUnit(String(token));
       if (response.status === 200 || response.status === 201) {
-        const data = response.data as CategorySubApiResponse;
+        const data = response.data as UnitApiResponse;
         console.log(data.categoryList);
-        setCatgeorySubList(data.categoryList);
+        setUnitList(data.categoryList);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
@@ -93,33 +84,33 @@ export default function CustomerForm() {
   const fetchData = (ID: string) => {
     setUpdate(true);
     setShowList(false);
-    const data = catgeorySubList.find((item) => item.subCategoryID === ID);
+    const data = UnitList.find((item) => item.unitID === ID);
     if (data) {
-      setsubCatName(data.subCategoryName);
+      setUnitName(data.unitName);
       setdescription(data.description);
-      setCategoryMainID(data.categoryID);
+      setabbreviation(data.abbreviation);
       setID(ID);
     }
   };
 
-  const ModifiedCatgeorySub = async () => {
-    if (!subCatName || !CategoryMainID) return setResponseBack(2);
+  const ModifiedUnit = async () => {
+    if (!UnitName) return setResponseBack(2);
     else {
       const token = localStorage.getItem("token");
       const formData = {
-        subCategoryID: ID,
-        categoryID: CategoryMainID,
-        subCategoryName: subCatName,
+        unitID: ID,
+        unitName: UnitName,
+        abbreviation: abbreviation,
         description: description,
       };
-      const response = await UpdateSubCategory(formData, String(token));
+      const response = await UpdateUnit(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         console.log(response);
         setShowList(true);
         setResponseBack(4);
-        setsubCatName("");
+        setUnitName("");
         setdescription("");
-        getCategorySub();
+        getUnit();
         setID("");
       }
       if (response.status === 401) {
@@ -131,16 +122,14 @@ export default function CustomerForm() {
   const DeleteCatgeorySub = async (ID: string) => {
     const token = localStorage.getItem("token");
     const formData = {
-      subCategoryID: ID,
+      unitID: ID,
     };
-    const response = await DeleteSubCategory(formData, String(token));
+    const response = await DeleteUnits(formData, String(token));
     if (response.status === 200 || response.status === 201) {
       console.log(response);
       setShowList(true);
       setID("");
-      setCatgeorySubList((item) =>
-        item.filter((emp) => emp.subCategoryID !== ID)
-      );
+      setUnitList((item) => item.filter((emp) => emp.unitID !== ID));
     }
     if (response.status === 401) {
       router.push("/sellerlogin");
@@ -148,8 +137,7 @@ export default function CustomerForm() {
   };
 
   useEffect(() => {
-    getCategorySub();
-    getCategroyMain();
+    getUnit();
   }, []);
 
   useEffect(() => {
@@ -166,9 +154,7 @@ export default function CustomerForm() {
   }, [responseBack]);
   return (
     <div className="w-full relative">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Main Categories Management
-      </h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Unit Management</h1>
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
@@ -212,7 +198,8 @@ export default function CustomerForm() {
             onClick={() => {
               setShowList(!showList);
               setID("");
-              setsubCatName("");
+              setUnitName("");
+              setabbreviation("");
               setdescription("");
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
@@ -236,22 +223,25 @@ export default function CustomerForm() {
               </div>
             ) : (
               <>
-                {catgeorySubList.length > 0 ? (
+                {UnitList.length > 0 ? (
                   <>
-                    {catgeorySubList.map((item) => (
+                    {UnitList.map((item) => (
                       <div
                         className="p-4 border mt-2  border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
-                        key={item.subCategoryID}
+                        key={item.unitID}
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
-                            {item.subCategoryName}
+                            {item.unitName}
                           </h3>
+                          <p className="text-gray-600">
+                            Short Code: {item.abbreviation}
+                          </p>
                           <p className="text-gray-600">{item.description}</p>
                         </div>
                         <div className="flex gap-4">
                           <button
-                            onClick={() => fetchData(item.subCategoryID)}
+                            onClick={() => fetchData(item.unitID)}
                             className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
                             title="Edit"
                           >
@@ -260,7 +250,7 @@ export default function CustomerForm() {
                           <button
                             onClick={() => {
                               setIsOpen(true);
-                              setID(item.subCategoryID);
+                              setID(item.unitID);
                             }}
                             className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
                             title="Delete"
@@ -281,37 +271,30 @@ export default function CustomerForm() {
           </>
         ) : (
           <div className="space-y-5 mt-2">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-medium mb-2">
-                Main Category <span className="text-red-500">*</span>
-              </label>
-
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <select
-                  name="CategoryMain"
-                  className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => setCategoryMainID(e.target.value)}
-                >
-                  {catgeoryMainList.map((cat) => (
-                    <option key={cat.categoryID} value={cat.categoryID}>
-                      {cat.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* === Column: Sub Category === */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                SubCategory Name <span className="text-red-500">*</span>
+                Unit Name <span className="text-red-500">*</span>
               </label>
               <input
-                value={subCatName}
-                onChange={(e) => setsubCatName(e.target.value)}
+                value={UnitName}
+                onChange={(e) => setUnitName(e.target.value)}
                 type="text"
-                name="SubCategory Name"
+                name="Unit Name"
                 placeholder="Enter SubCategory Name"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Abbreviation
+              </label>
+              <input
+                value={abbreviation}
+                onChange={(e) => setabbreviation(e.target.value)}
+                type="text"
+                name="Unit Name"
+                placeholder="Enter Abbreviation eg:- pcs, pck etc"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
@@ -357,7 +340,7 @@ export default function CustomerForm() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={ModifiedCatgeorySub}
+                  onClick={ModifiedUnit}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   Update
@@ -367,7 +350,7 @@ export default function CustomerForm() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={addCatgeorySub}
+                  onClick={addUnit}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   Save

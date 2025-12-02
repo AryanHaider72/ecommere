@@ -1,13 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Pencil, Trash } from "lucide-react";
-import GetCategoryMain from "@/api/lib/category/CategorySeller/CategoryMain";
 import { useRouter } from "next/navigation";
-import {
-  CategoryMain,
-  CategoryMainApiResponse,
-} from "@/api/types/categoryTypes/CategoryMain";
-import AddSubCategory from "@/api/lib/category/addCategorySub/catSub";
+
 import GetCategorySub from "@/api/lib/category/getCategorySub/categorySubGet";
 import {
   CategorySub,
@@ -16,8 +11,18 @@ import {
 import Spinner from "@/component/spinner/page";
 import UpdateSubCategory from "@/api/lib/category/updateCategorySub/updateSub";
 import DeleteSubCategory from "@/api/lib/category/deleteCategorySub/subCategeoryDelete";
+import { UnitApiResponse, UnitList } from "@/api/types/unit/getUnit";
+import GetUnit from "@/api/lib/unit/getUnit/page";
+import FurterSub from "@/api/lib/subCategory/addSub/page";
+import GetFurtherSub from "@/api/lib/subCategory/GetSub/getSub";
+import {
+  FurtherSub,
+  FurtherSubApiResponse,
+} from "@/api/types/subCategory/getSub";
+import UpdateFurtherSubCategory from "@/api/lib/subCategory/updateSub/updateSub";
+import DeleteFurtherSubCategory from "@/api/lib/subCategory/deleteSub/deleteSub";
 
-export default function CustomerForm() {
+export default function FurtherSubCategory() {
   const router = useRouter();
 
   const [showList, setShowList] = useState(true);
@@ -25,52 +30,37 @@ export default function CustomerForm() {
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const [CategoryMainID, setCategoryMainID] = useState("");
-  const [subCatName, setsubCatName] = useState("");
-  const [description, setdescription] = useState("");
+  const [unitID, setUnitID] = useState("");
+  const [categorySubID, setCategorySubID] = useState("");
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+  const [currentUnit, setCurrentUnit] = useState("");
+
+  const [name, setName] = useState("");
   const [ID, setID] = useState("");
   const [responseBack, setResponseBack] = useState(0);
 
-  const [catgeoryMainList, setCatgeoryMainList] = useState<CategoryMain[]>([]);
   const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
+  const [FurtherSubList, setFurtherSubList] = useState<FurtherSub[]>([]);
+  const [UnitList, setUnitList] = useState<UnitList[]>([]);
 
-  const getCategroyMain = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetCategoryMain(String(token));
-
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as CategoryMainApiResponse;
-      setCatgeoryMainList(data.categoryList);
-      setCategoryMainID(data.categoryList[0].categoryID);
-    }
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
-  };
-
-  const addCatgeorySub = async () => {
-    if (!subCatName || !CategoryMainID) return setResponseBack(2);
-    else {
+  const getUnit = async () => {
+    setLoading(true);
+    try {
       const token = localStorage.getItem("token");
-      const formData = {
-        categoryID: CategoryMainID,
-        subCategoryName: subCatName,
-        description: description,
-      };
-      const response = await AddSubCategory(formData, String(token));
+      const response = await GetUnit(String(token));
       if (response.status === 200 || response.status === 201) {
-        console.log(response);
-        setResponseBack(1);
-        setsubCatName("");
-        getCategorySub();
-        setdescription("");
-      }
-      if (response.status === 401) {
+        const data = response.data as UnitApiResponse;
+        setUnitList(data.categoryList);
+        setUnitID(data.categoryList[0].unitID);
+      } else if (response.status === 401) {
         router.push("/sellerlogin");
-      } else if (response.status === 500) setResponseBack(3);
+      }
+    } catch (err) {
+      setResponseBack(3);
+    } finally {
+      setLoading(false);
     }
   };
-
   const getCategorySub = async () => {
     setLoading(true);
     try {
@@ -80,6 +70,56 @@ export default function CustomerForm() {
         const data = response.data as CategorySubApiResponse;
         console.log(data.categoryList);
         setCatgeorySubList(data.categoryList);
+        setCategorySubID(data.categoryList[0].subCategoryID);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (err) {
+      setResponseBack(3);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addSubCategory = async () => {
+    if (!categorySubID || selectedUnits.length === 0 || !name)
+      return setResponseBack(2);
+
+    const token = localStorage.getItem("token");
+
+    const formData = {
+      subCategoryID: categorySubID,
+      units: selectedUnits.map((id) => ({
+        unitID: id,
+      })),
+      name,
+    };
+    console.log(formData);
+    const response = await FurterSub(formData, String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      setResponseBack(1);
+      setName("");
+      setSelectedUnits([]);
+      getFurtherSub();
+    }
+  };
+
+  const getFurtherSub = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await GetFurtherSub(String(token));
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as FurtherSubApiResponse;
+
+        // Make sure every item has units array
+        const safeList = data.categoryList.map((item) => ({
+          ...item,
+          units: Array.isArray(item.unit) ? item.unit : [],
+        }));
+        console.log(data.categoryList);
+        setFurtherSubList(safeList);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
@@ -93,33 +133,35 @@ export default function CustomerForm() {
   const fetchData = (ID: string) => {
     setUpdate(true);
     setShowList(false);
-    const data = catgeorySubList.find((item) => item.subCategoryID === ID);
+    const data = FurtherSubList.find((item) => item.subCategoryDetailID === ID);
     if (data) {
-      setsubCatName(data.subCategoryName);
-      setdescription(data.description);
-      setCategoryMainID(data.categoryID);
+      setSelectedUnits(data.unit.map((u) => u.unitID));
+      setCategorySubID(data.subCategoryID);
+      setName(data.name);
       setID(ID);
     }
   };
 
   const ModifiedCatgeorySub = async () => {
-    if (!subCatName || !CategoryMainID) return setResponseBack(2);
+    if (!categorySubID || !name) return setResponseBack(2);
     else {
       const token = localStorage.getItem("token");
       const formData = {
-        subCategoryID: ID,
-        categoryID: CategoryMainID,
-        subCategoryName: subCatName,
-        description: description,
+        subCategoryDetailID: ID,
+        // subCategoryID: categorySubID,
+        units: selectedUnits.map((id) => ({
+          unitID: id,
+        })),
+        name: name,
       };
-      const response = await UpdateSubCategory(formData, String(token));
+      console.log(formData);
+      const response = await UpdateFurtherSubCategory(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         console.log(response);
         setShowList(true);
         setResponseBack(4);
-        setsubCatName("");
-        setdescription("");
-        getCategorySub();
+        setName("");
+        getFurtherSub();
         setID("");
       }
       if (response.status === 401) {
@@ -131,15 +173,15 @@ export default function CustomerForm() {
   const DeleteCatgeorySub = async (ID: string) => {
     const token = localStorage.getItem("token");
     const formData = {
-      subCategoryID: ID,
+      subCategoryDetailID: ID,
     };
-    const response = await DeleteSubCategory(formData, String(token));
+    const response = await DeleteFurtherSubCategory(formData, String(token));
     if (response.status === 200 || response.status === 201) {
       console.log(response);
       setShowList(true);
       setID("");
-      setCatgeorySubList((item) =>
-        item.filter((emp) => emp.subCategoryID !== ID)
+      setFurtherSubList((item) =>
+        item.filter((emp) => emp.subCategoryDetailID !== ID)
       );
     }
     if (response.status === 401) {
@@ -148,8 +190,9 @@ export default function CustomerForm() {
   };
 
   useEffect(() => {
+    getFurtherSub();
+    getUnit();
     getCategorySub();
-    getCategroyMain();
   }, []);
 
   useEffect(() => {
@@ -164,10 +207,15 @@ export default function CustomerForm() {
       }, 2000);
     }
   }, [responseBack]);
+
+  const filteredData = FurtherSubList.filter(
+    (item) => item.subCategoryID === categorySubID
+  );
+
   return (
     <div className="w-full relative">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Main Categories Management
+        Sub Categories Management
       </h1>
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
@@ -211,9 +259,7 @@ export default function CustomerForm() {
           <button
             onClick={() => {
               setShowList(!showList);
-              setID("");
-              setsubCatName("");
-              setdescription("");
+              setName("");
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
           >
@@ -230,37 +276,76 @@ export default function CustomerForm() {
         </div>
         {showList ? (
           <>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Main Category <span className="text-red-500">*</span>
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  name="CategoryMain"
+                  value={categorySubID}
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => setCategorySubID(e.target.value)}
+                >
+                  {catgeorySubList.length > 0 ? (
+                    <>
+                      {catgeorySubList.map((cat) => (
+                        <option key={cat.categoryID} value={cat.subCategoryID}>
+                          {cat.subCategoryName}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option>No Record found</option>
+                  )}
+                </select>
+              </div>
+            </div>
             {loading ? (
               <div className="flex justify-center py-10">
                 <Spinner />
               </div>
             ) : (
               <>
-                {catgeorySubList.length > 0 ? (
+                {FurtherSubList.length > 0 ? (
                   <>
-                    {catgeorySubList.map((item) => (
+                    {FurtherSubList.map((item) => (
                       <div
-                        className="p-4 border mt-2  border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
-                        key={item.subCategoryID}
+                        className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+                        key={item.subCategoryDetailID}
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
-                            {item.subCategoryName}
+                            {item.name}
                           </h3>
-                          <p className="text-gray-600">{item.description}</p>
+
+                          {/* Loop units array */}
+                          <div className="flex gap-2 flex-wrap mt-1">
+                            {(item.unit ?? []).map((u) => (
+                              <span
+                                key={u.unitID}
+                                className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full"
+                              >
+                                {u.unitName}
+                              </span>
+                            ))}
+                          </div>
                         </div>
+
                         <div className="flex gap-4">
                           <button
-                            onClick={() => fetchData(item.subCategoryID)}
+                            onClick={() => fetchData(item.subCategoryDetailID)}
                             className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
                             title="Edit"
                           >
                             <Pencil className="w-5 h-5" />
                           </button>
+
                           <button
                             onClick={() => {
                               setIsOpen(true);
-                              setID(item.subCategoryID);
+                              setID(item.subCategoryDetailID);
                             }}
                             className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
                             title="Delete"
@@ -289,15 +374,91 @@ export default function CustomerForm() {
               <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                 <select
                   name="CategoryMain"
+                  value={categorySubID}
                   className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => setCategoryMainID(e.target.value)}
+                  onChange={(e) => setCategorySubID(e.target.value)}
                 >
-                  {catgeoryMainList.map((cat) => (
-                    <option key={cat.categoryID} value={cat.categoryID}>
-                      {cat.categoryName}
-                    </option>
-                  ))}
+                  {catgeorySubList.length > 0 ? (
+                    <>
+                      {catgeorySubList.map((cat) => (
+                        <option key={cat.categoryID} value={cat.subCategoryID}>
+                          {cat.subCategoryName}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option>No Record found</option>
+                  )}
                 </select>
+              </div>
+            </div>
+            {/* Unit Selector */}
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Unit <span className="text-red-500">*</span>
+              </label>
+
+              <div className="flex items-center gap-2">
+                {/* Dropdown */}
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 w-full">
+                  <select
+                    name="unitSelect"
+                    value={currentUnit}
+                    className="w-full bg-transparent outline-none text-gray-900 p-1"
+                    onChange={(e) => setCurrentUnit(e.target.value)}
+                  >
+                    <option value="">Select Unit</option>
+
+                    {UnitList.map((unit) => (
+                      <option key={unit.unitID} value={unit.unitID}>
+                        {unit.unitName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Add Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!currentUnit) return;
+
+                    if (selectedUnits.includes(currentUnit)) return; // prevent duplicate
+
+                    setSelectedUnits((prev) => [...prev, currentUnit]);
+                    setCurrentUnit("");
+                  }}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Badge List */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedUnits.map((id) => {
+                  const unit = UnitList.find((u) => u.unitID === id);
+
+                  return (
+                    <span
+                      key={id}
+                      className="px-3 py-1 bg-green-100 text-green-800 rounded-full flex items-center gap-2"
+                    >
+                      {unit?.unitName}
+
+                      <button
+                        onClick={() =>
+                          setSelectedUnits((prev) =>
+                            prev.filter((u) => u !== id)
+                          )
+                        }
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
             </div>
 
@@ -307,8 +468,8 @@ export default function CustomerForm() {
                 SubCategory Name <span className="text-red-500">*</span>
               </label>
               <input
-                value={subCatName}
-                onChange={(e) => setsubCatName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 type="text"
                 name="SubCategory Name"
                 placeholder="Enter SubCategory Name"
@@ -316,20 +477,6 @@ export default function CustomerForm() {
               />
             </div>
 
-            {/* === Column: Description === */}
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setdescription(e.target.value)}
-                name="description"
-                placeholder="Enter Description"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900 resize-none"
-                rows={3}
-              />
-            </div>
             {responseBack === 2 && (
               <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
                 Fill in All Required Fields
@@ -367,7 +514,7 @@ export default function CustomerForm() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={addCatgeorySub}
+                  onClick={addSubCategory}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   Save

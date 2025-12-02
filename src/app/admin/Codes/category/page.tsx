@@ -73,6 +73,9 @@ export default function AccountSettings() {
   const [description, setDescription] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
   const products: Product[] = [
     {
       id: 1,
@@ -204,6 +207,13 @@ export default function AccountSettings() {
       ...prev,
       [productId]: image,
     }));
+  };
+
+  const reorderImages = (from: number, to: number) => {
+    const updated = [...images];
+    const moved = updated.splice(from, 1)[0];
+    updated.splice(to, 0, moved);
+    setImages(updated);
   };
 
   return (
@@ -570,37 +580,52 @@ export default function AccountSettings() {
                       setIsDragOver(true);
                     }}
                     onDragLeave={() => setIsDragOver(false)}
-                    className={`w-full p-4 border-2 border-dashed rounded-md cursor-pointer text-center ${
+                    className={`w-full p-4 border-2 flex  justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
                       isDragOver
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-300"
                     }`}
                   >
-                    {images.some((img) => img) ? (
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {images.map((img, i) =>
-                          img ? (
-                            <img
-                              key={i}
-                              src={URL.createObjectURL(img)}
-                              alt={`Img ${i}`}
-                              className="w-20 h-20 object-cover rounded-md"
-                            />
-                          ) : (
-                            <div
-                              key={i}
-                              className="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500"
-                            >
-                              Empty
-                            </div>
-                          )
+                    {images.map((img, i) => (
+                      <div
+                        key={i}
+                        draggable={!!img}
+                        onDragStart={() => setDragIndex(i)}
+                        onDragEnter={() => img && setHoverIndex(i)}
+                        onDragEnd={() => {
+                          if (
+                            dragIndex !== null &&
+                            hoverIndex !== null &&
+                            dragIndex !== hoverIndex
+                          ) {
+                            reorderImages(dragIndex, hoverIndex);
+                          }
+                          setDragIndex(null);
+                          setHoverIndex(null);
+                        }}
+                        className={`relative w-20 h-20 rounded-md flex items-center justify-center 
+                      ${
+                        hoverIndex === i ? "ring-2 ring-blue-500 scale-105" : ""
+                      }
+                      transition-all duration-150`}
+                      >
+                        {img ? (
+                          <img
+                            src={URL.createObjectURL(img)}
+                            alt={`Img ${i}`}
+                            className="w-full h-full object-cover rounded-md pointer-events-none"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
+                            Empty
+                          </div>
                         )}
+
+                        <span className="absolute -bottom-5 text-xs text-gray-600">
+                          {i === 0 ? "Header Image" : `Image ${i + 1}`}
+                        </span>
                       </div>
-                    ) : (
-                      <span className="text-gray-500">
-                        Drop or click to upload
-                      </span>
-                    )}
+                    ))}
                   </div>
                   <input
                     ref={fileInputRef}
