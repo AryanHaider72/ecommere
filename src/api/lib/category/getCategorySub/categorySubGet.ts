@@ -2,11 +2,11 @@
 
 import { getRequest } from "@/api/authentication/main";
 
-export default async function GetCategorySub(token: string) {
+export default async function GetCategorySub(token: string, data?: string) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
   const response = await getRequest(
-    `/api/Category/Sub/GetCategory`,
+    `/api/Category/Sub/GetCategory/${data}`,
     null,
     customHeaders
   );

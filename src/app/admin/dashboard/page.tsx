@@ -112,9 +112,9 @@ export default function CustomerPanel() {
                     <div className="ml-6 mt-2 space-y-1">
                       {[
                         {
-                          id: "settings",
-                          label: "Product",
-                          icon: ShoppingCart,
+                          id: "unit",
+                          label: "Units",
+                          icon: Weight,
                         },
                         {
                           id: "customer",
@@ -122,14 +122,14 @@ export default function CustomerPanel() {
                           icon: ListCollapse,
                         },
                         {
-                          id: "unit",
-                          label: "Units",
-                          icon: Weight,
-                        },
-                        {
                           id: "SubCategory",
                           label: "Sub Category",
                           icon: ListChecksIcon,
+                        },
+                        {
+                          id: "settings",
+                          label: "Product",
+                          icon: ShoppingCart,
                         },
                       ].map((subItem) => (
                         <button
