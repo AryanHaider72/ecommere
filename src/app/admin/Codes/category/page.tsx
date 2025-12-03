@@ -1,7 +1,15 @@
 "use client";
-import { useState, useRef } from "react";
-import { Edit, Pencil, ShoppingBag, Trash } from "lucide-react";
-import Image from "next/image";
+import { useState, useRef, useEffect } from "react";
+import { Edit, Pencil, Plus, ShoppingBag, Trash } from "lucide-react";
+import convertImageToWebPWithWatermark from "@/api/OtherController/webConverter";
+import { SendDataToApi } from "@/api/OtherController/router";
+import {
+  CategoryMain,
+  CategoryMainApiResponse,
+} from "@/api/types/categoryTypes/CategoryMain";
+import GetCategoryMain from "@/api/lib/category/CategorySeller/CategoryMain";
+import { useRouter } from "next/navigation";
+import { CategorySub } from "@/api/types/categoryTypes/CategorySub";
 
 type CategoryTree = {
   [mainCategory: string]: {
@@ -9,14 +17,22 @@ type CategoryTree = {
   };
 };
 
-type Product = {
-  id: number;
-  name: string;
-  description: string;
-  price: string;
-  rating: number;
-  images: string[];
+interface ImagesList {
+  listImage: urlTypes[];
+}
+type urlTypes = {
+  url: string;
 };
+
+interface Varient {
+  varientName: string;
+  varientAttributes: VarientAttribute[];
+}
+interface VarientAttribute {
+  varientValue: string;
+  qty: number;
+  amount: number;
+}
 const categoryData: CategoryTree = {
   "Fashion & Apparel": {
     "Men’s Clothing": [
@@ -47,24 +63,18 @@ const categoryData: CategoryTree = {
   },
 };
 
-const availableSizes = ["S", "M", "L", "XL", "XXL"];
-
 export default function AccountSettings() {
-  const [showAll, setShowAll] = useState(false);
+  const router = useRouter();
   const [showlist, setShowList] = useState(false);
   const [selectedMain, setSelectedMain] = useState("");
   const [selectedSub, setSelectedSub] = useState("");
-  const [selectedOption, setSelectedOption] = useState("no");
+  const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
   const [selectedSubSub, setSelectedSubSub] = useState("");
   const [Quantity, setQuantity] = useState(0);
-  const [sizes, setSizes] = useState<{ size: string; price: string }[]>([
-    { size: "", price: "" },
-  ]);
-  const [samePriceForAll, setSamePriceForAll] = useState(false);
-  const [commonPrice, setCommonPrice] = useState("");
-  const [colors, setColors] = useState<string[]>([]);
-  const [newColor, setNewColor] = useState("#000000");
+
   const [images, setImages] = useState<(File | null)[]>([null, null, null]);
+  const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
+
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [productName, setProductName] = useState("");
   const [productTitle, setProductTitle] = useState("");
@@ -76,92 +86,97 @@ export default function AccountSettings() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
-  const products: Product[] = [
-    {
-      id: 1,
-      name: "DESIGN smart Bermuda ",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      price: "$599",
-      rating: 5.0,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-    {
-      id: 2,
-      name: "Linen blend culottes ",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      price: "$499",
-      rating: 4.8,
-      images: ["/collection1.jpg", "/fashion_83.webp", "/collection3.jpg"],
-    },
-    {
-      id: 3,
-      name: "DESIGN smart Bermuda",
-      price: "$699",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      rating: 4.9,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-    {
-      id: 4,
-      name: "Linen blend culottes",
-      price: "$329",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      rating: 4.6,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-    {
-      id: 5,
-      name: "DESIGN smart Bermuda",
-      price: "$799",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      rating: 5.0,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-    {
-      id: 6,
-      name: "Linen blend culottes",
-      price: "$279",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      rating: 4.7,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-    {
-      id: 7,
-      name: "Linen blend culottes",
-      price: "$329",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      rating: 4.6,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-    {
-      id: 8,
-      name: "DESIGN smart Bermuda",
-      price: "$799",
-      description: "High-quality linen blend culottes perfect for summer wear.",
-      rating: 5.0,
-      images: ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"],
-    },
-  ];
+  const [CategoryMainID, setCategoryMainID] = useState("");
+  const [catgeoryMainList, setCatgeoryMainList] = useState<CategoryMain[]>([]);
+  const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
 
-  const handleAddSize = () => setSizes([...sizes, { size: "", price: "" }]);
-  const handleSizeChange = (
-    index: number,
-    field: "size" | "price",
-    value: string
-  ) => {
-    const updated = [...sizes];
-    updated[index][field] = value;
-    setSizes(updated);
-  };
+  //VARIENT States
+  const [listVarient, setListVarient] = useState<Varient[]>([]);
+  const [mainVarientName, setMainVarientName] = useState("");
+  const [currentAttributes, setCurrentAttributes] = useState<
+    VarientAttribute[]
+  >([]);
+  const [newAttribute, setNewAttribute] = useState<VarientAttribute>({
+    varientValue: "",
+    qty: 0,
+    amount: 0,
+  });
 
-  const handleAddColor = () => {
-    if (newColor && !colors.includes(newColor)) {
-      setColors([...colors, newColor]);
-      setNewColor("#000000");
+  const getCategroyMain = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      setCatgeoryMainList(data.categoryList);
+      setCategoryMainID(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
     }
   };
-  const handleRemoveColor = (color: string) =>
-    setColors(colors.filter((c) => c !== color));
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    handleImageChange(e.dataTransfer.files);
+  };
+
+  const handleClick = () => fileInputRef.current?.click();
+
+  const displayTitle = `${productName}${
+    productName && productTitle ? " | " : ""
+  }${productTitle}`;
+
+  //-----------------------------------------------Variant Function----------------------------------------------
+
+  const handleAddMainVariant = () => {
+    if (!mainVarientName.trim()) {
+      alert("Please enter a Variant Name");
+      return;
+    }
+    if (currentAttributes.length === 0) {
+      alert("Please add at least one attribute");
+      return;
+    }
+
+    const updatedList = [
+      ...listVarient,
+      {
+        varientName: mainVarientName.trim(),
+        varientAttributes: currentAttributes,
+      },
+    ];
+    setListVarient(updatedList);
+    // Reset inputs for next variant
+    setMainVarientName("");
+    setCurrentAttributes([]);
+  };
+
+  // Add new attribute row to currentAttributes
+  const handleAddAttribute = () => {
+    if (!newAttribute.varientValue.trim()) {
+      alert("Please enter Attribute Name");
+      return;
+    }
+    setCurrentAttributes([...currentAttributes, newAttribute]);
+    setNewAttribute({ varientValue: "", qty: 0, amount: 0 });
+  };
+
+  // Update newAttribute inputs (for the input row)
+  const handleNewAttributeChange = (
+    field: keyof VarientAttribute,
+    value: string | number
+  ) => {
+    setNewAttribute({ ...newAttribute, [field]: value });
+  };
+
+  // Remove an attribute from currentAttributes by index
+  const handleRemoveAttribute = (index: number) => {
+    setCurrentAttributes(currentAttributes.filter((_, i) => i !== index));
+  };
+
+  //-----------------------------------------------Image Function----------------------------------------------
 
   const handleImageChange = (files: FileList | null) => {
     if (files) {
@@ -179,42 +194,88 @@ export default function AccountSettings() {
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    handleImageChange(e.dataTransfer.files);
-  };
-
-  const handleClick = () => fileInputRef.current?.click();
-  const isStitched = selectedSubSub.toLowerCase().includes("stitched");
-
-  const displayTitle = `${productName}${
-    productName && productTitle ? " | " : ""
-  }${productTitle}`;
-  const originalAmount = parseFloat(amount) || 0;
-  const discountPercent = parseFloat(discount) || 0;
-  const discountedAmount = originalAmount * (1 - discountPercent / 100);
-
-  const [selectedImages, setSelectedImages] = useState<Record<number, string>>(
-    products.reduce((acc, product) => {
-      acc[product.id] = product.images[0];
-      return acc;
-    }, {} as Record<number, string>)
-  );
-
-  const handleImageClick = (productId: number, image: string) => {
-    setSelectedImages((prev) => ({
-      ...prev,
-      [productId]: image,
-    }));
-  };
-
   const reorderImages = (from: number, to: number) => {
     const updated = [...images];
     const moved = updated.splice(from, 1)[0];
     updated.splice(to, 0, moved);
     setImages(updated);
   };
+  const handleUploadAll = async () => {
+    // Filter out null images
+    const filesToUpload = images.filter((img): img is File => img !== null);
+
+    if (filesToUpload.length === 0) {
+      alert("No images to upload");
+      return;
+    }
+
+    // Use the previously suggested function for uploading multiple images
+    const uploadedUrls = await sendMultipleImages(filesToUpload);
+    console.log("Uploaded URLs before setState:", uploadedUrls);
+    if (uploadedUrls) {
+      setListImages((prevState) => ({
+        listImage: [
+          ...prevState.listImage,
+          ...uploadedUrls.map((url) => ({ url })),
+        ],
+      }));
+    }
+    return uploadedUrls;
+    // You can save these URLs in state or send to backend as needed
+  };
+
+  const sendMultipleImages = async (files: File[]) => {
+    if (!files || files.length === 0) {
+      alert("Please select at least one file");
+      return;
+    }
+
+    const watermark = "© My Watermark";
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // Convert to WebP with watermark (your function)
+      const webPBlob = await convertImageToWebPWithWatermark(file, watermark);
+
+      if (!webPBlob) {
+        alert(`Conversion failed for image ${file.name}`);
+        continue;
+      }
+
+      // Upload to API
+      const res = await SendDataToApi(webPBlob as unknown as File);
+      if (res && res.data && res.data.secure_url) {
+        uploadedUrls.push(res.data.secure_url);
+      } else {
+        alert(`Upload failed for image ${file.name}`);
+      }
+    }
+
+    // Do something with URLs (e.g. set state or return)
+    return uploadedUrls;
+  };
+
+  const handleSave = () => {
+    handleUploadAll();
+    console.log(listVarient);
+    console.log(listImages);
+  };
+  //-----------------------------------------------Return----------------------------------------------
+
+  const totalQuantity = listVarient.reduce((total, variant) => {
+    return (
+      total + variant.varientAttributes.reduce((sum, attr) => sum + attr.qty, 0)
+    );
+  }, 0);
+
+  const discountedAmount =
+    Number(amount) - (Number(amount) * Number(discount)) / 100;
+
+  useEffect(() => {
+    getCategroyMain();
+  }, []);
 
   return (
     <div className="w-full px-4 md:px-8 pb-10">
@@ -264,34 +325,6 @@ export default function AccountSettings() {
                   </div>
                   <div className="w-full">
                     <label className="block text-gray-700 font-medium mb-1">
-                      Product Title
-                    </label>
-                    <input
-                      type="text"
-                      value={productTitle}
-                      onChange={(e) => setProductTitle(e.target.value)}
-                      placeholder="Enter product title"
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2 */}
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-1">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-1">
                       Discount
                     </label>
                     <input
@@ -303,34 +336,66 @@ export default function AccountSettings() {
                     />
                   </div>
                 </div>
-                <div className="w-full">
-                  <label className="block text-gray-700 font-medium mb-1">
-                    Quantity
-                  </label>
-                  <input
-                    type="number"
-                    value={Quantity || 0}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
-                    placeholder="Enter Quantity"
-                    className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="flex flex-col md:flex-row gap-4 mb-4">
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Width
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter Width"
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Height
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Enter Height "
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Depth
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Enter Depth "
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Weight
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Enter Weight "
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
                 <div className="p-3 rounded-xl max-w-md">
-                  <h2 className="text-md text-gray-800 mb-4">Offline Store</h2>
+                  <h2 className="text-md text-gray-800 mb-4">
+                    Show in Country
+                  </h2>
 
-                  <div className="flex flex-wrap gap-4 ">
+                  <div className="flex flex-wrap flex-col gap-4 ">
                     {/* Option 1 */}
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="radio"
                         name="inline-radio"
-                        value="yes"
-                        checked={selectedOption === "yes"}
+                        value="ShowinAllCountry"
+                        checked={selectedOption === "ShowinAllCountry"}
                         onChange={(e) => setSelectedOption(e.target.value)}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Yes
+                        Show in All Country
                       </span>
                     </label>
 
@@ -339,46 +404,51 @@ export default function AccountSettings() {
                       <input
                         type="radio"
                         name="inline-radio"
-                        value="no"
-                        checked={selectedOption === "no"}
+                        value="ShowinSomeCountry"
+                        checked={selectedOption === "ShowinSomeCountry"}
                         onChange={(e) => setSelectedOption(e.target.value)}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
-                        No
+                        Show in Some Country
+                      </span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="HideinSomeCountry"
+                        checked={selectedOption === "HideinSomeCountry"}
+                        onChange={(e) => setSelectedOption(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Hide in Some Country
                       </span>
                     </label>
                   </div>
                 </div>
-
-                {selectedOption === "yes" && (
-                  <>
-                    <h2 className="text-md font-semibold text-gray-800 mb-4">
-                      Fix Ratio
-                    </h2>
-                    <div className="flex gap-2">
-                      <div className="w-full">
-                        <label className="text-gray-600 font-medium mb-2 block">
-                          Sold Online
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter Quantity Sold Online"
-                          className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                      <div className="w-full">
-                        <label className="text-gray-600 font-medium mb-2 block">
-                          Sold Offline
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter Quantity Sold Offline"
-                          className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                        />
-                      </div>
-                    </div>
-                  </>
+                {selectedOption === "ShowinSomeCountry" && (
+                  <div className=" gap-4 mb-4">
+                    <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                      Display Country
+                    </label>
+                    <select className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select Country</option>
+                      <option value="">Pakistan</option>
+                    </select>
+                  </div>
+                )}
+                {selectedOption === "HideinSomeCountry" && (
+                  <div className=" gap-4 mb-4">
+                    <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                      Hide Country
+                    </label>
+                    <select className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select Main Category</option>
+                      <option value="">Pakistan</option>
+                    </select>
+                  </div>
                 )}
 
                 {/* Description */}
@@ -408,166 +478,165 @@ export default function AccountSettings() {
                     className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     value={selectedMain}
                     onChange={(e) => {
-                      setSelectedMain(e.target.value);
-                      setSelectedSub("");
-                      setSelectedSubSub("");
+                      setCategoryMainID(e.target.value);
                     }}
                   >
-                    <option value="">Select Main Category</option>
-                    {Object.keys(categoryData).map((cat) => (
-                      <option key={cat}>{cat}</option>
+                    {catgeoryMainList.map((item) => (
+                      <option
+                        key={item.categoryID}
+                        value={item.categoryID}
+                        className="p-2"
+                      >
+                        {item.categoryName}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Gender */}
-                {selectedMain && (
+                {CategoryMainID && (
                   <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <select
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={selectedSub}
+                      className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={selectedMain}
                       onChange={(e) => {
-                        setSelectedSub(e.target.value);
-                        setSelectedSubSub("");
+                        setCategoryMainID(e.target.value);
                       }}
                     >
-                      <option value="">Select Gender</option>
-                      {Object.keys(categoryData[selectedMain]).map((sub) => (
-                        <option key={sub}>{sub}</option>
+                      {catgeoryMainList.map((item) => (
+                        <option
+                          key={item.categoryID}
+                          value={item.categoryID}
+                          className="p-2"
+                        >
+                          {item.categoryName}
+                        </option>
                       ))}
                     </select>
-                  </div>
-                )}
-
-                {/* Type */}
-                {selectedSub && (
-                  <div className="flex flex-col md:flex-row gap-4 mb-4">
-                    <select
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={selectedSubSub}
-                      onChange={(e) => setSelectedSubSub(e.target.value)}
-                    >
-                      <option value="">Select Type</option>
-                      {categoryData[selectedMain][selectedSub].map((type) => (
-                        <option key={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Sizes */}
-                {selectedSubSub && (
-                  <div className="mb-4">
-                    <label className="block text-gray-700 font-medium mb-1">
-                      Sizes
-                    </label>
-                    <label className="flex items-center mb-2">
-                      <input
-                        type="checkbox"
-                        checked={samePriceForAll}
-                        onChange={(e) => {
-                          setSamePriceForAll(e.target.checked);
-                          setShowAll(true);
-                        }}
-                        className="mr-2"
-                      />
-                      Same price for all sizes
-                    </label>
-
-                    {samePriceForAll ? (
-                      <input
-                        type="number"
-                        placeholder="Enter common price"
-                        value={commonPrice}
-                        onChange={(e) => setCommonPrice(e.target.value)}
-                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      />
-                    ) : (
-                      <>
-                        {sizes.map((s, i) => (
-                          <div
-                            key={i}
-                            className="flex flex-col md:flex-row gap-4 mb-2"
-                          >
-                            <select
-                              value={s.size}
-                              onChange={(e) =>
-                                handleSizeChange(i, "size", e.target.value)
-                              }
-                              className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="">Select Size</option>
-                              {availableSizes.map((size) => (
-                                <option key={size}>{size}</option>
-                              ))}
-                            </select>
-                            <input
-                              type="number"
-                              placeholder="Price for this size"
-                              value={s.price}
-                              onChange={(e) =>
-                                handleSizeChange(i, "price", e.target.value)
-                              }
-                              className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={handleAddSize}
-                          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                        >
-                          + Add Another Size
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Colors */}
-                {isStitched && (
-                  <div className="mb-4">
-                    <label className="block text-gray-700 font-medium mb-1">
-                      Colors
-                    </label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <input
-                        type="color"
-                        value={newColor}
-                        onChange={(e) => setNewColor(e.target.value)}
-                        className="w-16 h-10 border border-gray-200 shadow-sm rounded-md"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddColor}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                      >
-                        + Add Color
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {colors.map((color) => (
-                        <span
-                          key={color}
-                          className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm"
-                        >
-                          <div
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: color }}
-                          ></div>
-                          <button
-                            onClick={() => handleRemoveColor(color)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 )}
 
                 {/* Image Upload */}
+              </fieldset>
+
+              <fieldset className="p-4 border border-gray-300 rounded-lg">
+                <legend className="text-lg font-semibold mb-4">
+                  Variant Info
+                </legend>
+
+                {/* Input for Main Variant Name and button */}
+                <div className="flex gap-2 items-center mb-4">
+                  <input
+                    type="text"
+                    placeholder="Enter Variant Name (Main)"
+                    value={mainVarientName}
+                    onChange={(e) => setMainVarientName(e.target.value)}
+                    className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={handleAddMainVariant}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Save Variant
+                  </button>
+                </div>
+
+                {/* Table of current attributes (sub-variants) */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border border-gray-300 rounded">
+                    <thead className="bg-gray-100 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 py-2">Attribute Name</th>
+                        <th className="px-4 py-2">Qty</th>
+                        <th className="px-4 py-2">Amount</th>
+                        <th className="px-4 py-2">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Existing attributes */}
+                      {currentAttributes.map((attr, i) => (
+                        <tr
+                          key={i}
+                          className="border-b border-gray-300 odd:bg-white even:bg-gray-50"
+                        >
+                          <td className="px-4 py-2">{attr.varientValue}</td>
+                          <td className="px-4 py-2">{attr.qty}</td>
+                          <td className="px-4 py-2">{attr.amount}</td>
+                          <td className="px-4 py-2">
+                            <button
+                              className="px-2 py-1 bg-red-600 text-white rounded"
+                              onClick={() => handleRemoveAttribute(i)}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+
+                      {/* Row for adding new attribute */}
+                      <tr>
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            placeholder="Attribute Name"
+                            value={newAttribute.varientValue}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "varientValue",
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            value={newAttribute.qty}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "qty",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={newAttribute.amount}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "amount",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <button
+                            onClick={handleAddAttribute}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
+                            title="Add Attribute"
+                          >
+                            <Plus className="mr-1" />
+                            Add
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </fieldset>
+
+              <fieldset className="p-4 border border-gray-300 rounded-lg">
+                <legend className="text-lg font-semibold text-gray-800 px-2">
+                  Product Image
+                </legend>
                 <div className="mb-4">
                   <label className="block text-gray-700 font-medium mb-1">
                     Product Images (Max 3)
@@ -637,8 +706,10 @@ export default function AccountSettings() {
                   />
                 </div>
               </fieldset>
-
-              <button className="w-full py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-900">
+              <button
+                onClick={handleSave}
+                className="w-full py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-900"
+              >
                 Save
               </button>
             </div>
@@ -681,7 +752,7 @@ export default function AccountSettings() {
               <p className="font-semibold text-gray-800 text-center">
                 {displayTitle}
               </p>
-              {Number(Quantity) > 0 ? (
+              {Number(totalQuantity) > 0 ? (
                 <p className=" px-2 py-1 text-sm bg-green-200 text-green-500 text-center rounded-md">
                   Available in Stock
                 </p>
@@ -690,149 +761,65 @@ export default function AccountSettings() {
                   Out of Stock
                 </p>
               )}
-              <p className="text-gray-500 text-sm text-center">{description}</p>
+              <p className="text-gray-500 text-sm text-center p-3">
+                {description}
+              </p>
 
               {/* Sizes */}
-              {(samePriceForAll || sizes.some((s) => s.size)) && (
-                <div className="flex flex-wrap gap-1 mt-2 justify-center">
-                  {(samePriceForAll
-                    ? availableSizes
-                    : sizes.filter((s) => s.size).map((s) => s.size)
-                  ).map((size, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 bg-black text-xs text-white rounded-full"
-                    >
-                      {size}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Colors */}
-              {colors.length > 0 && (
-                <div className="flex gap-1 mt-2 justify-center">
-                  {colors.map((color, i) => (
-                    <div
-                      key={i}
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: color }}
-                    ></div>
-                  ))}
-                </div>
-              )}
 
               {/* Price */}
               <div className="mt-2 text-center">
-                {discountPercent > 0 ? (
+                {Number(discount) > 0 ? (
                   <>
                     <span className="font-bold text-gray-900">
-                      ${discountedAmount.toFixed(2)}
+                      {discountedAmount.toFixed(2)}
                     </span>
                     <span className="ml-2 text-gray-400 text-sm line-through">
-                      ${originalAmount.toFixed(2)}
+                      {Number(amount).toFixed(2)}
                     </span>
                   </>
                 ) : (
                   <p className="text-gray-700 font-semibold">
-                    ${originalAmount.toFixed(2)}
+                    {Number(amount).toFixed(2)}
                   </p>
                 )}
+              </div>
+              <div>
+                {listVarient.map((item, index) => (
+                  <div key={index} className="mb-4">
+                    <h1>{item.varientName}</h1>
+                    <div className="flex gap-2 items-center">
+                      {item.varientAttributes.map((attr, index) => (
+                        <>
+                          {attr.qty <= 0 ? (
+                            <button
+                              key={index}
+                              onClick={() => setAmount(String(attr.amount))}
+                              className="px-2 py-1 bg-gray-300 text-xs text-gray-600 rounded-full"
+                              disabled
+                            >
+                              {attr.varientValue}
+                            </button>
+                          ) : (
+                            <button
+                              key={index}
+                              onClick={() => setAmount(String(attr.amount))}
+                              className="px-2 py-1 bg-black text-xs text-white rounded-full"
+                            >
+                              {attr.varientValue}
+                            </button>
+                          )}
+                        </>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="w-full bg-white p-6 rounded-xl shadow-lg">
-          <div className="p-6">
-            <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-              Product List
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.length === 0 ? (
-                <div className="text-center text-gray-500 w-full py-10 border rounded-lg">
-                  No products added yet.
-                </div>
-              ) : (
-                products.map((item) => (
-                  <div
-                    key={item.id}
-                    className="w-full max-w-sm mx-auto bg-white border border-gray-200 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg"
-                  >
-                    {/* Main Image */}
-                    <div className="relative w-full h-120 overflow-hidden rounded-t-lg group">
-                      <Image
-                        src={selectedImages[item.id]}
-                        alt={item.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-
-                    {/* Thumbnails */}
-                    <div className="flex justify-center gap-2 mt-3 px-3">
-                      {item.images.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className={`relative w-12 h-12 rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
-                            selectedImages[item.id] === img
-                              ? "border-yellow-500"
-                              : "border-transparent"
-                          }`}
-                          onClick={() => handleImageClick(item.id, img)}
-                        >
-                          <Image
-                            src={img}
-                            alt="Thumbnail"
-                            fill
-                            className="object-cover hover:opacity-80 transition-opacity"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="px-5 pb-5">
-                      <h5 className="text-xl font-semibold tracking-tight mt-3 text-gray-900">
-                        {item.name}
-                      </h5>
-                      <span className="text-gray-500 text-sm mt-1 mb-1 block">
-                        {item.description}
-                      </span>
-
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="flex gap-2 items-center">
-                          <span className="text-md font-bold text-gray-900">
-                            {item.price}
-                          </span>
-                          <del className="text-gray-400 text-sm">
-                            {Number(300) - 50}
-                          </del>
-                        </div>
-
-                        <div className="flex gap-2 items-center">
-                          <button
-                            className="p-2 bg-yellow-400 hover:bg-yellow-500 rounded-md text-white"
-                            title="Edit"
-                          >
-                            <Pencil size={18} />
-                          </button>
-                          <button
-                            className="p-2 bg-red-500 hover:bg-red-600 rounded-md text-white"
-                            title="Delete"
-                          >
-                            <Trash size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+        <></>
       )}
     </div>
   );

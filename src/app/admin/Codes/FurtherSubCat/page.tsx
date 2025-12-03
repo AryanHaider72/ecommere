@@ -143,21 +143,21 @@ export default function FurtherSubCategory() {
   };
 
   const ModifiedCatgeorySub = async () => {
-    if (!categorySubID || !name) return setResponseBack(2);
+    if (!categorySubID || !name || selectedUnits.length === 0)
+      return setResponseBack(2);
     else {
       const token = localStorage.getItem("token");
       const formData = {
         subCategoryDetailID: ID,
-        // subCategoryID: categorySubID,
+        subCategoryID: categorySubID,
         units: selectedUnits.map((id) => ({
           unitID: id,
         })),
         name: name,
       };
-      console.log(formData);
       const response = await UpdateFurtherSubCategory(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        console.log(response);
+        getFurtherSub();
         setShowList(true);
         setResponseBack(4);
         setName("");
@@ -260,6 +260,7 @@ export default function FurtherSubCategory() {
             onClick={() => {
               setShowList(!showList);
               setName("");
+              setSelectedUnits([]);
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
           >
@@ -291,7 +292,10 @@ export default function FurtherSubCategory() {
                   {catgeorySubList.length > 0 ? (
                     <>
                       {catgeorySubList.map((cat) => (
-                        <option key={cat.categoryID} value={cat.subCategoryID}>
+                        <option
+                          key={cat.subCategoryID}
+                          value={cat.subCategoryID}
+                        >
                           {cat.subCategoryName}
                         </option>
                       ))}
@@ -308,12 +312,12 @@ export default function FurtherSubCategory() {
               </div>
             ) : (
               <>
-                {FurtherSubList.length > 0 ? (
+                {filteredData.length > 0 ? (
                   <>
-                    {FurtherSubList.map((item) => (
+                    {filteredData.map((item) => (
                       <div
                         className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
-                        key={item.subCategoryDetailID}
+                        key={item.subCategoryID}
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
@@ -357,7 +361,7 @@ export default function FurtherSubCategory() {
                     ))}
                   </>
                 ) : (
-                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                  <div className="w-full mt-2 bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
                     No Record Found
                   </div>
                 )}
@@ -381,7 +385,10 @@ export default function FurtherSubCategory() {
                   {catgeorySubList.length > 0 ? (
                     <>
                       {catgeorySubList.map((cat) => (
-                        <option key={cat.categoryID} value={cat.subCategoryID}>
+                        <option
+                          key={cat.subCategoryID}
+                          value={cat.subCategoryID}
+                        >
                           {cat.subCategoryName}
                         </option>
                       ))}
