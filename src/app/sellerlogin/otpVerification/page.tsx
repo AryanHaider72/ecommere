@@ -1,7 +1,9 @@
 "use client";
 
 import OtpSend from "@/api/authentication/OtpSend";
+import GetInitalStore from "@/api/authentication/StoreGet";
 import VerfiedSeller from "@/api/authentication/verifySeller";
+import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,6 +12,8 @@ export default function VerifyOtpPage() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
+  const [showStore, setShowStore] = useState(false);
+  const [storeList, setStoreList] = useState<storeInital[]>([]);
 
   const verfiy = async () => {
     const token = localStorage.getItem("token");
@@ -40,7 +44,7 @@ export default function VerifyOtpPage() {
 
   if (!email) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-300 via-indigo-400 to-blue-500 px-4">
+      <div className="min-h-screen flex items-center justify-center  px-4">
         <p className="text-center text-red-700 text-lg font-semibold bg-white px-6 py-4 rounded-lg shadow-lg max-w-sm">
           {message}
         </p>
@@ -49,7 +53,7 @@ export default function VerifyOtpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-300 via-indigo-400 to-blue-500 px-4">
+    <div className="min-h-screen flex items-center justify-center  px-4">
       <div className="bg-white rounded-xl shadow-xl p-10 max-w-md w-full">
         <h2 className="text-3xl font-extrabold text-indigo-700 mb-6 text-center">
           Verify Your Email

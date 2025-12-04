@@ -11,11 +11,14 @@ import LogoutApi from "@/api/authentication/logout";
 import SellerVerificationApi from "@/api/authentication/sellerVerification";
 import VerifyOtpPage from "./otpVerification/page";
 import OtpSend from "@/api/authentication/OtpSend";
+import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
+import GetInitalStore from "@/api/authentication/StoreGet";
 
 export default function Login() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword1, setShowPassword1] = useState(false);
+  const [showList, setShowList] = useState(false);
 
   const [Email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +32,7 @@ export default function Login() {
   const [responseBack, setResponseBack] = useState(0);
   const [createAccount, setCreateAccount] = useState(false);
   const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
+  const [storeList, setStoreList] = useState<storeInital[]>([]);
 
   //Login Function
   const Login = async () => {
@@ -60,10 +64,10 @@ export default function Login() {
     if (response.data === "UnVerified Seller") {
       verfiy();
       localStorage.setItem("userEmail", Email.toLowerCase());
-
-      router.push("./otpVerification");
+      router.push("/sellerlogin/otpVerification");
     } else {
-      router.push("/admin/dashboard");
+      setShowList(true);
+      storesget();
     }
   };
   //SignUp Function
@@ -88,18 +92,6 @@ export default function Login() {
     if (response?.status === 400 || response?.status === 401) {
       setResponseBack(1);
     } else setResponseBack(2);
-  };
-
-  const checkAuth = async () => {
-    const token = localStorage.getItem("token");
-    const response = await CheckAuth(token as string);
-    console.log("Response from CheckAuth API:", response);
-    if (response?.status === 200 || response?.status === 201) {
-      router.push("/admin/dashboard");
-    }
-    if (response?.status === 400 || response?.status === 401) {
-      router.push("/sellerlogin");
-    }
   };
 
   const validate = () => {
@@ -128,263 +120,308 @@ export default function Login() {
         setResponseBack(0);
       }, 2000);
     }
-    checkAuth();
   }, [responseBack]);
+
+  const storesget = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetInitalStore(String(token));
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as StoreApiResponse;
+      setStoreList(data.storeList);
+    } else {
+      router.push("");
+    }
+  };
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-sm">
-        {createAccount ? (
-          <>
-            <h3 className="text-center text-2xl font-semibold mb-6">Sign Up</h3>
+      {showList ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
+          {storeList.map((store, i) => (
+            <div
+              key={i}
+              className="cursor-pointer bg-white rounded-lg shadow-md p-5 border hover:shadow-xl hover:border-indigo-500 transition duration-200"
+            >
+              <img
+                src="/logo.png"
+                alt="Store Logo"
+                className="w-20 h-20 mx-auto object-cover rounded-full mb-4"
+              />
 
-            <div>
-              {/* Email Field */}
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  UserName
-                </label>
-                <input
-                  type="Email"
-                  id="email"
-                  value={UserNameSeller}
-                  onChange={(e) => setUserNameSeller(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="UserName"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Email
-                </label>
-                <input
-                  type="Email"
-                  id="email"
-                  value={EmailSeller}
-                  onChange={(e) => setEmailSeller(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Email"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Phone No
-                </label>
-                <input
-                  type="text"
-                  value={phoneNo}
-                  onChange={(e) => setphoneNo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Phone No"
-                  minLength={11}
-                  required
-                />
-                {errors.phoneNo && (
-                  <p className="text-red-500 text-sm">{errors.phoneNo}</p>
-                )}
-              </div>
+              <h3 className="text-xl font-semibold text-gray-800 text-center">
+                {store.storeID}
+              </h3>
 
-              {/* Password Field with Toggle */}
-              <div className="mb-6">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Password
-                </label>
-                <div className="relative">
+              <p className="text-center text-gray-500 text-sm">
+                {store.storeName}
+              </p>
+
+              <div className="mt-4 flex justify-center">
+                <span className="px-4 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-full">
+                  View Dashboard
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-sm">
+          {createAccount ? (
+            <>
+              <h3 className="text-center text-2xl font-semibold mb-6">
+                Sign Up
+              </h3>
+
+              <div>
+                {/* Email Field */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    UserName
+                  </label>
                   <input
-                    value={passwordSeller}
-                    onChange={(e) => setPasswordSeller(e.target.value)}
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Password"
-                    minLength={8}
+                    type="Email"
+                    id="email"
+                    value={UserNameSeller}
+                    onChange={(e) => setUserNameSeller(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="UserName"
                     required
                   />
-
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    tabIndex={-1}
+                </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    {showPassword ? <Eye /> : <EyeClosed />}
-                  </button>
-                  {errors.passwordSeller && (
-                    <p className="text-red-500 text-sm">
-                      {errors.passwordSeller}
-                    </p>
+                    Email
+                  </label>
+                  <input
+                    type="Email"
+                    id="email"
+                    value={EmailSeller}
+                    onChange={(e) => setEmailSeller(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Email"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Phone No
+                  </label>
+                  <input
+                    type="text"
+                    value={phoneNo}
+                    onChange={(e) => setphoneNo(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Phone No"
+                    minLength={11}
+                    required
+                  />
+                  {errors.phoneNo && (
+                    <p className="text-red-500 text-sm">{errors.phoneNo}</p>
                   )}
                 </div>
-              </div>
-              <div className="mb-6">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    value={passwordConfirm}
-                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                    type={showPassword1 ? "text" : "password"}
-                    id="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Confirm Password"
-                    required
-                  />
+
+                {/* Password Field with Toggle */}
+                <div className="mb-6">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      value={passwordSeller}
+                      onChange={(e) => setPasswordSeller(e.target.value)}
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                      placeholder="Password"
+                      minLength={8}
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <Eye /> : <EyeClosed />}
+                    </button>
+                    {errors.passwordSeller && (
+                      <p className="text-red-500 text-sm">
+                        {errors.passwordSeller}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      value={passwordConfirm}
+                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      type={showPassword1 ? "text" : "password"}
+                      id="password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                      placeholder="Confirm Password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
+                      onClick={() => setShowPassword1((prev) => !prev)}
+                      tabIndex={-1}
+                    >
+                      {showPassword1 ? <Eye /> : <EyeClosed />}
+                    </button>
+                  </div>
+                </div>
+                {errors.passwordConfirm && (
+                  <p className="text-red-500 text-sm">
+                    {errors.passwordConfirm}
+                  </p>
+                )}
+                {responseBack === 1 && (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    Invalid Email/password
+                  </div>
+                )}
+                {responseBack === 2 && (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    Network Error
+                  </div>
+                )}
+                {responseBack === 4 && (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    SignUp Successful! Please Login.
+                  </div>
+                )}
+                {passwordSeller !== passwordConfirm ? (
                   <button
                     type="button"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
-                    onClick={() => setShowPassword1((prev) => !prev)}
-                    tabIndex={-1}
+                    disabled
+                    className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-not-allowed"
                   >
-                    {showPassword1 ? <Eye /> : <EyeClosed />}
+                    SignUp
                   </button>
-                </div>
-              </div>
-              {errors.passwordConfirm && (
-                <p className="text-red-500 text-sm">{errors.passwordConfirm}</p>
-              )}
-              {responseBack === 1 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Invalid Email/password
-                </div>
-              )}
-              {responseBack === 2 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Network Error
-                </div>
-              )}
-              {responseBack === 4 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  SignUp Successful! Please Login.
-                </div>
-              )}
-              {passwordSeller !== passwordConfirm ? (
-                <button
-                  type="button"
-                  disabled
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-not-allowed"
-                >
-                  SignUp
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    validate();
-                  }}
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-pointer"
-                >
-                  SignUp
-                </button>
-              )}
-              <div
-                onClick={() => setCreateAccount(!createAccount)}
-                className="text-blue-500 text-sm hover:underline mt-2 cursor-pointer"
-              >
-                Already Have an Account?
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 className="text-center text-2xl font-semibold mb-6">Login</h3>
-
-            <div>
-              {/* Email Field */}
-              <div className="mb-4">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Email
-                </label>
-                <input
-                  type="Email"
-                  id="email"
-                  value={Email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Email"
-                  required
-                />
-              </div>
-
-              {/* Password Field with Toggle */}
-              <div className="mb-6">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Password"
-                    required
-                  />
+                ) : (
                   <button
                     type="button"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    tabIndex={-1}
+                    onClick={() => {
+                      validate();
+                    }}
+                    className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200 cursor-pointer"
                   >
-                    {showPassword ? <Eye /> : <EyeClosed />}
+                    SignUp
                   </button>
+                )}
+                <div
+                  onClick={() => setCreateAccount(!createAccount)}
+                  className="text-blue-500 text-sm hover:underline mt-2 cursor-pointer"
+                >
+                  Already Have an Account?
                 </div>
               </div>
-              {responseBack === 3 && (
-                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
-                  UserLogin Successful
+            </>
+          ) : (
+            <>
+              <h3 className="text-center text-2xl font-semibold mb-6">Login</h3>
+
+              <div>
+                {/* Email Field */}
+                <div className="mb-4">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Email
+                  </label>
+                  <input
+                    type="Email"
+                    id="email"
+                    value={Email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Email"
+                    required
+                  />
                 </div>
-              )}
-              {responseBack === 1 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Invalid Email/password
+
+                {/* Password Field with Toggle */}
+                <div className="mb-6">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                      placeholder="Password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <Eye /> : <EyeClosed />}
+                    </button>
+                  </div>
                 </div>
-              )}
-              {responseBack === 2 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Network Error
+                {responseBack === 3 && (
+                  <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
+                    UserLogin Successful
+                  </div>
+                )}
+                {responseBack === 1 && (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    Invalid Email/password
+                  </div>
+                )}
+                {responseBack === 2 && (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    Network Error
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  onClick={Login}
+                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
+                >
+                  Login
+                </button>
+                <div
+                  onClick={() => setCreateAccount(!createAccount)}
+                  className="text-blue-500 text-sm hover:underline mt-2 cursor-pointer"
+                >
+                  Create an Accont?
                 </div>
-              )}
-              <button
-                type="submit"
-                onClick={Login}
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
-              >
-                Login
-              </button>
-              <div
-                onClick={() => setCreateAccount(!createAccount)}
-                className="text-blue-500 text-sm hover:underline mt-2 cursor-pointer"
-              >
-                Create an Accont?
               </div>
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

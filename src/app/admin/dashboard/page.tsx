@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Star,
@@ -18,6 +18,7 @@ import {
   ListCollapse,
   Weight,
   ListChecksIcon,
+  Settings,
 } from "lucide-react";
 import Overview from "../overview/page";
 import AccountSettings from "../Codes/category/page";
@@ -29,6 +30,7 @@ import UnitForm from "../Codes/Unit/page";
 import FurtherSubCategory from "../Codes/FurtherSubCat/page";
 import CheckAuth from "@/api/authentication/checkAuth";
 import { useRouter } from "next/navigation";
+import ProfileManagement from "../profile/page";
 export default function CustomerPanel() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -38,6 +40,7 @@ export default function CustomerPanel() {
   const navItems = [
     { id: "Code", label: "Code", icon: Plus },
     { id: "orders", label: "Orders", icon: ShoppingCart },
+    { id: "setting", label: "Setting", icon: Settings },
   ];
   const checkAuth = async () => {
     const token = localStorage.getItem("token");
@@ -50,6 +53,9 @@ export default function CustomerPanel() {
       router.push("/sellerlogin");
     }
   };
+  useEffect(() => {
+    checkAuth();
+  }, []);
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen bg-gray-50 relative">
       {/* === Mobile Header === */}
@@ -112,9 +118,9 @@ export default function CustomerPanel() {
                     <div className="ml-6 mt-2 space-y-1">
                       {[
                         {
-                          id: "settings",
-                          label: "Product",
-                          icon: ShoppingCart,
+                          id: "unit",
+                          label: "Units",
+                          icon: Weight,
                         },
                         {
                           id: "customer",
@@ -122,14 +128,14 @@ export default function CustomerPanel() {
                           icon: ListCollapse,
                         },
                         {
-                          id: "unit",
-                          label: "Units",
-                          icon: Weight,
-                        },
-                        {
                           id: "SubCategory",
                           label: "Sub Category",
                           icon: ListChecksIcon,
+                        },
+                        {
+                          id: "settings",
+                          label: "Product",
+                          icon: ShoppingCart,
                         },
                       ].map((subItem) => (
                         <button
@@ -192,7 +198,7 @@ export default function CustomerPanel() {
         {activeTab === "SubCategory" && <FurtherSubCategory />}
         {/* {activeTab === "reviews" && <Review />}
         {activeTab === "orders" && <Order />} */}
-        {activeTab === "settings" && <AccountSettings />}
+        {activeTab === "setting" && <ProfileManagement />}
         {activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "supplier" && <SupplierForm />}

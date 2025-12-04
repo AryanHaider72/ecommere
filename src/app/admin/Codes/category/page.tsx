@@ -69,6 +69,8 @@ export default function AccountSettings() {
   const [selectedMain, setSelectedMain] = useState("");
   const [selectedSub, setSelectedSub] = useState("");
   const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
+  const [selectedOption2, setSelectedOption2] = useState("OnlineStore");
+  const [selectedOption3, setSelectedOption3] = useState("Yes");
   const [selectedSubSub, setSelectedSubSub] = useState("");
   const [Quantity, setQuantity] = useState(0);
 
@@ -308,6 +310,43 @@ export default function AccountSettings() {
                 <legend className="text-lg font-semibold text-gray-800 px-2">
                   Product Info
                 </legend>
+                <div className="p-3 rounded-xl max-w-md">
+                  <h2 className="text-md text-gray-800 mb-4">
+                    Pos Integration
+                  </h2>
+
+                  <div className="flex flex-wrap  gap-4 ">
+                    {/* Option 1 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="Yes"
+                        checked={selectedOption3 === "Yes"}
+                        onChange={(e) => setSelectedOption3(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Yes
+                      </span>
+                    </label>
+
+                    {/* Option 2 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="No"
+                        checked={selectedOption3 === "No"}
+                        onChange={(e) => setSelectedOption3(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        No
+                      </span>
+                    </label>
+                  </div>
+                </div>
 
                 {/* Row 1 */}
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -339,43 +378,119 @@ export default function AccountSettings() {
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <div className="w-full">
                     <label className="block text-gray-700 font-medium mb-1">
-                      Width
+                      Total Quantity
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter Width"
+                      value={productName}
+                      onChange={(e) => setProductName(e.target.value)}
+                      placeholder="Enter Qunatity"
                       className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div className="w-full">
                     <label className="block text-gray-700 font-medium mb-1">
-                      Height
+                      Amount
                     </label>
                     <input
                       type="number"
-                      placeholder="Enter Height "
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                      placeholder="Enter Amount"
                       className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-1">
-                      Depth
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Enter Depth "
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
+                </div>
+                {selectedOption3 === "No" && (
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Width
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter Width"
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Height
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Enter Height "
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Depth
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Enter Depth "
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Weight
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="Enter Weight "
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-1">
-                      Weight
+                )}
+                <div className="p-3 rounded-xl max-w-md">
+                  <h2 className="text-md text-gray-800 mb-4">Store Sale</h2>
+
+                  <div className="flex flex-wrap  gap-4 ">
+                    {/* Option 1 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="Both"
+                        checked={selectedOption2 === "Both"}
+                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Both
+                      </span>
                     </label>
-                    <input
-                      type="number"
-                      placeholder="Enter Weight "
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
+
+                    {/* Option 2 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="OnlineStore"
+                        checked={selectedOption2 === "OnlineStore"}
+                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Online Store
+                      </span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="inline-radio"
+                        value="OfflineStore"
+                        checked={selectedOption2 === "OfflineStore"}
+                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Offline Store
+                      </span>
+                    </label>
                   </div>
                 </div>
                 <div className="p-3 rounded-xl max-w-md">
@@ -517,195 +632,199 @@ export default function AccountSettings() {
 
                 {/* Image Upload */}
               </fieldset>
+              {selectedOption2 === "OnlineStore" ||
+                (selectedOption2 === "Both" && (
+                  <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="text-lg font-semibold mb-4">
+                      Variant Info
+                    </legend>
 
-              <fieldset className="p-4 border border-gray-300 rounded-lg">
-                <legend className="text-lg font-semibold mb-4">
-                  Variant Info
-                </legend>
+                    {/* Input for Main Variant Name and button */}
+                    <div className="flex gap-2 items-center mb-4">
+                      <input
+                        type="text"
+                        placeholder="Enter Variant Name (Main)"
+                        value={mainVarientName}
+                        onChange={(e) => setMainVarientName(e.target.value)}
+                        className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={handleAddMainVariant}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Save Variant
+                      </button>
+                    </div>
 
-                {/* Input for Main Variant Name and button */}
-                <div className="flex gap-2 items-center mb-4">
-                  <input
-                    type="text"
-                    placeholder="Enter Variant Name (Main)"
-                    value={mainVarientName}
-                    onChange={(e) => setMainVarientName(e.target.value)}
-                    className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={handleAddMainVariant}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Save Variant
-                  </button>
-                </div>
-
-                {/* Table of current attributes (sub-variants) */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border border-gray-300 rounded">
-                    <thead className="bg-gray-100 border-b border-gray-300">
-                      <tr>
-                        <th className="px-4 py-2">Attribute Name</th>
-                        <th className="px-4 py-2">Qty</th>
-                        <th className="px-4 py-2">Amount</th>
-                        <th className="px-4 py-2">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Existing attributes */}
-                      {currentAttributes.map((attr, i) => (
-                        <tr
-                          key={i}
-                          className="border-b border-gray-300 odd:bg-white even:bg-gray-50"
-                        >
-                          <td className="px-4 py-2">{attr.varientValue}</td>
-                          <td className="px-4 py-2">{attr.qty}</td>
-                          <td className="px-4 py-2">{attr.amount}</td>
-                          <td className="px-4 py-2">
-                            <button
-                              className="px-2 py-1 bg-red-600 text-white rounded"
-                              onClick={() => handleRemoveAttribute(i)}
+                    {/* Table of current attributes (sub-variants) */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border border-gray-300 rounded">
+                        <thead className="bg-gray-100 border-b border-gray-300">
+                          <tr>
+                            <th className="px-4 py-2">Attribute Name</th>
+                            <th className="px-4 py-2">Qty</th>
+                            <th className="px-4 py-2">Amount</th>
+                            <th className="px-4 py-2">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Existing attributes */}
+                          {currentAttributes.map((attr, i) => (
+                            <tr
+                              key={i}
+                              className="border-b border-gray-300 odd:bg-white even:bg-gray-50"
                             >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                              <td className="px-4 py-2">{attr.varientValue}</td>
+                              <td className="px-4 py-2">{attr.qty}</td>
+                              <td className="px-4 py-2">{attr.amount}</td>
+                              <td className="px-4 py-2">
+                                <button
+                                  className="px-2 py-1 bg-red-600 text-white rounded"
+                                  onClick={() => handleRemoveAttribute(i)}
+                                >
+                                  Remove
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
 
-                      {/* Row for adding new attribute */}
-                      <tr>
-                        <td className="px-4 py-2">
-                          <input
-                            type="text"
-                            placeholder="Attribute Name"
-                            value={newAttribute.varientValue}
-                            onChange={(e) =>
-                              handleNewAttributeChange(
-                                "varientValue",
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            value={newAttribute.qty}
-                            onChange={(e) =>
-                              handleNewAttributeChange(
-                                "qty",
-                                parseInt(e.target.value) || 0
-                              )
-                            }
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={newAttribute.amount}
-                            onChange={(e) =>
-                              handleNewAttributeChange(
-                                "amount",
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <button
-                            onClick={handleAddAttribute}
-                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
-                            title="Add Attribute"
-                          >
-                            <Plus className="mr-1" />
-                            Add
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </fieldset>
-
-              <fieldset className="p-4 border border-gray-300 rounded-lg">
-                <legend className="text-lg font-semibold text-gray-800 px-2">
-                  Product Image
-                </legend>
-                <div className="mb-4">
-                  <label className="block text-gray-700 font-medium mb-1">
-                    Product Images (Max 3)
-                  </label>
-                  <div
-                    onClick={handleClick}
-                    onDrop={handleDrop}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(true);
-                    }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    className={`w-full p-4 border-2 flex  justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
-                      isDragOver
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    {images.map((img, i) => (
+                          {/* Row for adding new attribute */}
+                          <tr>
+                            <td className="px-4 py-2">
+                              <input
+                                type="text"
+                                placeholder="Attribute Name"
+                                value={newAttribute.varientValue}
+                                onChange={(e) =>
+                                  handleNewAttributeChange(
+                                    "varientValue",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                type="number"
+                                min={0}
+                                value={newAttribute.qty}
+                                onChange={(e) =>
+                                  handleNewAttributeChange(
+                                    "qty",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={newAttribute.amount}
+                                onChange={(e) =>
+                                  handleNewAttributeChange(
+                                    "amount",
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <button
+                                onClick={handleAddAttribute}
+                                className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
+                                title="Add Attribute"
+                              >
+                                <Plus className="mr-1" />
+                                Add
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </fieldset>
+                ))}
+              {selectedOption2 === "OnlineStore" ||
+                (selectedOption2 === "Both" && (
+                  <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="text-lg font-semibold text-gray-800 px-2">
+                      Product Image
+                    </legend>
+                    <div className="mb-4">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Product Images (Max 3)
+                      </label>
                       <div
-                        key={i}
-                        draggable={!!img}
-                        onDragStart={() => setDragIndex(i)}
-                        onDragEnter={() => img && setHoverIndex(i)}
-                        onDragEnd={() => {
-                          if (
-                            dragIndex !== null &&
-                            hoverIndex !== null &&
-                            dragIndex !== hoverIndex
-                          ) {
-                            reorderImages(dragIndex, hoverIndex);
-                          }
-                          setDragIndex(null);
-                          setHoverIndex(null);
+                        onClick={handleClick}
+                        onDrop={handleDrop}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragOver(true);
                         }}
-                        className={`relative w-20 h-20 rounded-md flex items-center justify-center 
+                        onDragLeave={() => setIsDragOver(false)}
+                        className={`w-full p-4 border-2 flex  justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
+                          isDragOver
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {images.map((img, i) => (
+                          <div
+                            key={i}
+                            draggable={!!img}
+                            onDragStart={() => setDragIndex(i)}
+                            onDragEnter={() => img && setHoverIndex(i)}
+                            onDragEnd={() => {
+                              if (
+                                dragIndex !== null &&
+                                hoverIndex !== null &&
+                                dragIndex !== hoverIndex
+                              ) {
+                                reorderImages(dragIndex, hoverIndex);
+                              }
+                              setDragIndex(null);
+                              setHoverIndex(null);
+                            }}
+                            className={`relative w-20 h-20 rounded-md flex items-center justify-center 
                       ${
                         hoverIndex === i ? "ring-2 ring-blue-500 scale-105" : ""
                       }
                       transition-all duration-150`}
-                      >
-                        {img ? (
-                          <img
-                            src={URL.createObjectURL(img)}
-                            alt={`Img ${i}`}
-                            className="w-full h-full object-cover rounded-md pointer-events-none"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
-                            Empty
-                          </div>
-                        )}
+                          >
+                            {img ? (
+                              <img
+                                src={URL.createObjectURL(img)}
+                                alt={`Img ${i}`}
+                                className="w-full h-full object-cover rounded-md pointer-events-none"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
+                                Empty
+                              </div>
+                            )}
 
-                        <span className="absolute -bottom-5 text-xs text-gray-600">
-                          {i === 0 ? "Header Image" : `Image ${i + 1}`}
-                        </span>
+                            <span className="absolute -bottom-5 text-xs text-gray-600">
+                              {i === 0 ? "Header Image" : `Image ${i + 1}`}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => handleImageChange(e.target.files)}
-                    className="hidden"
-                  />
-                </div>
-              </fieldset>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => handleImageChange(e.target.files)}
+                        className="hidden"
+                      />
+                    </div>
+                  </fieldset>
+                ))}
               <button
                 onClick={handleSave}
                 className="w-full py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-900"
