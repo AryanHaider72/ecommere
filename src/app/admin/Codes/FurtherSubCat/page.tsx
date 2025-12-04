@@ -21,6 +21,8 @@ import {
 } from "@/api/types/subCategory/getSub";
 import UpdateFurtherSubCategory from "@/api/lib/subCategory/updateSub/updateSub";
 import DeleteFurtherSubCategory from "@/api/lib/subCategory/deleteSub/deleteSub";
+import GetCategoryMain from "@/api/lib/category/CategorySeller/CategoryMain";
+import { CategoryMainApiResponse } from "@/api/types/categoryTypes/CategoryMain";
 
 export default function FurtherSubCategory() {
   const router = useRouter();
@@ -43,6 +45,18 @@ export default function FurtherSubCategory() {
   const [FurtherSubList, setFurtherSubList] = useState<FurtherSub[]>([]);
   const [UnitList, setUnitList] = useState<UnitList[]>([]);
 
+  const getCategroyMain = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      getCategorySub(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
   const getUnit = async () => {
     setLoading(true);
     try {
@@ -61,16 +75,18 @@ export default function FurtherSubCategory() {
       setLoading(false);
     }
   };
-  const getCategorySub = async () => {
+
+  const getCategorySub = async (CategoryMainID: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetCategorySub(String(token));
+      const response = await GetCategorySub(String(token), CategoryMainID);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as CategorySubApiResponse;
-        console.log(data.categoryList);
+        console.log(data);
         setCatgeorySubList(data.categoryList);
         setCategorySubID(data.categoryList[0].subCategoryID);
+        getFurtherSub(data.categoryList[0].subCategoryID);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
@@ -101,15 +117,15 @@ export default function FurtherSubCategory() {
       setResponseBack(1);
       setName("");
       setSelectedUnits([]);
-      getFurtherSub();
+      getFurtherSub(categorySubID);
     }
   };
 
-  const getFurtherSub = async () => {
+  const getFurtherSub = async (ID: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetFurtherSub(String(token));
+      const response = await GetFurtherSub(String(token), ID);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as FurtherSubApiResponse;
 
@@ -157,11 +173,10 @@ export default function FurtherSubCategory() {
       };
       const response = await UpdateFurtherSubCategory(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        getFurtherSub();
+        getFurtherSub(categorySubID);
         setShowList(true);
         setResponseBack(4);
         setName("");
-        getFurtherSub();
         setID("");
       }
       if (response.status === 401) {
@@ -190,9 +205,9 @@ export default function FurtherSubCategory() {
   };
 
   useEffect(() => {
-    getFurtherSub();
+    getCategroyMain();
     getUnit();
-    getCategorySub();
+    // getCategorySub();
   }, []);
 
   useEffect(() => {
@@ -207,10 +222,6 @@ export default function FurtherSubCategory() {
       }, 2000);
     }
   }, [responseBack]);
-
-  const filteredData = FurtherSubList.filter(
-    (item) => item.subCategoryID === categorySubID
-  );
 
   return (
     <div className="w-full relative">
@@ -287,7 +298,10 @@ export default function FurtherSubCategory() {
                   name="CategoryMain"
                   value={categorySubID}
                   className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => setCategorySubID(e.target.value)}
+                  onChange={(e) => {
+                    setCategorySubID(e.target.value);
+                    getFurtherSub(e.target.value);
+                  }}
                 >
                   {catgeorySubList.length > 0 ? (
                     <>
@@ -312,9 +326,9 @@ export default function FurtherSubCategory() {
               </div>
             ) : (
               <>
-                {filteredData.length > 0 ? (
+                {FurtherSubList.length > 0 ? (
                   <>
-                    {filteredData.map((item) => (
+                    {FurtherSubList.map((item) => (
                       <div
                         className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
                         key={item.subCategoryID}

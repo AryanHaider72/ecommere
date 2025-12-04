@@ -42,6 +42,7 @@ export default function CustomerForm() {
       const data = response.data as CategoryMainApiResponse;
       setCatgeoryMainList(data.categoryList);
       setCategoryMainID(data.categoryList[0].categoryID);
+      getCategorySub(data.categoryList[0].categoryID);
     }
     if (response.status === 401) {
       router.push("/sellerlogin");
@@ -62,7 +63,7 @@ export default function CustomerForm() {
         console.log(response);
         setResponseBack(1);
         setsubCatName("");
-        getCategorySub();
+        getCategorySub(CategoryMainID);
         setdescription("");
       }
       if (response.status === 401) {
@@ -71,11 +72,11 @@ export default function CustomerForm() {
     }
   };
 
-  const getCategorySub = async () => {
+  const getCategorySub = async (categoryMainID: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetCategorySub(String(token));
+      const response = await GetCategorySub(String(token), categoryMainID);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as CategorySubApiResponse;
         console.log(data.categoryList);
@@ -119,7 +120,7 @@ export default function CustomerForm() {
         setResponseBack(4);
         setsubCatName("");
         setdescription("");
-        getCategorySub();
+        getCategorySub(CategoryMainID);
         setID("");
       }
       if (response.status === 401) {
@@ -148,7 +149,6 @@ export default function CustomerForm() {
   };
 
   useEffect(() => {
-    getCategorySub();
     getCategroyMain();
   }, []);
 
