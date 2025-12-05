@@ -2,11 +2,11 @@
 
 import { getRequest } from "@/api/authentication/main";
 
-export default async function GetUnit(token: string) {
+export default async function GetUnit(token: string, data: string) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
   const response = await getRequest(
-    `/api/Category/Units/GetUnit`,
+    `/api/Category/Units/GetUnit/${data}`,
     null,
     customHeaders
   );

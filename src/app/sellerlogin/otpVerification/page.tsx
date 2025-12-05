@@ -38,7 +38,7 @@ export default function VerifyOtpPage() {
     console.log("Response from new API:", response);
     if (response.status === 200 || response.status === 201) {
       setMessage("Email verified successfully!");
-      router.push("/admin/dashboard");
+      router.push("/mainDashboard");
     }
   };
 

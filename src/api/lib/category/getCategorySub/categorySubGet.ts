@@ -1,13 +1,13 @@
 "use server";
 
-import { getRequest } from "@/api/authentication/main";
+import { postRequest } from "@/api/authentication/main";
 
-export default async function GetCategorySub(token: string, data?: string) {
+export default async function GetCategorySub(token: string, data?: {}) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
-  const response = await getRequest(
-    `/api/Category/Sub/GetCategory/${data}`,
-    null,
+  const response = await postRequest(
+    `/api/Category/Sub/GetCategory`,
+    data,
     customHeaders
   );
   if (response.success) {

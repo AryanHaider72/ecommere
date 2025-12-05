@@ -31,11 +31,14 @@ import FurtherSubCategory from "../Codes/FurtherSubCat/page";
 import CheckAuth from "@/api/authentication/checkAuth";
 import { useRouter } from "next/navigation";
 import ProfileManagement from "../profile/page";
-export default function CustomerPanel() {
+import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
+import GetInitalStore from "@/api/authentication/StoreGet";
+export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropDown, setDropDown] = useState(false);
+  const [storeList, setStoreList] = useState<storeInital[]>([]);
 
   const navItems = [
     { id: "Code", label: "Code", icon: Plus },
@@ -47,12 +50,30 @@ export default function CustomerPanel() {
     const response = await CheckAuth(token as string);
     console.log("Response from CheckAuth API:", response);
     if (response?.status === 200 || response?.status === 201) {
-      router.push("/admin/dashboard");
+      console.log(response);
     }
     if (response?.status === 400 || response?.status === 401) {
       router.push("/sellerlogin");
     }
   };
+  const storesget = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetInitalStore(String(token));
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as StoreApiResponse;
+      const storeExists = data.storeList.some(
+        (store) => store.storeID === storeID
+      );
+      if (!storeExists) {
+        // Invalid storeID: redirect or show error
+        router.push("/404"); // or show custom error
+        return;
+      }
+    }
+  };
+  useEffect(() => {
+    storesget();
+  }, []);
   useEffect(() => {
     checkAuth();
   }, []);
@@ -133,7 +154,7 @@ export default function CustomerPanel() {
                           icon: ListChecksIcon,
                         },
                         {
-                          id: "settings",
+                          id: "setting",
                           label: "Product",
                           icon: ShoppingCart,
                         },
@@ -195,14 +216,15 @@ export default function CustomerPanel() {
       {/* === Main Content === */}
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
         {activeTab === "dashboard" && <Overview />}
-        {activeTab === "SubCategory" && <FurtherSubCategory />}
+        {activeTab === "SubCategory" && (
+          <FurtherSubCategory storeID={storeID} />
+        )}
         {/* {activeTab === "reviews" && <Review />}
         {activeTab === "orders" && <Order />} */}
-        {activeTab === "setting" && <ProfileManagement />}
-        {activeTab === "unit" && <UnitForm />}
+        {activeTab === "setting" && <AccountSettings />}
+        {activeTab === "unit" && <UnitForm storeID={storeID} />}
         {activeTab === "orders" && <SellerOrders />}
-        {activeTab === "supplier" && <SupplierForm />}
-        {activeTab === "customer" && <CustomerForm />}
+        {activeTab === "customer" && <CustomerForm storeID={storeID} />}
         {activeTab === "purchase" && <PurchaseForm />}
         {/* // {activeTab === "wishlist" && <Wishlist />}
         // {activeTab === "cart" && <Cart />} */}

@@ -1,5 +1,6 @@
 export interface RequestSubCatAddData {
   categoryID: string;
+  storeID: string;
   subCategoryName: string;
   description: string;
 }

@@ -16,45 +16,57 @@ import {
 import Spinner from "@/component/spinner/page";
 import UpdateSubCategory from "@/api/lib/category/updateCategorySub/updateSub";
 import DeleteSubCategory from "@/api/lib/category/deleteCategorySub/subCategeoryDelete";
-import AddUnits from "@/api/lib/unit/addUnit/page";
-import GetUnit from "@/api/lib/unit/getUnit/page";
-import { UnitApiResponse, UnitList } from "@/api/types/unit/getUnit";
-import UpdateUnit from "@/api/lib/unit/updateUnit/page";
-import DeleteUnits from "@/api/lib/unit/deleteUnit/page";
-
-export default function UnitForm() {
+type CustomerFormProps = {
+  storeID: string;
+};
+export default function CustomerForm({ storeID }: { storeID: string }) {
   const router = useRouter();
-
   const [showList, setShowList] = useState(true);
   const [loading, setLoading] = useState(true);
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const [UnitName, setUnitName] = useState("");
-  const [abbreviation, setabbreviation] = useState("");
+  const [CategoryMainID, setCategoryMainID] = useState("");
+  const [subCatName, setsubCatName] = useState("");
   const [description, setdescription] = useState("");
   const [ID, setID] = useState("");
   const [responseBack, setResponseBack] = useState(0);
 
-  const [UnitList, setUnitList] = useState<UnitList[]>([]);
+  const [catgeoryMainList, setCatgeoryMainList] = useState<CategoryMain[]>([]);
+  const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
 
-  const addUnit = async () => {
-    if (!UnitName) return setResponseBack(2);
+  const getCategroyMain = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      setCatgeoryMainList(data.categoryList);
+      setCategoryMainID(data.categoryList[0].categoryID);
+      getCategorySub(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+
+  const addCatgeorySub = async () => {
+    if (!subCatName || !CategoryMainID) return setResponseBack(2);
     else {
       const token = localStorage.getItem("token");
       const formData = {
-        abbreviation: abbreviation,
-        unitName: UnitName,
+        categoryID: CategoryMainID,
+        storeID: storeID,
+        subCategoryName: subCatName,
         description: description,
       };
-      const response = await AddUnits(formData, String(token));
+      const response = await AddSubCategory(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         console.log(response);
         setResponseBack(1);
-        setUnitName("");
-        setabbreviation("");
+        setsubCatName("");
+        getCategorySub(CategoryMainID);
         setdescription("");
-        getUnit();
       }
       if (response.status === 401) {
         router.push("/sellerlogin");
@@ -62,15 +74,19 @@ export default function UnitForm() {
     }
   };
 
-  const getUnit = async () => {
+  const getCategorySub = async (categoryMainID: string) => {
     setLoading(true);
     try {
+      const formData = {
+        categoryID: categoryMainID,
+        storeID: storeID,
+      };
       const token = localStorage.getItem("token");
-      const response = await GetUnit(String(token));
+      const response = await GetCategorySub(String(token), formData);
       if (response.status === 200 || response.status === 201) {
-        const data = response.data as UnitApiResponse;
+        const data = response.data as CategorySubApiResponse;
         console.log(data.categoryList);
-        setUnitList(data.categoryList);
+        setCatgeorySubList(data.categoryList);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
@@ -84,33 +100,34 @@ export default function UnitForm() {
   const fetchData = (ID: string) => {
     setUpdate(true);
     setShowList(false);
-    const data = UnitList.find((item) => item.unitID === ID);
+    const data = catgeorySubList.find((item) => item.subCategoryID === ID);
     if (data) {
-      setUnitName(data.unitName);
+      setsubCatName(data.subCategoryName);
       setdescription(data.description);
-      setabbreviation(data.abbreviation);
+      setCategoryMainID(data.categoryID);
       setID(ID);
     }
   };
 
-  const ModifiedUnit = async () => {
-    if (!UnitName) return setResponseBack(2);
+  const ModifiedCatgeorySub = async () => {
+    if (!subCatName || !CategoryMainID) return setResponseBack(2);
     else {
       const token = localStorage.getItem("token");
       const formData = {
-        unitID: ID,
-        unitName: UnitName,
-        abbreviation: abbreviation,
+        subCategoryID: ID,
+        storeID: storeID,
+        categoryID: CategoryMainID,
+        subCategoryName: subCatName,
         description: description,
       };
-      const response = await UpdateUnit(formData, String(token));
+      const response = await UpdateSubCategory(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         console.log(response);
         setShowList(true);
         setResponseBack(4);
-        setUnitName("");
+        setsubCatName("");
         setdescription("");
-        getUnit();
+        getCategorySub(CategoryMainID);
         setID("");
       }
       if (response.status === 401) {
@@ -122,14 +139,17 @@ export default function UnitForm() {
   const DeleteCatgeorySub = async (ID: string) => {
     const token = localStorage.getItem("token");
     const formData = {
-      unitID: ID,
+      storeID: storeID,
+      subCategoryID: ID,
     };
-    const response = await DeleteUnits(formData, String(token));
+    const response = await DeleteSubCategory(formData, String(token));
     if (response.status === 200 || response.status === 201) {
       console.log(response);
       setShowList(true);
       setID("");
-      setUnitList((item) => item.filter((emp) => emp.unitID !== ID));
+      setCatgeorySubList((item) =>
+        item.filter((emp) => emp.subCategoryID !== ID)
+      );
     }
     if (response.status === 401) {
       router.push("/sellerlogin");
@@ -137,7 +157,7 @@ export default function UnitForm() {
   };
 
   useEffect(() => {
-    getUnit();
+    getCategroyMain();
   }, []);
 
   useEffect(() => {
@@ -154,7 +174,9 @@ export default function UnitForm() {
   }, [responseBack]);
   return (
     <div className="w-full relative">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Unit Management</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Main Categories Management
+      </h1>
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
@@ -198,8 +220,7 @@ export default function UnitForm() {
             onClick={() => {
               setShowList(!showList);
               setID("");
-              setUnitName("");
-              setabbreviation("");
+              setsubCatName("");
               setdescription("");
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
@@ -223,25 +244,22 @@ export default function UnitForm() {
               </div>
             ) : (
               <>
-                {UnitList.length > 0 ? (
+                {catgeorySubList.length > 0 ? (
                   <>
-                    {UnitList.map((item) => (
+                    {catgeorySubList.map((item) => (
                       <div
                         className="p-4 border mt-2  border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
-                        key={item.unitID}
+                        key={item.subCategoryID}
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
-                            {item.unitName}
+                            {item.subCategoryName}
                           </h3>
-                          <p className="text-gray-600">
-                            Short Code: {item.abbreviation}
-                          </p>
                           <p className="text-gray-600">{item.description}</p>
                         </div>
                         <div className="flex gap-4">
                           <button
-                            onClick={() => fetchData(item.unitID)}
+                            onClick={() => fetchData(item.subCategoryID)}
                             className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
                             title="Edit"
                           >
@@ -250,7 +268,7 @@ export default function UnitForm() {
                           <button
                             onClick={() => {
                               setIsOpen(true);
-                              setID(item.unitID);
+                              setID(item.subCategoryID);
                             }}
                             className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
                             title="Delete"
@@ -271,30 +289,37 @@ export default function UnitForm() {
           </>
         ) : (
           <div className="space-y-5 mt-2">
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Main Category <span className="text-red-500">*</span>
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => setCategoryMainID(e.target.value)}
+                >
+                  {catgeoryMainList.map((cat) => (
+                    <option key={cat.categoryID} value={cat.categoryID}>
+                      {cat.categoryName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* === Column: Sub Category === */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
-                Unit Name <span className="text-red-500">*</span>
+                SubCategory Name <span className="text-red-500">*</span>
               </label>
               <input
-                value={UnitName}
-                onChange={(e) => setUnitName(e.target.value)}
+                value={subCatName}
+                onChange={(e) => setsubCatName(e.target.value)}
                 type="text"
-                name="Unit Name"
+                name="SubCategory Name"
                 placeholder="Enter SubCategory Name"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Abbreviation
-              </label>
-              <input
-                value={abbreviation}
-                onChange={(e) => setabbreviation(e.target.value)}
-                type="text"
-                name="Unit Name"
-                placeholder="Enter Abbreviation eg:- pcs, pck etc"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
@@ -340,7 +365,7 @@ export default function UnitForm() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={ModifiedUnit}
+                  onClick={ModifiedCatgeorySub}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   Update
@@ -350,7 +375,7 @@ export default function UnitForm() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={addUnit}
+                  onClick={addCatgeorySub}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   Save

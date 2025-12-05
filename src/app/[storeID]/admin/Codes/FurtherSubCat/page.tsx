@@ -24,7 +24,7 @@ import DeleteFurtherSubCategory from "@/api/lib/subCategory/deleteSub/deleteSub"
 import GetCategoryMain from "@/api/lib/category/CategorySeller/CategoryMain";
 import { CategoryMainApiResponse } from "@/api/types/categoryTypes/CategoryMain";
 
-export default function FurtherSubCategory() {
+export default function FurtherSubCategory({ storeID }: { storeID: string }) {
   const router = useRouter();
 
   const [showList, setShowList] = useState(true);
@@ -61,7 +61,7 @@ export default function FurtherSubCategory() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetUnit(String(token));
+      const response = await GetUnit(String(token), String(storeID));
       if (response.status === 200 || response.status === 201) {
         const data = response.data as UnitApiResponse;
         setUnitList(data.categoryList);
@@ -80,7 +80,11 @@ export default function FurtherSubCategory() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetCategorySub(String(token), CategoryMainID);
+      const formData = {
+        categoryID: CategoryMainID,
+        storeID: storeID,
+      };
+      const response = await GetCategorySub(String(token), formData);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as CategorySubApiResponse;
         console.log(data);

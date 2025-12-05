@@ -1,5 +1,6 @@
 export interface RequestUnitAddData {
   unitName: string;
+  storeID: string;
   abbreviation: string;
   description: string;
 }
