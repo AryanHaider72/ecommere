@@ -2,11 +2,11 @@
 
 import { getRequest, postRequest } from "@/api/authentication/main";
 
-export default async function GetFurtherSub(token: string, data?: {}) {
+export default async function GetUserData(token: string, data?: {}) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
-  const response = await postRequest(
-    `/api/Category/Sub/FurtherSub/GetCategory`,
+  const response = await getRequest(
+    `/api/Seller/getSellerDetail`,
     data,
     customHeaders
   );
@@ -14,7 +14,7 @@ export default async function GetFurtherSub(token: string, data?: {}) {
     return {
       data: response.data,
       status: response.status,
-      message: "GetSubCategory User",
+      message: "Payment  Get",
     };
   }
   const status = response.status;
@@ -37,9 +37,7 @@ export default async function GetFurtherSub(token: string, data?: {}) {
 
   return {
     data: null,
-    message:
-      response.message ||
-      "SubGetSubCategory failed due to an unexpected error.",
+    message: response.message || "Payment failed due to an unexpected error.",
     status: response.status,
   };
 }

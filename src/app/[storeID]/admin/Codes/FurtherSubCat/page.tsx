@@ -51,6 +51,7 @@ export default function FurtherSubCategory({ storeID }: { storeID: string }) {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as CategoryMainApiResponse;
+      setCategorySubID(data.categoryList[0].categoryID);
       getCategorySub(data.categoryList[0].categoryID);
     }
     if (response.status === 401) {
@@ -76,12 +77,12 @@ export default function FurtherSubCategory({ storeID }: { storeID: string }) {
     }
   };
 
-  const getCategorySub = async (CategoryMainID: string) => {
+  const getCategorySub = async (ID: string) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
       const formData = {
-        categoryID: CategoryMainID,
+        categoryID: ID,
         storeID: storeID,
       };
       const response = await GetCategorySub(String(token), formData);
@@ -129,7 +130,11 @@ export default function FurtherSubCategory({ storeID }: { storeID: string }) {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await GetFurtherSub(String(token), ID);
+      const formData = {
+        subCategoryID: ID || categorySubID,
+        storeID: storeID,
+      };
+      const response = await GetFurtherSub(String(token), formData);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as FurtherSubApiResponse;
 

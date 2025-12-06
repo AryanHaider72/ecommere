@@ -41,6 +41,8 @@ import CheckAuth from "@/api/authentication/checkAuth";
 // import CheckAuth from "@/api/authentication/checkAuth";
 // import { useRouter } from "next/navigation";
 // import ProfileManagement from "../profile/page";
+import ProfileSetting from "./setting/page";
+
 export default function CustomerPanel() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -145,8 +147,8 @@ export default function CustomerPanel() {
         {activeTab === "payment" && <SellerPaymentInfo />}
         {/* {activeTab === "reviews" && <Review />}
         {activeTab === "orders" && <Order />} */}
-        {/* {activeTab === "setting" && <ProfileManagement />}
-        {activeTab === "unit" && <UnitForm />}
+        {activeTab === "setting" && <ProfileSetting />}
+        {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "supplier" && <SupplierForm />}
         {activeTab === "customer" && <CustomerForm />}

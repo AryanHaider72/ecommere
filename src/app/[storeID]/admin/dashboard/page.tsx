@@ -65,8 +65,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
         (store) => store.storeID === storeID
       );
       if (!storeExists) {
-        // Invalid storeID: redirect or show error
-        router.push("/404"); // or show custom error
+        router.push("/404");
         return;
       }
     }

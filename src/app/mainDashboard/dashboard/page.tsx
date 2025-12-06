@@ -1,6 +1,9 @@
 "use client";
 import GetInitalStore from "@/api/authentication/StoreGet";
+import StoreCreation from "@/api/lib/store/createStore/createStore";
+import GetUserData from "@/api/lib/userData/userDataGet/dataGet";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
+import { userDatagetApiResponse } from "@/api/types/userData/userDataType";
 import {
   ShoppingBag,
   Clock,
@@ -20,7 +23,13 @@ import { useEffect, useState } from "react";
 export default function SellerOverviewDashbaord() {
   const router = useRouter();
   const [storeShow, setStoreShow] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [addStoreForm, setaddStoreForm] = useState(false);
+  const [responseBack, setResponseBack] = useState(0);
+
+  const [storeEmail, setStoreEmail] = useState("");
+  const [storeName, setStoreName] = useState("");
+  const [storeDescription, setStoreDescription] = useState("");
 
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const stats = [
@@ -103,6 +112,44 @@ export default function SellerOverviewDashbaord() {
       setStoreList(data.storeList);
     }
   };
+  const getData = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetUserData(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const user = response.data as userDatagetApiResponse;
+      setStoreEmail(user.userData[0].email);
+    }
+
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const createStore = async () => {
+    if (!storeDescription || !storeEmail) return setResponseBack(2);
+    else {
+      const token = localStorage.getItem("token");
+      const formData = {
+        email: storeEmail,
+        storeName: storeName,
+        description: storeDescription,
+      };
+      const response = await StoreCreation(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        setStoreName("");
+        setStoreDescription("");
+        setResponseBack(1);
+      }
+
+      if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+      if (response.status === 409) {
+        return setResponseBack(3);
+      } else return setResponseBack(4);
+    }
+  };
+
   useEffect(() => {
     storesget();
   }, []);
@@ -126,51 +173,72 @@ export default function SellerOverviewDashbaord() {
 
       {storeShow && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-4xl mx-auto">
             {/* Header */}
-            <div className="w-full flex justify-end ">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Your Stores
+              </h2>
               <button
                 onClick={() => setStoreShow(false)}
-                className=" cursor-pointer hover:text-red-600"
+                className="p-1 rounded-full hover:bg-gray-200 transition"
               >
-                <X />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
+
             {storeList.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Store Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 flex-1">
                   {storeList.map((item) => (
                     <div
                       key={item.storeID}
                       onClick={() => router.push(`/${item.storeID}`)}
-                      className="relative bg-white shadow-sm border border-gray-200 p-6 rounded-2xl 
-                          hover:shadow-lg hover:-translate-y-1 hover:bg-gray-100 transition-all cursor-pointer text-center"
+                      className="relative bg-gray-50 shadow-md border border-gray-200 p-5 rounded-2xl 
+                        hover:shadow-lg hover:-translate-y-1 hover:bg-white transition-all cursor-pointer text-center flex flex-col justify-center items-center"
                     >
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {item.storeName}
+                      </h3>
                       <span
-                        className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold 
+                        className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold 
                               w-5 h-5 flex items-center justify-center rounded-full shadow"
                       >
                         2
                       </span>
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {item.storeName}
-                      </h2>
                     </div>
                   ))}
                 </div>
-              </>
+
+                {/* Create Store Sidebar */}
+                <div className="flex sm:flex-col justify-center items-center sm:items-start">
+                  <button
+                    onClick={() => {
+                      setaddStoreForm(true);
+                      setStoreShow(false);
+                      getData();
+                    }}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition-all text-lg font-medium"
+                  >
+                    + Create Store
+                  </button>
+                </div>
+              </div>
             ) : (
-              <>
+              // No stores: center the button
+              <div className="flex justify-center items-center h-40">
                 <button
                   onClick={() => {
                     setaddStoreForm(true);
                     setStoreShow(false);
+                    getData();
                   }}
-                  className="px-3 py-2 bg-blue-500 hover:bg-blue-600 rounded-md text-white"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition-all text-lg font-medium"
                 >
-                  Create Store
+                  + Create Your First Store
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -190,55 +258,85 @@ export default function SellerOverviewDashbaord() {
                 <ChevronLeft />
               </button>
             </div>
-            <div className="max-w-lg mx-auto bg-white shadow-md p-6 mt-10 rounded-xl ">
-              <h1 className="text-2xl font-bold text-gray-900 mb-5">
+            <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 border border-gray-200 mt-10">
+              <h2 className="text-2xl font-semibold mb-6 text-gray-800">
                 Create New Store
-              </h1>
+              </h2>
 
-              {/* Store Name */}
-              <div className="mb-4">
-                <label className="font-medium text-gray-700">Store Name</label>
-                <input
-                  name="storeName"
-                  type="text"
-                  placeholder="Enter store name"
-                  // value={form.storeName}
-                  // onChange={handleChange}
-                  className="w-full p-3 border rounded-lg mt-1"
-                />
+              <div className="space-y-5">
+                {/* Email (Read-only) */}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={storeEmail}
+                    readOnly
+                    placeholder="Enter store email"
+                    className="w-full px-3 py-3 border rounded-md border-gray-300 bg-gray-100"
+                  />
+                </div>
+
+                {/* Store Name */}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    Store Name
+                  </label>
+                  <input
+                    type="text"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="Enter store name"
+                    className="w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={storeDescription}
+                    onChange={(e) => setStoreDescription(e.target.value)}
+                    placeholder="Enter description..."
+                    rows={4}
+                    className="w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+                  ></textarea>
+                </div>
+
+                {/* Messages */}
+                {responseBack === 2 && (
+                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
+                    Fill in All Required Fields
+                  </div>
+                )}
+                {responseBack === 1 && (
+                  <div className="w-full bg-green-100 text-green-800 p-3 rounded text-center">
+                    Store Created Successfully
+                  </div>
+                )}
+                {responseBack === 3 && (
+                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
+                    Store Limit Reached
+                  </div>
+                )}
+                {responseBack === 4 && (
+                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
+                    Network Error
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  onClick={createStore} // Your API call function
+                  type="button"
+                  className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition"
+                >
+                  {loading ? "Creating..." : "Create Store"}
+                </button>
               </div>
-
-              {/* Email */}
-              <div className="mb-4">
-                <label className="font-medium text-gray-700">Store Email</label>
-                <input
-                  name="email"
-                  type="email"
-                  placeholder="Enter store email"
-                  className="w-full p-3 border rounded-lg mt-1"
-                />
-              </div>
-
-              {/* Description */}
-              <div className="mb-4">
-                <label className="font-medium text-gray-700">Description</label>
-                <textarea
-                  name="description"
-                  placeholder="Enter description..."
-                  rows={4}
-                  className="w-full p-3 border rounded-lg mt-1"
-                ></textarea>
-              </div>
-
-              {/* Submit Button */}
-              <button className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition flex items-center justify-center gap-2">
-                Create Store
-                {/* {loading ? (
-                      <Loader2 className="animate-spin w-5 h-5" />
-                    ) : (
-                      "Create Store"
-                    )} */}
-              </button>
             </div>
           </div>
         </div>
