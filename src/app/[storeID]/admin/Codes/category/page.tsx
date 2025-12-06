@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Edit, Pencil, Plus, ShoppingBag, Trash } from "lucide-react";
+import { Edit, Pencil, Plus, ShoppingBag, Trash, X } from "lucide-react";
 import convertImageToWebPWithWatermark from "@/api/OtherController/webConverter";
 import { SendDataToApi } from "@/api/OtherController/router";
 import {
@@ -9,7 +9,23 @@ import {
 } from "@/api/types/categoryTypes/CategoryMain";
 import GetCategoryMain from "@/api/lib/category/CategorySeller/CategoryMain";
 import { useRouter } from "next/navigation";
-import { CategorySub } from "@/api/types/categoryTypes/CategorySub";
+import {
+  CategorySub,
+  CategorySubApiResponse,
+} from "@/api/types/categoryTypes/CategorySub";
+import GetCountry from "@/api/lib/country/countryList/countryListGet";
+import {
+  Countryget,
+  CountrygetApiResponse,
+} from "@/api/types/country/countryget";
+import GetCategorySub from "@/api/lib/category/getCategorySub/categorySubGet";
+import GetFurtherSub from "@/api/lib/subCategory/GetSub/getSub";
+import {
+  FurtherSub,
+  FurtherSubApiResponse,
+} from "@/api/types/subCategory/getSub";
+import GetUnitByID from "@/api/lib/unit/unitGetByID/unitGetByID";
+import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
 
 type CategoryTree = {
   [mainCategory: string]: {
@@ -33,6 +49,12 @@ interface VarientAttribute {
   qty: number;
   amount: number;
 }
+
+interface CountryList {
+  countryID: string;
+  countryName: string;
+}
+
 const categoryData: CategoryTree = {
   "Fashion & Apparel": {
     "Men’s Clothing": [
@@ -63,14 +85,14 @@ const categoryData: CategoryTree = {
   },
 };
 
-export default function AccountSettings() {
+export default function ProductControll({ storeID }: { storeID: string }) {
   const router = useRouter();
   const [showlist, setShowList] = useState(false);
   const [selectedMain, setSelectedMain] = useState("");
   const [selectedSub, setSelectedSub] = useState("");
   const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
   const [selectedOption2, setSelectedOption2] = useState("OnlineStore");
-  const [selectedOption3, setSelectedOption3] = useState("Yes");
+
   const [selectedSubSub, setSelectedSubSub] = useState("");
   const [Quantity, setQuantity] = useState(0);
 
@@ -89,8 +111,28 @@ export default function AccountSettings() {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const [CategoryMainID, setCategoryMainID] = useState("");
+  const [CategorySubID, setCategorySubID] = useState("");
+  const [FurtherCategorySubID, setFurtherCategorySubID] = useState("");
+  const [UnitID, setUnitID] = useState("");
   const [catgeoryMainList, setCatgeoryMainList] = useState<CategoryMain[]>([]);
   const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
+  const [FurtherSubList, setFurtherSubList] = useState<FurtherSub[]>([]);
+  const [UnitList, setUnitList] = useState<UnitListID[]>([]);
+
+  const [Width, setWidth] = useState("");
+  const [Height, setHeight] = useState("");
+  const [Depth, setDepth] = useState("");
+  const [Weight, setWeight] = useState("");
+  const [TotalQuantity, setTotalQuantity] = useState("");
+
+  const [countryHideList, setCountryHideList] = useState<CountryList[]>([]);
+  const [countryShowLis, setCountryShowList] = useState<CountryList[]>([]);
+  const [HideCountryID, setHideCountryID] = useState("");
+  const [DisplayCountryID, setDisplayCountryID] = useState("");
+  const [DisplayCountryName, setDisplayCountryName] = useState("");
+  const [HideCountryName, setHideCountryName] = useState("");
+
+  const [listofCountry, setListofCountry] = useState<Countryget[]>([]);
 
   //VARIENT States
   const [listVarient, setListVarient] = useState<Varient[]>([]);
@@ -103,20 +145,6 @@ export default function AccountSettings() {
     qty: 0,
     amount: 0,
   });
-
-  const getCategroyMain = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetCategoryMain(String(token));
-
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as CategoryMainApiResponse;
-      setCatgeoryMainList(data.categoryList);
-      setCategoryMainID(data.categoryList[0].categoryID);
-    }
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
-  };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -266,6 +294,40 @@ export default function AccountSettings() {
   };
   //-----------------------------------------------Return----------------------------------------------
 
+  const hanldeAddShowCountry = () => {
+    // const data = countryShowLis.find((item) => item.countryID === id);
+    const updatedList = [
+      ...countryShowLis,
+      {
+        countryID: DisplayCountryID,
+        countryName: DisplayCountryName,
+      },
+    ];
+    setDisplayCountryID("");
+    setCountryShowList(updatedList);
+  };
+
+  const handleRemoveShowCountry = (index: number) => {
+    setCountryShowList(countryShowLis.filter((_, i) => i !== index));
+  };
+
+  const hanldeAddHideCountry = () => {
+    // const data = countryShowLis.find((item) => item.countryID === id);
+    const updatedList = [
+      ...countryHideList,
+      {
+        countryID: HideCountryID,
+        countryName: HideCountryName,
+      },
+    ];
+    setHideCountryID("");
+    setCountryHideList(updatedList);
+  };
+
+  const handleRemoveHideCountry = (index: number) => {
+    setCountryHideList(countryHideList.filter((_, i) => i !== index));
+  };
+
   const totalQuantity = listVarient.reduce((total, variant) => {
     return (
       total + variant.varientAttributes.reduce((sum, attr) => sum + attr.qty, 0)
@@ -275,30 +337,150 @@ export default function AccountSettings() {
   const discountedAmount =
     Number(amount) - (Number(amount) * Number(discount)) / 100;
 
+  const getCategroyMain = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      setCatgeoryMainList(data.categoryList);
+      getCategorySub(data.categoryList[0].categoryID);
+      setCategoryMainID(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+
+  const getCountry = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCountry(String(token));
+    if (response.status === 201 || response.status === 200) {
+      console.log(response.data);
+      const data = response.data as CountrygetApiResponse;
+      setListofCountry(data.countryList);
+    } else if (response.status === 401) return router.push("/sellerogin");
+  };
+
+  const getCategorySub = async (ID: string) => {
+    const formData = {
+      categoryID: ID,
+      storeID: storeID,
+    };
+    const token = localStorage.getItem("token");
+    const response = await GetCategorySub(String(token), formData);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategorySubApiResponse;
+      console.log(data.categoryList);
+      setCatgeorySubList(data.categoryList);
+      setCategorySubID(data.categoryList[0].subCategoryID);
+      getFurtherSub(data.categoryList[0].subCategoryID);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const getFurtherSub = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const formData = {
+      subCategoryID: ID,
+      storeID: storeID,
+    };
+    const response = await GetFurtherSub(String(token), formData);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as FurtherSubApiResponse;
+
+      // Make sure every item has units array
+      const safeList = data.categoryList.map((item) => ({
+        ...item,
+        units: Array.isArray(item.unit) ? item.unit : [],
+      }));
+      console.log(data.categoryList);
+      setFurtherSubList(safeList);
+      setFurtherCategorySubID(data.categoryList[0].subCategoryDetailID);
+      getUnits(data.categoryList[0].subCategoryDetailID);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const getUnits = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const formData = {
+      subCategoryDetailID: ID,
+      storeID: storeID,
+    };
+    const response = await GetUnitByID(String(token), formData);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as UnitIDApiResponse;
+      setUnitList(data.unitsList);
+      setUnitID(data.unitsList[0].unitID);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  //ProductAdd
+  const productAdd = async () => {
+    const payload = {
+      storeID: storeID,
+      categoryID: CategoryMainID,
+      subCategoryID: CategorySubID,
+      subCategoryDetailID: FurtherCategorySubID,
+      unitID: UnitID,
+      currentStock: totalQuantity,
+      ...(selectedOption === "ShowinAllCountry" && {
+        showinAllCountry: true,
+        showinCountry: false,
+        notShowinCountry: false,
+      }),
+      ...(selectedOption === "ShowinSomeCountry" && {
+        showinAllCountry: false,
+        showinCountry: true,
+        notShowinCountry: false,
+      }),
+      ...(selectedOption === "ShowinSomeCountry" && {
+        lisCountry: {
+          countryShowLis,
+        },
+      }),
+      ...(selectedOption === "HideinSomeCountry" && {
+        showinAllCountry: false,
+        showinCountry: false,
+        notShowinCountry: true,
+      }),
+      ...(selectedOption === "HideinSomeCountry" && {
+        lisCountry: {
+          countryHideList,
+        },
+      }),
+    };
+  };
+
   useEffect(() => {
     getCategroyMain();
+    getCountry();
   }, []);
 
   return (
     <div className="w-full px-4 md:px-8 pb-10">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
-        <ShoppingBag className="w-7 h-7 text-indigo-600" /> Category
-      </h1>
-      {showlist ? (
-        <button
-          className="px-4 py-2 bg-blue-600 rounded-md text-white mb-3"
-          onClick={() => setShowList(false)}
-        >
-          Show list
-        </button>
-      ) : (
-        <button
-          className="px-4 py-2 bg-blue-600 rounded-md text-white mb-3"
-          onClick={() => setShowList(true)}
-        >
-          Add New
-        </button>
-      )}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-3">
+          <ShoppingBag className="w-7 h-7 text-indigo-600" /> Category
+        </h1>
+        {showlist ? (
+          <button
+            className="px-4 py-2 bg-blue-600 rounded-md text-white mb-3"
+            onClick={() => setShowList(false)}
+          >
+            Show list
+          </button>
+        ) : (
+          <button
+            className="px-4 py-2 bg-blue-600 rounded-md text-white mb-3"
+            onClick={() => setShowList(true)}
+          >
+            Add New
+          </button>
+        )}
+      </div>
       {/* Responsive layout */}
       {showlist ? (
         <div className="flex flex-col lg:flex-row gap-6">
@@ -310,24 +492,23 @@ export default function AccountSettings() {
                 <legend className="text-lg font-semibold text-gray-800 px-2">
                   Product Info
                 </legend>
+
                 <div className="p-3 rounded-xl max-w-md">
-                  <h2 className="text-md text-gray-800 mb-4">
-                    Pos Integration
-                  </h2>
+                  <h2 className="text-md text-gray-800 mb-4">Store Sale</h2>
 
                   <div className="flex flex-wrap  gap-4 ">
                     {/* Option 1 */}
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="radio"
-                        name="inline-radio"
-                        value="Yes"
-                        checked={selectedOption3 === "Yes"}
-                        onChange={(e) => setSelectedOption3(e.target.value)}
+                        name="StoreSale"
+                        value="Both"
+                        checked={selectedOption2 === "Both"}
+                        onChange={(e) => setSelectedOption2(e.target.value)}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Yes
+                        Both
                       </span>
                     </label>
 
@@ -335,14 +516,27 @@ export default function AccountSettings() {
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="radio"
-                        name="inline-radio"
-                        value="No"
-                        checked={selectedOption3 === "No"}
-                        onChange={(e) => setSelectedOption3(e.target.value)}
+                        name="StoreSale"
+                        value="OnlineStore"
+                        checked={selectedOption2 === "OnlineStore"}
+                        onChange={(e) => setSelectedOption2(e.target.value)}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
-                        No
+                        Online Store
+                      </span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="StoreSale"
+                        value="OfflineStore"
+                        checked={selectedOption2 === "OfflineStore"}
+                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Offline Store
                       </span>
                     </label>
                   </div>
@@ -382,26 +576,29 @@ export default function AccountSettings() {
                     </label>
                     <input
                       type="text"
-                      value={productName}
-                      onChange={(e) => setProductName(e.target.value)}
+                      value={TotalQuantity}
+                      onChange={(e) => setTotalQuantity(e.target.value)}
                       placeholder="Enter Qunatity"
                       className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-1">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      value={discount}
-                      onChange={(e) => setDiscount(e.target.value)}
-                      placeholder="Enter Amount"
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  {/* {selectedOption2 === "OfflineStore" && (
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(e.target.value)}
+                        placeholder="Enter Amount"
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )} */}
                 </div>
-                {selectedOption3 === "No" && (
+                {(selectedOption2 === "Both" ||
+                  selectedOption2 === "OnlineStore") && (
                   <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <div className="w-full">
                       <label className="block text-gray-700 font-medium mb-1">
@@ -409,6 +606,8 @@ export default function AccountSettings() {
                       </label>
                       <input
                         type="text"
+                        value={Width}
+                        onChange={(e) => setWidth(e.target.value)}
                         placeholder="Enter Width"
                         className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                       />
@@ -419,6 +618,8 @@ export default function AccountSettings() {
                       </label>
                       <input
                         type="number"
+                        value={Height}
+                        onChange={(e) => setHeight(e.target.value)}
                         placeholder="Enter Height "
                         className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                       />
@@ -428,6 +629,8 @@ export default function AccountSettings() {
                         Depth
                       </label>
                       <input
+                        value={Depth}
+                        onChange={(e) => setDepth(e.target.value)}
                         type="number"
                         placeholder="Enter Depth "
                         className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
@@ -438,6 +641,8 @@ export default function AccountSettings() {
                         Weight
                       </label>
                       <input
+                        value={Weight}
+                        onChange={(e) => setWeight(e.target.value)}
                         type="number"
                         placeholder="Enter Weight "
                         className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
@@ -445,125 +650,167 @@ export default function AccountSettings() {
                     </div>
                   </div>
                 )}
-                <div className="p-3 rounded-xl max-w-md">
-                  <h2 className="text-md text-gray-800 mb-4">Store Sale</h2>
+                {(selectedOption2 === "Both" ||
+                  selectedOption2 === "OnlineStore") && (
+                  <div className="p-3 rounded-xl max-w-md">
+                    <h2 className="text-md text-gray-800 mb-4">
+                      Show in Country
+                    </h2>
 
-                  <div className="flex flex-wrap  gap-4 ">
-                    {/* Option 1 */}
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="inline-radio"
-                        value="Both"
-                        checked={selectedOption2 === "Both"}
-                        onChange={(e) => setSelectedOption2(e.target.value)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Both
-                      </span>
-                    </label>
+                    <div className="flex flex-wrap flex-col gap-4 ">
+                      {/* Option 1 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ShowinCountry"
+                          value="ShowinAllCountry"
+                          checked={selectedOption === "ShowinAllCountry"}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          onClick={() => {
+                            setCountryHideList([]);
+                            setCountryShowList([]);
+                          }}
+                        />
 
-                    {/* Option 2 */}
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="inline-radio"
-                        value="OnlineStore"
-                        checked={selectedOption2 === "OnlineStore"}
-                        onChange={(e) => setSelectedOption2(e.target.value)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Online Store
-                      </span>
-                    </label>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="inline-radio"
-                        value="OfflineStore"
-                        checked={selectedOption2 === "OfflineStore"}
-                        onChange={(e) => setSelectedOption2(e.target.value)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Offline Store
-                      </span>
-                    </label>
-                  </div>
-                </div>
-                <div className="p-3 rounded-xl max-w-md">
-                  <h2 className="text-md text-gray-800 mb-4">
-                    Show in Country
-                  </h2>
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Show in All Country
+                        </span>
+                      </label>
 
-                  <div className="flex flex-wrap flex-col gap-4 ">
-                    {/* Option 1 */}
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="inline-radio"
-                        value="ShowinAllCountry"
-                        checked={selectedOption === "ShowinAllCountry"}
-                        onChange={(e) => setSelectedOption(e.target.value)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Show in All Country
-                      </span>
-                    </label>
-
-                    {/* Option 2 */}
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="inline-radio"
-                        value="ShowinSomeCountry"
-                        checked={selectedOption === "ShowinSomeCountry"}
-                        onChange={(e) => setSelectedOption(e.target.value)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Show in Some Country
-                      </span>
-                    </label>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="inline-radio"
-                        value="HideinSomeCountry"
-                        checked={selectedOption === "HideinSomeCountry"}
-                        onChange={(e) => setSelectedOption(e.target.value)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-gray-700 text-sm font-medium">
-                        Hide in Some Country
-                      </span>
-                    </label>
-                  </div>
-                </div>
-                {selectedOption === "ShowinSomeCountry" && (
-                  <div className=" gap-4 mb-4">
-                    <label className=" mt-2 block text-gray-700 font-medium mb-1">
-                      Display Country
-                    </label>
-                    <select className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500">
-                      <option value="">Select Country</option>
-                      <option value="">Pakistan</option>
-                    </select>
+                      {/* Option 2 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ShowinCountry"
+                          value="ShowinSomeCountry"
+                          checked={selectedOption === "ShowinSomeCountry"}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          onClick={() => setCountryHideList([])}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Show in Some Country
+                        </span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ShowinCountry"
+                          value="HideinSomeCountry"
+                          checked={selectedOption === "HideinSomeCountry"}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          onClick={() => setCountryShowList([])}
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Hide in Some Country
+                        </span>
+                      </label>
+                    </div>
                   </div>
                 )}
+                {selectedOption === "ShowinSomeCountry" && (
+                  <>
+                    <div className=" gap-4 mb-4">
+                      <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                        Display Country
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={DisplayCountryID}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            setDisplayCountryID(id);
+                            const data = listofCountry.find(
+                              (item) => item.countryID === id
+                            );
+                            if (data) {
+                              setDisplayCountryName(data.countryName);
+                            }
+                          }}
+                          className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select Country</option>
+                          {listofCountry.map((item) => (
+                            <option key={item.countryID} value={item.countryID}>
+                              {item.countryName}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => hanldeAddShowCountry()}
+                          className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
+                        >
+                          <Plus />
+                        </button>
+                      </div>
+                    </div>
+                    {countryShowLis.map((item, index) => (
+                      <div
+                        key={index}
+                        className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
+                      >
+                        <span>{item.countryName}</span>
+                        <X
+                          size={16}
+                          className="cursor-pointer hover:text-red-500 transition"
+                          onClick={() => handleRemoveShowCountry(index)}
+                        />
+                      </div>
+                    ))}
+                  </>
+                )}
                 {selectedOption === "HideinSomeCountry" && (
-                  <div className=" gap-4 mb-4">
-                    <label className=" mt-2 block text-gray-700 font-medium mb-1">
-                      Hide Country
-                    </label>
-                    <select className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500">
-                      <option value="">Select Main Category</option>
-                      <option value="">Pakistan</option>
-                    </select>
-                  </div>
+                  <>
+                    <div className=" gap-4 mb-4">
+                      <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                        Hide Country
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={HideCountryID}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            setHideCountryID(id);
+                            const data = listofCountry.find(
+                              (item) => item.countryID === id
+                            );
+                            if (data) {
+                              setHideCountryName(data.countryName);
+                            }
+                          }}
+                          className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select Country</option>
+                          {listofCountry.map((item) => (
+                            <option key={item.countryID} value={item.countryID}>
+                              {item.countryName}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={hanldeAddHideCountry}
+                          className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
+                        >
+                          <Plus />
+                        </button>
+                      </div>
+                    </div>
+                    {countryHideList.map((item, index) => (
+                      <div
+                        key={index}
+                        className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
+                      >
+                        <span>{item.countryName}</span>
+                        <X
+                          size={16}
+                          className="cursor-pointer hover:text-red-500 transition"
+                          onClick={() => handleRemoveHideCountry(index)}
+                        />
+                      </div>
+                    ))}
+                  </>
                 )}
 
                 {/* Description */}
@@ -588,246 +835,327 @@ export default function AccountSettings() {
                 </legend>
 
                 {/* Main Category */}
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
+                <div className=" md:flex-row gap-4 mb-4">
+                  <label className="block text-gray-700 font-medium mb-1">
+                    Main Category
+                  </label>
                   <select
                     className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     value={selectedMain}
                     onChange={(e) => {
                       setCategoryMainID(e.target.value);
+                      getCategorySub(e.target.value);
                     }}
                   >
-                    {catgeoryMainList.map((item) => (
-                      <option
-                        key={item.categoryID}
-                        value={item.categoryID}
-                        className="p-2"
-                      >
-                        {item.categoryName}
-                      </option>
-                    ))}
+                    {catgeorySubList.length !== 0 ? (
+                      <>
+                        {catgeoryMainList.map((item) => (
+                          <option
+                            key={item.categoryID}
+                            value={item.categoryID}
+                            className="p-2"
+                          >
+                            {item.categoryName}
+                          </option>
+                        ))}
+                      </>
+                    ) : (
+                      <option> No Record Found</option>
+                    )}
                   </select>
                 </div>
 
                 {CategoryMainID && (
-                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                  <div className=" md:flex-row gap-4 mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Sub Category
+                    </label>
                     <select
                       className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={selectedMain}
+                      value={CategorySubID}
                       onChange={(e) => {
-                        setCategoryMainID(e.target.value);
+                        {
+                          setCategorySubID(e.target.value);
+                          getFurtherSub(e.target.value);
+                        }
                       }}
                     >
-                      {catgeoryMainList.map((item) => (
-                        <option
-                          key={item.categoryID}
-                          value={item.categoryID}
-                          className="p-2"
-                        >
-                          {item.categoryName}
-                        </option>
-                      ))}
+                      {catgeorySubList.length !== 0 ? (
+                        <>
+                          {catgeorySubList.map((item) => (
+                            <option
+                              key={item.subCategoryID}
+                              value={item.subCategoryID}
+                              className="p-2"
+                            >
+                              {item.subCategoryName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option> No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+                )}
+                {CategorySubID && (
+                  <div className=" md:flex-row gap-4 mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Further Sub Category
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={FurtherCategorySubID}
+                      onChange={(e) => {
+                        setFurtherCategorySubID(e.target.value);
+                        getUnits(e.target.value);
+                      }}
+                    >
+                      {FurtherSubList.length !== 0 ? (
+                        <>
+                          {FurtherSubList.map((item) => (
+                            <option
+                              key={item.subCategoryDetailID}
+                              value={item.subCategoryDetailID}
+                              className="p-2"
+                            >
+                              {item.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option> No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+                )}
+                {FurtherCategorySubID && (
+                  <div className=" md:flex-row gap-4 mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Unit
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={UnitID}
+                      onChange={(e) => {
+                        setUnitID(e.target.value);
+                      }}
+                    >
+                      {UnitList.length !== 0 ? (
+                        <>
+                          {UnitList.map((item) => (
+                            <option
+                              key={item.unitID}
+                              value={item.unitID}
+                              className="p-2"
+                            >
+                              {item.unitName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option> No Record Found</option>
+                      )}
                     </select>
                   </div>
                 )}
 
                 {/* Image Upload */}
               </fieldset>
-              {selectedOption2 === "OnlineStore" ||
-                (selectedOption2 === "Both" && (
-                  <fieldset className="p-4 border border-gray-300 rounded-lg">
-                    <legend className="text-lg font-semibold mb-4">
-                      Variant Info
-                    </legend>
 
-                    {/* Input for Main Variant Name and button */}
-                    <div className="flex gap-2 items-center mb-4">
-                      <input
-                        type="text"
-                        placeholder="Enter Variant Name (Main)"
-                        value={mainVarientName}
-                        onChange={(e) => setMainVarientName(e.target.value)}
-                        className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        onClick={handleAddMainVariant}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                      >
-                        Save Variant
-                      </button>
-                    </div>
+              <fieldset className="p-4 border border-gray-300 rounded-lg">
+                <legend className="text-lg font-semibold mb-4">
+                  Variant Info
+                </legend>
 
-                    {/* Table of current attributes (sub-variants) */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border border-gray-300 rounded">
-                        <thead className="bg-gray-100 border-b border-gray-300">
-                          <tr>
-                            <th className="px-4 py-2">Attribute Name</th>
-                            <th className="px-4 py-2">Qty</th>
-                            <th className="px-4 py-2">Amount</th>
-                            <th className="px-4 py-2">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Existing attributes */}
-                          {currentAttributes.map((attr, i) => (
-                            <tr
-                              key={i}
-                              className="border-b border-gray-300 odd:bg-white even:bg-gray-50"
+                {/* Input for Main Variant Name and button */}
+                <div className="flex gap-2 items-center mb-4">
+                  <input
+                    type="text"
+                    placeholder="Enter Variant Name (Main)"
+                    value={mainVarientName}
+                    onChange={(e) => setMainVarientName(e.target.value)}
+                    className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={handleAddMainVariant}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Save Variant
+                  </button>
+                </div>
+
+                {/* Table of current attributes (sub-variants) */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border border-gray-300 rounded">
+                    <thead className="bg-gray-100 border-b border-gray-300">
+                      <tr>
+                        <th className="px-4 py-2">Attribute Name</th>
+                        <th className="px-4 py-2">Qty</th>
+                        <th className="px-4 py-2">Amount</th>
+                        <th className="px-4 py-2">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Existing attributes */}
+                      {currentAttributes.map((attr, i) => (
+                        <tr
+                          key={i}
+                          className="border-b border-gray-300 odd:bg-white even:bg-gray-50"
+                        >
+                          <td className="px-4 py-2">{attr.varientValue}</td>
+                          <td className="px-4 py-2">{attr.qty}</td>
+                          <td className="px-4 py-2">{attr.amount}</td>
+                          <td className="px-4 py-2">
+                            <button
+                              className="px-2 py-1 bg-red-600 text-white rounded"
+                              onClick={() => handleRemoveAttribute(i)}
                             >
-                              <td className="px-4 py-2">{attr.varientValue}</td>
-                              <td className="px-4 py-2">{attr.qty}</td>
-                              <td className="px-4 py-2">{attr.amount}</td>
-                              <td className="px-4 py-2">
-                                <button
-                                  className="px-2 py-1 bg-red-600 text-white rounded"
-                                  onClick={() => handleRemoveAttribute(i)}
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
 
-                          {/* Row for adding new attribute */}
-                          <tr>
-                            <td className="px-4 py-2">
-                              <input
-                                type="text"
-                                placeholder="Attribute Name"
-                                value={newAttribute.varientValue}
-                                onChange={(e) =>
-                                  handleNewAttributeChange(
-                                    "varientValue",
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-4 py-2">
-                              <input
-                                type="number"
-                                min={0}
-                                value={newAttribute.qty}
-                                onChange={(e) =>
-                                  handleNewAttributeChange(
-                                    "qty",
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-4 py-2">
-                              <input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                value={newAttribute.amount}
-                                onChange={(e) =>
-                                  handleNewAttributeChange(
-                                    "amount",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                            <td className="px-4 py-2">
-                              <button
-                                onClick={handleAddAttribute}
-                                className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
-                                title="Add Attribute"
-                              >
-                                <Plus className="mr-1" />
-                                Add
-                              </button>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </fieldset>
-                ))}
-              {selectedOption2 === "OnlineStore" ||
-                (selectedOption2 === "Both" && (
-                  <fieldset className="p-4 border border-gray-300 rounded-lg">
-                    <legend className="text-lg font-semibold text-gray-800 px-2">
-                      Product Image
-                    </legend>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 font-medium mb-1">
-                        Product Images (Max 3)
-                      </label>
-                      <div
-                        onClick={handleClick}
-                        onDrop={handleDrop}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setIsDragOver(true);
-                        }}
-                        onDragLeave={() => setIsDragOver(false)}
-                        className={`w-full p-4 border-2 flex  justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
-                          isDragOver
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {images.map((img, i) => (
-                          <div
-                            key={i}
-                            draggable={!!img}
-                            onDragStart={() => setDragIndex(i)}
-                            onDragEnter={() => img && setHoverIndex(i)}
-                            onDragEnd={() => {
-                              if (
-                                dragIndex !== null &&
-                                hoverIndex !== null &&
-                                dragIndex !== hoverIndex
-                              ) {
-                                reorderImages(dragIndex, hoverIndex);
-                              }
-                              setDragIndex(null);
-                              setHoverIndex(null);
-                            }}
-                            className={`relative w-20 h-20 rounded-md flex items-center justify-center 
+                      {/* Row for adding new attribute */}
+                      <tr>
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            placeholder="Attribute Name"
+                            value={newAttribute.varientValue}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "varientValue",
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            value={newAttribute.qty}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "qty",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={newAttribute.amount}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "amount",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <button
+                            onClick={handleAddAttribute}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
+                            title="Add Attribute"
+                          >
+                            <Plus className="mr-1" />
+                            Add
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </fieldset>
+              {(selectedOption2 === "OnlineStore" ||
+                selectedOption2 === "Both") && (
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                  <legend className="text-lg font-semibold text-gray-800 px-2">
+                    Product Image
+                  </legend>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Product Images (Max 3)
+                    </label>
+                    <div
+                      onClick={handleClick}
+                      onDrop={handleDrop}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(true);
+                      }}
+                      onDragLeave={() => setIsDragOver(false)}
+                      className={`w-full p-4 border-2 flex  justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
+                        isDragOver
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      {images.map((img, i) => (
+                        <div
+                          key={i}
+                          draggable={!!img}
+                          onDragStart={() => setDragIndex(i)}
+                          onDragEnter={() => img && setHoverIndex(i)}
+                          onDragEnd={() => {
+                            if (
+                              dragIndex !== null &&
+                              hoverIndex !== null &&
+                              dragIndex !== hoverIndex
+                            ) {
+                              reorderImages(dragIndex, hoverIndex);
+                            }
+                            setDragIndex(null);
+                            setHoverIndex(null);
+                          }}
+                          className={`relative w-20 h-20 rounded-md flex items-center justify-center 
                       ${
                         hoverIndex === i ? "ring-2 ring-blue-500 scale-105" : ""
                       }
                       transition-all duration-150`}
-                          >
-                            {img ? (
-                              <img
-                                src={URL.createObjectURL(img)}
-                                alt={`Img ${i}`}
-                                className="w-full h-full object-cover rounded-md pointer-events-none"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
-                                Empty
-                              </div>
-                            )}
+                        >
+                          {img ? (
+                            <img
+                              src={URL.createObjectURL(img)}
+                              alt={`Img ${i}`}
+                              className="w-full h-full object-cover rounded-md pointer-events-none"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
+                              Empty
+                            </div>
+                          )}
 
-                            <span className="absolute -bottom-5 text-xs text-gray-600">
-                              {i === 0 ? "Header Image" : `Image ${i + 1}`}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleImageChange(e.target.files)}
-                        className="hidden"
-                      />
+                          <span className="absolute -bottom-5 text-xs text-gray-600">
+                            {i === 0 ? "Header Image" : `Image ${i + 1}`}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  </fieldset>
-                ))}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(e.target.files)}
+                      className="hidden"
+                    />
+                  </div>
+                </fieldset>
+              )}
               <button
                 onClick={handleSave}
-                className="w-full py-3 bg-black text-white font-semibold rounded-md hover:bg-gray-900"
+                className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
               >
                 Save
               </button>
