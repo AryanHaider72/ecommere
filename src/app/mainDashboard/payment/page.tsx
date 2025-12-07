@@ -1,3 +1,5 @@
+"use client";
+
 import AddPayment from "@/api/lib/payment/addPayment/addPayment";
 import DeletePaymentApi from "@/api/lib/payment/deletePayment/deletePayment";
 import GetPayment from "@/api/lib/payment/getPayment/getPayment";

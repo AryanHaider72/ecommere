@@ -26,6 +26,9 @@ import {
 } from "@/api/types/subCategory/getSub";
 import GetUnitByID from "@/api/lib/unit/unitGetByID/unitGetByID";
 import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
+import AddProduct from "@/api/lib/product/productAdd/productAdd";
+import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
+import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
 
 type CategoryTree = {
   [mainCategory: string]: {
@@ -95,6 +98,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
 
   const [selectedSubSub, setSelectedSubSub] = useState("");
   const [Quantity, setQuantity] = useState(0);
+  const [Threshold, setThreshold] = useState("");
 
   const [images, setImages] = useState<(File | null)[]>([null, null, null]);
   const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
@@ -106,6 +110,14 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [discount, setDiscount] = useState("");
   const [description, setDescription] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
+  const [Loading, setLoading] = useState(false);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [productID, setProductID] = useState("");
+  const [selectedProductImageIndex, setSelectedProductImageIndex] = useState<{
+    [productID: string]: number;
+  }>({});
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -118,6 +130,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
   const [FurtherSubList, setFurtherSubList] = useState<FurtherSub[]>([]);
   const [UnitList, setUnitList] = useState<UnitListID[]>([]);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState<
+    Record<string, number>
+  >({});
 
   const [Width, setWidth] = useState("");
   const [Height, setHeight] = useState("");
@@ -133,6 +148,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [HideCountryName, setHideCountryName] = useState("");
 
   const [listofCountry, setListofCountry] = useState<Countryget[]>([]);
+  const [ProductList, setProductList] = useState<Product[]>([]);
+
+  const [responseBack, setResponseBack] = useState(0);
 
   //VARIENT States
   const [listVarient, setListVarient] = useState<Varient[]>([]);
@@ -236,13 +254,13 @@ export default function ProductControll({ storeID }: { storeID: string }) {
 
     if (filesToUpload.length === 0) {
       alert("No images to upload");
-      return;
+      return []; // Return empty array if no files
     }
 
     // Use the previously suggested function for uploading multiple images
     const uploadedUrls = await sendMultipleImages(filesToUpload);
     console.log("Uploaded URLs before setState:", uploadedUrls);
-    if (uploadedUrls) {
+    if (uploadedUrls && uploadedUrls.length > 0) {
       setListImages((prevState) => ({
         listImage: [
           ...prevState.listImage,
@@ -250,8 +268,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
         ],
       }));
     }
-    return uploadedUrls;
-    // You can save these URLs in state or send to backend as needed
+
+    return uploadedUrls || []; // Return the URLs directly (or empty array on failure)
   };
 
   const sendMultipleImages = async (files: File[]) => {
@@ -287,11 +305,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     return uploadedUrls;
   };
 
-  const handleSave = () => {
-    handleUploadAll();
-    console.log(listVarient);
-    console.log(listImages);
-  };
   //-----------------------------------------------Return----------------------------------------------
 
   const hanldeAddShowCountry = () => {
@@ -356,7 +369,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     const token = localStorage.getItem("token");
     const response = await GetCountry(String(token));
     if (response.status === 201 || response.status === 200) {
-      console.log(response.data);
       const data = response.data as CountrygetApiResponse;
       setListofCountry(data.countryList);
     } else if (response.status === 401) return router.push("/sellerogin");
@@ -371,7 +383,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     const response = await GetCategorySub(String(token), formData);
     if (response.status === 200 || response.status === 201) {
       const data = response.data as CategorySubApiResponse;
-      console.log(data.categoryList);
       setCatgeorySubList(data.categoryList);
       setCategorySubID(data.categoryList[0].subCategoryID);
       getFurtherSub(data.categoryList[0].subCategoryID);
@@ -394,7 +405,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
         ...item,
         units: Array.isArray(item.unit) ? item.unit : [],
       }));
-      console.log(data.categoryList);
       setFurtherSubList(safeList);
       setFurtherCategorySubID(data.categoryList[0].subCategoryDetailID);
       getUnits(data.categoryList[0].subCategoryDetailID);
@@ -418,47 +428,156 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     }
   };
   //ProductAdd
+  // ProductAdd
   const productAdd = async () => {
+    if (
+      !selectedOption2 ||
+      !productName ||
+      !CategoryMainID ||
+      !CategorySubID ||
+      !FurtherCategorySubID
+    ) {
+      return setResponseBack(2);
+    }
+
+    // Await the image upload only if images are required (for online or both)
+    let uploadedUrls: string[] = [];
+    if (selectedOption2 === "OnlineStore" || selectedOption2 === "Both") {
+      uploadedUrls = await handleUploadAll();
+      if (!uploadedUrls || uploadedUrls.length === 0) {
+        alert("Image upload failed. Please try again.");
+        return; // Stop if uploads failed
+      }
+    }
+
+    // Build the listCountry based on selectedOption
+    let listCountry: { countryID: string }[] = [];
+    if (selectedOption === "ShowinSomeCountry") {
+      listCountry = countryShowLis.map((item) => ({
+        countryID: item.countryID,
+      }));
+    } else if (selectedOption === "HideinSomeCountry") {
+      listCountry = countryHideList.map((item) => ({
+        countryID: item.countryID,
+      }));
+    }
+
     const payload = {
       storeID: storeID,
+      storeSale: selectedOption2,
       categoryID: CategoryMainID,
-      subCategoryID: CategorySubID,
+      productName: productName,
       subCategoryDetailID: FurtherCategorySubID,
+      subCategoryID: CategorySubID,
       unitID: UnitID,
-      currentStock: totalQuantity,
-      ...(selectedOption === "ShowinAllCountry" && {
-        showinAllCountry: true,
-        showinCountry: false,
-        notShowinCountry: false,
-      }),
-      ...(selectedOption === "ShowinSomeCountry" && {
-        showinAllCountry: false,
-        showinCountry: true,
-        notShowinCountry: false,
-      }),
-      ...(selectedOption === "ShowinSomeCountry" && {
-        lisCountry: {
-          countryShowLis,
-        },
-      }),
-      ...(selectedOption === "HideinSomeCountry" && {
-        showinAllCountry: false,
-        showinCountry: false,
-        notShowinCountry: true,
-      }),
-      ...(selectedOption === "HideinSomeCountry" && {
-        lisCountry: {
-          countryHideList,
-        },
-      }),
+      discount: Number(discount) || 0,
+      currentStock: Number(totalQuantity),
+      threshold: Number(Threshold),
+      percentage: 0,
+      showinAllCountry: selectedOption === "ShowinAllCountry",
+      showinCountry: selectedOption === "ShowinSomeCountry",
+      notShowinCountry: selectedOption === "HideinSomeCountry",
+      description: description,
+      width: Number(Width) || 0,
+      height: Number(Height) || 0,
+      depth: Number(Depth) || 0,
+      weight: Number(Weight) || 0,
+      listCountry: listCountry,
+      listImage: uploadedUrls.map((url) => ({ url })), // Use the returned URLs directly
+      listVarient: listVarient,
     };
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await AddProduct(payload, String(token));
+      if (response.status === 200 || response.status === 201) {
+        getProduct();
+        setResponseBack(1);
+        // Reset logic...
+        setProductName("");
+        setDiscount("");
+        setThreshold("");
+        setTotalQuantity("");
+        setWidth("");
+        setHeight("");
+        setDepth("");
+        setWeight("");
+        setDescription("");
+        setCountryHideList([]);
+        setCountryShowList([]);
+        setSelectedOption("ShowinAllCountry");
+        setListVarient([]);
+        setListImages({ listImage: [] });
+        setCurrentAttributes([]);
+        setMainVarientName("");
+        setImages([null, null, null]);
+        setMainImageIndex(0);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      } else {
+        setResponseBack(3);
+      }
+    } catch (error) {
+      console.error("API call error:", error);
+      setResponseBack(3);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProduct = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetProduct(String(token), storeID);
+    if (response.status == 200 || response.status == 201) {
+      console.log(response.data);
+      const data = response.data as ProductApiResponse;
+      setProductList(data.list);
+    } else if (response.status == 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const fetchData = (ID: string) => {
+    setShowList(true);
+    const data = ProductList.find((item) => item.productID === ID);
+    if (data) {
+      setProductName(data.productName);
+      setDescription(data.description);
+      setDiscount(String(data.discount));
+      setTotalQuantity(String(data.currentStock));
+      setWidth(String(data.width));
+      setHeight(String(data.height));
+      setDepth(String(data.depth));
+      setWeight(String(data.weight));
+      setThreshold(String(data.threshold));
+      setCategoryMainID(data.categoryID);
+      setCategorySubID(data.subCategoryID);
+      setFurtherCategorySubID(data.subCategoryDetailID);
+      // setSelectedOption2(data.storeSale);
+      // setListVarient(data.variants)
+      // showinAllCountry: selectedOption === "ShowinAllCountry",
+      // showinCountry: selectedOption === "ShowinSomeCountry",
+      // notShowinCountry: selectedOption === "HideinSomeCountry",
+    }
   };
 
   useEffect(() => {
     getCategroyMain();
     getCountry();
+    getProduct();
   }, []);
-
+  useEffect(() => {
+    if (
+      responseBack === 1 ||
+      responseBack === 2 ||
+      responseBack === 3 ||
+      responseBack === 4
+    ) {
+      setTimeout(() => {
+        setResponseBack(0);
+      }, 2000);
+    }
+  }, [responseBack]);
   return (
     <div className="w-full px-4 md:px-8 pb-10">
       <div className="flex justify-between items-center mb-6">
@@ -504,7 +623,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                         name="StoreSale"
                         value="Both"
                         checked={selectedOption2 === "Both"}
-                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        onChange={(e) => setSelectedOption2("Both")}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -519,7 +638,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                         name="StoreSale"
                         value="OnlineStore"
                         checked={selectedOption2 === "OnlineStore"}
-                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        onChange={(e) => setSelectedOption2("OnlineStore")}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -532,7 +651,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                         name="StoreSale"
                         value="OfflineStore"
                         checked={selectedOption2 === "OfflineStore"}
-                        onChange={(e) => setSelectedOption2(e.target.value)}
+                        onChange={(e) => setSelectedOption2("OfflineStore")}
                         className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -582,20 +701,18 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                       className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {/* {selectedOption2 === "OfflineStore" && (
-                    <div className="w-full">
-                      <label className="block text-gray-700 font-medium mb-1">
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        value={discount}
-                        onChange={(e) => setDiscount(e.target.value)}
-                        placeholder="Enter Amount"
-                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  )} */}
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Threshold
+                    </label>
+                    <input
+                      type="number"
+                      value={Threshold}
+                      onChange={(e) => setThreshold(e.target.value)}
+                      placeholder="Enter Threshold"
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
                 {(selectedOption2 === "Both" ||
                   selectedOption2 === "OnlineStore") && (
@@ -1153,11 +1270,31 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                   </div>
                 </fieldset>
               )}
+              {responseBack === 2 && (
+                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                  Fill in All Required Fields
+                </div>
+              )}
+              {responseBack === 3 && (
+                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                  Network Error
+                </div>
+              )}
+              {responseBack === 1 && (
+                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
+                  Record Added Successful
+                </div>
+              )}
+              {responseBack === 4 && (
+                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
+                  Record Modified Successful
+                </div>
+              )}
               <button
-                onClick={handleSave}
+                onClick={productAdd}
                 className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
               >
-                Save
+                {Loading ? "Saving.." : "Save"}
               </button>
             </div>
           </div>
@@ -1266,7 +1403,161 @@ export default function ProductControll({ storeID }: { storeID: string }) {
           </div>
         </div>
       ) : (
-        <></>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {ProductList.map((product) => {
+              /* ---------------------- PRICE LOGIC ---------------------- */
+
+              // Find selected variant index for this product
+              const selectedVarIndex =
+                selectedVariantIndex[product.productID] ?? 0;
+
+              // Selected variant value (from first variant group)
+              const selectedVariantValue =
+                product.variants?.[0]?.variantValues?.[selectedVarIndex];
+
+              const originalAmount = Number(selectedVariantValue?.amount || 0);
+
+              const discountedAmount =
+                originalAmount -
+                (originalAmount * (product.discount || 0)) / 100;
+
+              /* ---------------------- IMAGE LOGIC ---------------------- */
+
+              const mainImageIndex =
+                selectedProductImageIndex[product.productID] || 0;
+
+              const mainImageUrl =
+                product.images?.[mainImageIndex]?.url ||
+                "/placeholder-image.jpg";
+
+              return (
+                <div
+                  key={product.productID}
+                  className="bg-white rounded-xl shadow hover:shadow-lg p-4 cursor-pointer transition-all min-w-[280px]"
+                >
+                  {/* === Main Product Image === */}
+                  <div className="w-full h-64 bg-gray-200 rounded-lg mb-3 overflow-hidden">
+                    <img
+                      src={mainImageUrl}
+                      alt={product.productName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* === Thumbnail Images === */}
+                  {product.images && product.images.length > 1 && (
+                    <div className="flex gap-2 mb-4 justify-center">
+                      {product.images.map((img, i) => (
+                        <img
+                          key={img.urlID}
+                          src={img.url}
+                          onClick={() =>
+                            setSelectedProductImageIndex((prev) => ({
+                              ...prev,
+                              [product.productID]: i,
+                            }))
+                          }
+                          className={`w-12 h-12 object-cover rounded-md cursor-pointer border ${
+                            i === mainImageIndex
+                              ? "border-blue-600"
+                              : "border-gray-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* === Product Name === */}
+                  <h3 className="font-semibold text-gray-900 text-lg">
+                    {product.productName}
+                  </h3>
+
+                  {/* === Short Description === */}
+                  <p className="text-gray-500 text-sm line-clamp-2">
+                    {product.description}
+                  </p>
+
+                  {/* === PRICE DISPLAY (Dynamic Based on Variant) === */}
+                  <div className="mt-2">
+                    {product.discount > 0 ? (
+                      <div className="flex gap-2 items-center">
+                        <span className="text-gray-900 font-bold">
+                          ${discountedAmount.toFixed(2)}
+                        </span>
+                        <span className="line-through text-gray-400">
+                          ${originalAmount.toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-900 font-bold">
+                        {originalAmount.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* === Variants (Clickable – Updates the Price) === */}
+                  {product.variants &&
+                    product.variants.map((variant) => (
+                      <div key={variant.varientID} className="mt-3">
+                        <h4 className="text-sm font-medium text-gray-700">
+                          {variant.variantName}
+                        </h4>
+
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {variant.variantValues.map((attr, idx) => (
+                            <button
+                              key={attr.attributeID}
+                              onClick={() =>
+                                setSelectedVariantIndex((prev) => ({
+                                  ...prev,
+                                  [product.productID]: idx,
+                                }))
+                              }
+                              className={`px-2 py-1 rounded-full text-xs 
+                      ${
+                        selectedVariantIndex[product.productID] === idx
+                          ? "bg-blue-600 text-white"
+                          : attr.qty > 0
+                          ? "bg-gray-900 text-white hover:bg-gray-700"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      }
+                    `}
+                              disabled={attr.qty <= 0}
+                            >
+                              {attr.varientValue}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                  {/* === Action Buttons === */}
+                  <div className="flex gap-2 mt-4 justify-end">
+                    <button
+                      title="Edit"
+                      onClick={() => fetchData(product.productID)}
+                      className="text-white rounded-md px-2 py-2 bg-yellow-500 hover:bg-yellow-600"
+                    >
+                      <Pencil />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setProductID(product.productID);
+                        setIsOpen(true);
+                      }}
+                      title="Delete"
+                      className="text-white px-2 py-2 rounded-md bg-red-500 hover:bg-red-600"
+                    >
+                      <Trash />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
