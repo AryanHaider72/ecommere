@@ -29,6 +29,7 @@ import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
 import AddProduct from "@/api/lib/product/productAdd/productAdd";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
+import ProductCard from "./product";
 
 type CategoryTree = {
   [mainCategory: string]: {
@@ -112,12 +113,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [Loading, setLoading] = useState(false);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [productID, setProductID] = useState("");
-  const [selectedProductImageIndex, setSelectedProductImageIndex] = useState<{
-    [productID: string]: number;
-  }>({});
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -148,7 +143,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [HideCountryName, setHideCountryName] = useState("");
 
   const [listofCountry, setListofCountry] = useState<Countryget[]>([]);
-  const [ProductList, setProductList] = useState<Product[]>([]);
 
   const [responseBack, setResponseBack] = useState(0);
 
@@ -492,7 +486,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       const token = localStorage.getItem("token");
       const response = await AddProduct(payload, String(token));
       if (response.status === 200 || response.status === 201) {
-        getProduct();
         setResponseBack(1);
         // Reset logic...
         setProductName("");
@@ -526,45 +519,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     }
   };
 
-  const getProduct = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetProduct(String(token), storeID);
-    if (response.status == 200 || response.status == 201) {
-      console.log(response.data);
-      const data = response.data as ProductApiResponse;
-      setProductList(data.list);
-    } else if (response.status == 401) {
-      router.push("/sellerlogin");
-    }
-  };
-  const fetchData = (ID: string) => {
-    setShowList(true);
-    const data = ProductList.find((item) => item.productID === ID);
-    if (data) {
-      setProductName(data.productName);
-      setDescription(data.description);
-      setDiscount(String(data.discount));
-      setTotalQuantity(String(data.currentStock));
-      setWidth(String(data.width));
-      setHeight(String(data.height));
-      setDepth(String(data.depth));
-      setWeight(String(data.weight));
-      setThreshold(String(data.threshold));
-      setCategoryMainID(data.categoryID);
-      setCategorySubID(data.subCategoryID);
-      setFurtherCategorySubID(data.subCategoryDetailID);
-      // setSelectedOption2(data.storeSale);
-      // setListVarient(data.variants)
-      // showinAllCountry: selectedOption === "ShowinAllCountry",
-      // showinCountry: selectedOption === "ShowinSomeCountry",
-      // notShowinCountry: selectedOption === "HideinSomeCountry",
-    }
-  };
-
   useEffect(() => {
     getCategroyMain();
     getCountry();
-    getProduct();
   }, []);
   useEffect(() => {
     if (
@@ -1404,159 +1361,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {ProductList.map((product) => {
-              /* ---------------------- PRICE LOGIC ---------------------- */
-
-              // Find selected variant index for this product
-              const selectedVarIndex =
-                selectedVariantIndex[product.productID] ?? 0;
-
-              // Selected variant value (from first variant group)
-              const selectedVariantValue =
-                product.variants?.[0]?.variantValues?.[selectedVarIndex];
-
-              const originalAmount = Number(selectedVariantValue?.amount || 0);
-
-              const discountedAmount =
-                originalAmount -
-                (originalAmount * (product.discount || 0)) / 100;
-
-              /* ---------------------- IMAGE LOGIC ---------------------- */
-
-              const mainImageIndex =
-                selectedProductImageIndex[product.productID] || 0;
-
-              const mainImageUrl =
-                product.images?.[mainImageIndex]?.url ||
-                "/placeholder-image.jpg";
-
-              return (
-                <div
-                  key={product.productID}
-                  className="bg-white rounded-xl shadow hover:shadow-lg p-4 cursor-pointer transition-all min-w-[280px]"
-                >
-                  {/* === Main Product Image === */}
-                  <div className="w-full h-64 bg-gray-200 rounded-lg mb-3 overflow-hidden">
-                    <img
-                      src={mainImageUrl}
-                      alt={product.productName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  {/* === Thumbnail Images === */}
-                  {product.images && product.images.length > 1 && (
-                    <div className="flex gap-2 mb-4 justify-center">
-                      {product.images.map((img, i) => (
-                        <img
-                          key={img.urlID}
-                          src={img.url}
-                          onClick={() =>
-                            setSelectedProductImageIndex((prev) => ({
-                              ...prev,
-                              [product.productID]: i,
-                            }))
-                          }
-                          className={`w-12 h-12 object-cover rounded-md cursor-pointer border ${
-                            i === mainImageIndex
-                              ? "border-blue-600"
-                              : "border-gray-200"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* === Product Name === */}
-                  <h3 className="font-semibold text-gray-900 text-lg">
-                    {product.productName}
-                  </h3>
-
-                  {/* === Short Description === */}
-                  <p className="text-gray-500 text-sm line-clamp-2">
-                    {product.description}
-                  </p>
-
-                  {/* === PRICE DISPLAY (Dynamic Based on Variant) === */}
-                  <div className="mt-2">
-                    {product.discount > 0 ? (
-                      <div className="flex gap-2 items-center">
-                        <span className="text-gray-900 font-bold">
-                          ${discountedAmount.toFixed(2)}
-                        </span>
-                        <span className="line-through text-gray-400">
-                          ${originalAmount.toFixed(2)}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-900 font-bold">
-                        {originalAmount.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* === Variants (Clickable – Updates the Price) === */}
-                  {product.variants &&
-                    product.variants.map((variant) => (
-                      <div key={variant.varientID} className="mt-3">
-                        <h4 className="text-sm font-medium text-gray-700">
-                          {variant.variantName}
-                        </h4>
-
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {variant.variantValues.map((attr, idx) => (
-                            <button
-                              key={attr.attributeID}
-                              onClick={() =>
-                                setSelectedVariantIndex((prev) => ({
-                                  ...prev,
-                                  [product.productID]: idx,
-                                }))
-                              }
-                              className={`px-2 py-1 rounded-full text-xs 
-                      ${
-                        selectedVariantIndex[product.productID] === idx
-                          ? "bg-blue-600 text-white"
-                          : attr.qty > 0
-                          ? "bg-gray-900 text-white hover:bg-gray-700"
-                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      }
-                    `}
-                              disabled={attr.qty <= 0}
-                            >
-                              {attr.varientValue}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* === Action Buttons === */}
-                  <div className="flex gap-2 mt-4 justify-end">
-                    <button
-                      title="Edit"
-                      onClick={() => fetchData(product.productID)}
-                      className="text-white rounded-md px-2 py-2 bg-yellow-500 hover:bg-yellow-600"
-                    >
-                      <Pencil />
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setProductID(product.productID);
-                        setIsOpen(true);
-                      }}
-                      title="Delete"
-                      className="text-white px-2 py-2 rounded-md bg-red-500 hover:bg-red-600"
-                    >
-                      <Trash />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <ProductCard storeID={storeID} />
         </>
       )}
     </div>

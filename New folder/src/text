@@ -1,0 +1,60 @@
+<fieldset className="p-4 border border-gray-300 rounded-lg">
+                <legend className="text-lg font-semibold text-gray-800 px-2">
+                  Category Info
+                </legend>
+
+                {/* Main Category */}
+                <div className="flex flex-col md:flex-row gap-4 mb-4">
+                  <select
+                    className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    value={selectedMain}
+                    onChange={(e) => {
+                      setSelectedMain(e.target.value);
+                      setSelectedSub("");
+                      setSelectedSubSub("");
+                    }}
+                  >
+                    <option value="">Select Main Category</option>
+                    {Object.keys(categoryData).map((cat) => (
+                      <option key={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Gender */}
+                {selectedMain && (
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <select
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={selectedSub}
+                      onChange={(e) => {
+                        setSelectedSub(e.target.value);
+                        setSelectedSubSub("");
+                      }}
+                    >
+                      <option value="">Select Gender</option>
+                      {Object.keys(categoryData[selectedMain]).map((sub) => (
+                        <option key={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Type */}
+                {selectedSub && (
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <select
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={selectedSubSub}
+                      onChange={(e) => setSelectedSubSub(e.target.value)}
+                    >
+                      <option value="">Select Type</option>
+                      {categoryData[selectedMain][selectedSub].map((type) => (
+                        <option key={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Image Upload */}
+              </fieldset>

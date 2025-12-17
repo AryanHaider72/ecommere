@@ -24,7 +24,7 @@ export default async function DeleteProductApi(data: {}, token?: string) {
   if (status === 400 || status === 401) {
     return {
       data: null,
-      message: "Invalid credentials",
+      message: response.message,
       status,
     };
   }
