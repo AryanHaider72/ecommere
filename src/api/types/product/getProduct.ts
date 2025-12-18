@@ -21,6 +21,10 @@ export type Product = {
   height: number;
   depth: number;
   weight: number;
+  showinAllCountry: boolean;
+  showinCountry: boolean;
+  notShowinCountry: boolean;
+  countryList: countryList[];
   images: Image[];
   variants: Variant[];
 };
@@ -44,4 +48,8 @@ export type VariantValue = {
   varientValue: string;
   amount: number;
   qty: number;
+};
+export type countryList = {
+  countryID: string;
+  countryName: string;
 };

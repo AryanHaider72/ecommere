@@ -1,60 +1,214 @@
-<fieldset className="p-4 border border-gray-300 rounded-lg">
-                <legend className="text-lg font-semibold text-gray-800 px-2">
-                  Category Info
-                </legend>
+{(selectedOption2 === "Both" ||
+                  selectedOption2 === "OnlineStore") && (
+                  <div className="p-3 rounded-xl max-w-md">
+                    <h2 className="text-md text-gray-800 mb-4">
+                      Show in Country
+                    </h2>
 
-                {/* Main Category */}
-                <div className="flex flex-col md:flex-row gap-4 mb-4">
-                  <select
-                    className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                    value={selectedMain}
-                    onChange={(e) => {
-                      setSelectedMain(e.target.value);
-                      setSelectedSub("");
-                      setSelectedSubSub("");
-                    }}
-                  >
-                    <option value="">Select Main Category</option>
-                    {Object.keys(categoryData).map((cat) => (
-                      <option key={cat}>{cat}</option>
+                    <div className="flex flex-wrap flex-col gap-4 ">
+                      {/* Option 1 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ShowinCountry"
+                          value="ShowinAllCountry"
+                          checked={selectedOption === "ShowinAllCountry"}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          onClick={() => {
+                            setCountryHideList([]);
+                            setCountryShowList([]);
+                          }}
+                        />
+
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Show in All Country
+                        </span>
+                      </label>
+
+                      {/* Option 2 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ShowinCountry"
+                          value="ShowinSomeCountry"
+                          checked={selectedOption === "ShowinSomeCountry"}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          onClick={() => setCountryHideList([])}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Show in Some Country
+                        </span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="ShowinCountry"
+                          value="HideinSomeCountry"
+                          checked={selectedOption === "HideinSomeCountry"}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          onClick={() => setCountryShowList([])}
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Hide in Some Country
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+                {selectedOption === "ShowinSomeCountry" && (
+                  <>
+                    <div className=" gap-4 mb-4">
+                      <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                        Display Country
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={DisplayCountryID}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            setDisplayCountryID(id);
+                            const data = listofCountry.find(
+                              (item) => item.countryID === id
+                            );
+                            if (data) {
+                              setDisplayCountryName(data.countryName);
+                            }
+                          }}
+                          className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select Country</option>
+                          {listofCountry.map((item) => (
+                            <option key={item.countryID} value={item.countryID}>
+                              {item.countryName}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => hanldeAddShowCountry()}
+                          className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
+                        >
+                          <Plus />
+                        </button>
+                      </div>
+                    </div>
+                    {countryShowLis.map((item, index) => (
+                      <div
+                        key={index}
+                        className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
+                      >
+                        <span>{item.countryName}</span>
+                        <X
+                          size={16}
+                          className="cursor-pointer hover:text-red-500 transition"
+                          onClick={() => handleRemoveShowCountry(index)}
+                        />
+                      </div>
                     ))}
-                  </select>
-                </div>
-
-                {/* Gender */}
-                {selectedMain && (
-                  <div className="flex flex-col md:flex-row gap-4 mb-4">
-                    <select
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={selectedSub}
-                      onChange={(e) => {
-                        setSelectedSub(e.target.value);
-                        setSelectedSubSub("");
-                      }}
-                    >
-                      <option value="">Select Gender</option>
-                      {Object.keys(categoryData[selectedMain]).map((sub) => (
-                        <option key={sub}>{sub}</option>
-                      ))}
-                    </select>
-                  </div>
+                  </>
+                )}
+                {selectedOption === "HideinSomeCountry" && (
+                  <>
+                    <div className=" gap-4 mb-4">
+                      <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                        Hide Country
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={HideCountryID}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            setHideCountryID(id);
+                            const data = listofCountry.find(
+                              (item) => item.countryID === id
+                            );
+                            if (data) {
+                              setHideCountryName(data.countryName);
+                            }
+                          }}
+                          className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select Country</option>
+                          {listofCountry.map((item) => (
+                            <option key={item.countryID} value={item.countryID}>
+                              {item.countryName}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={hanldeAddHideCountry}
+                          className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
+                        >
+                          <Plus />
+                        </button>
+                      </div>
+                    </div>
+                    {countryHideList.map((item, index) => (
+                      <div
+                        key={index}
+                        className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
+                      >
+                        <span>{item.countryName}</span>
+                        <X
+                          size={16}
+                          className="cursor-pointer hover:text-red-500 transition"
+                          onClick={() => handleRemoveHideCountry(index)}
+                        />
+                      </div>
+                    ))}
+                  </>
                 )}
 
-                {/* Type */}
-                {selectedSub && (
-                  <div className="flex flex-col md:flex-row gap-4 mb-4">
-                    <select
-                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                      value={selectedSubSub}
-                      onChange={(e) => setSelectedSubSub(e.target.value)}
-                    >
-                      <option value="">Select Type</option>
-                      {categoryData[selectedMain][selectedSub].map((type) => (
-                        <option key={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
 
-                {/* Image Upload */}
-              </fieldset>
+
+
+
+
+
+
+
+
+
+                // const hanldeAddShowCountry = () => {
+  //   // const data = countryShowLis.find((item) => item.countryID === id);
+  //   const updatedList = [
+  //     ...countryShowLis,
+  //     {
+  //       countryID: DisplayCountryID,
+  //       countryName: DisplayCountryName,
+  //     },
+  //   ];
+  //   setDisplayCountryID("");
+  //   setCountryShowList(updatedList);
+  // };
+
+  // const handleRemoveShowCountry = (index: number) => {
+  //   setCountryShowList(countryShowLis.filter((_, i) => i !== index));
+  // };
+
+  // const hanldeAddHideCountry = () => {
+  //   // const data = countryShowLis.find((item) => item.countryID === id);
+  //   const updatedList = [
+  //     ...countryHideList,
+  //     {
+  //       countryID: HideCountryID,
+  //       countryName: HideCountryName,
+  //     },
+  //   ];
+  //   setHideCountryID("");
+  //   setCountryHideList(updatedList);
+  // };
+
+  // const handleRemoveHideCountry = (index: number) => {
+  //   setCountryHideList(countryHideList.filter((_, i) => i !== index));
+  // };
+  // const getCountry = async () => {
+  //   const token = localStorage.getItem("token");
+  //   const response = await GetCountry(String(token));
+  //   if (response.status === 201 || response.status === 200) {
+  //     const data = response.data as CountrygetApiResponse;
+  //     setListofCountry(data.countryList);
+  //   } else if (response.status === 401) return router.push("/sellerogin");
+  // };

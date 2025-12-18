@@ -1,17 +1,96 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Trash } from "lucide-react";
+import { Camera, Pencil, Plus, Trash, X } from "lucide-react";
 import DeleteProductApi from "@/api/lib/product/DeleteProduct/DeleteProduct";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import { useRouter } from "next/navigation";
 import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
 import Spinner from "@/component/spinner/page";
+import {
+  Countryget,
+  CountrygetApiResponse,
+} from "@/api/types/country/countryget";
+import GetCountry from "@/api/lib/country/countryList/countryListGet";
+import GetCategoryMain from "@/api/lib/category/CategorySeller/CategoryMain";
+import {
+  CategoryMain,
+  CategoryMainApiResponse,
+} from "@/api/types/categoryTypes/CategoryMain";
+import GetCategorySub from "@/api/lib/category/getCategorySub/categorySubGet";
+import {
+  CategorySub,
+  CategorySubApiResponse,
+} from "@/api/types/categoryTypes/CategorySub";
+import GetFurtherSub from "@/api/lib/subCategory/GetSub/getSub";
+import {
+  FurtherSub,
+  FurtherSubApiResponse,
+} from "@/api/types/subCategory/getSub";
+import GetUnitByID from "@/api/lib/unit/unitGetByID/unitGetByID";
+import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
+import ModifyProductBasicInfo from "@/api/lib/product/ModifyProduct/ModifyBasicInfo/ModifyBasicInfo";
+
+interface CountryList {
+  countryID: string;
+  countryName: string;
+}
+interface Varient {
+  varientName: string;
+  varientAttributes: VarientAttribute[];
+}
+interface VarientAttribute {
+  varientValue: string;
+  qty: number;
+  amount: number;
+}
 
 export default function ProductCard({ storeID }: { storeID?: string }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [productAbout, setProductAbout] = useState(false);
+  const [varinetAbout, setVarinetAbout] = useState(false);
+
   const [ID, setID] = useState("");
+  const [productName, setProductName] = useState("");
+  const [description, setDescription] = useState("");
+  const [Width, setWidth] = useState("");
+  const [Height, setHeight] = useState("");
+  const [Depth, setDepth] = useState("");
+  const [Weight, setWeight] = useState("");
+  const [TotalQuantity, setTotalQuantity] = useState("");
+  const [Threshold, setThreshold] = useState("");
+  const [discount, setDiscount] = useState("");
+  const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
+  const [DisplayCountryID, setDisplayCountryID] = useState("");
+  const [DisplayCountryName, setDisplayCountryName] = useState("");
+  const [HideCountryID, setHideCountryID] = useState("");
+  const [HideCountryName, setHideCountryName] = useState("");
+  const [currentStep, setCurrentStep] = useState(1);
+  const [listofCountry, setListofCountry] = useState<Countryget[]>([]);
+  const [countryHideList, setCountryHideList] = useState<CountryList[]>([]);
+  const [countryShowLis, setCountryShowList] = useState<CountryList[]>([]);
+
+  const [CategoryMainID, setCategoryMainID] = useState("");
+  const [CategorySubID, setCategorySubID] = useState("");
+  const [FurtherCategorySubID, setFurtherCategorySubID] = useState("");
+  const [UnitID, setUnitID] = useState("");
+  const [catgeoryMainList, setCatgeoryMainList] = useState<CategoryMain[]>([]);
+  const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
+  const [FurtherSubList, setFurtherSubList] = useState<FurtherSub[]>([]);
+  const [UnitList, setUnitList] = useState<UnitListID[]>([]);
+  //VARIENT States
+  const [listVarient, setListVarient] = useState<Varient[]>([]);
+  const [mainVarientName, setMainVarientName] = useState("");
+  const [currentAttributes, setCurrentAttributes] = useState<
+    VarientAttribute[]
+  >([]);
+  const [newAttribute, setNewAttribute] = useState<VarientAttribute>({
+    varientValue: "",
+    qty: 0,
+    amount: 0,
+  });
+
   const [productList, setProductList] = useState<Product[]>([]);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<
     Record<string, number>
@@ -32,6 +111,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponse;
+      console.log(data.list);
       setProductList(data.list);
     } else if (response.status === 401) {
       router.push("/sellerlogin");
@@ -62,6 +142,97 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     setDeleting(false); // stop spinner
   };
 
+  const fetchData = (ID: String) => {
+    const data = productList.find((item) => item.productID === ID);
+    if (data) {
+      setID(ID as string);
+      setProductName(data.productName);
+      setDescription(data.description);
+      setWidth(String(data.width) || "");
+      setHeight(String(data.height) || "");
+      setDepth(String(data.depth) || "");
+      setWeight(String(data.weight) || "");
+      setTotalQuantity(String(data.currentStock) || "");
+      setThreshold(String(data.threshold) || "");
+      setDiscount(String(data.discount) || "");
+      if (data.showinCountry) {
+        setSelectedOption("ShowinSomeCountry");
+        setCountryShowList(data.countryList);
+      } else if (data.notShowinCountry) {
+        setSelectedOption("HideinSomeCountry");
+        setCountryHideList(data.countryList);
+      } else {
+        setSelectedOption("ShowinAllCountry");
+      }
+    }
+  };
+
+  const basicInfo = async () => {
+    try {
+      setLoading(true);
+      let listCountry: { countryID: string }[] = [];
+      if (selectedOption === "ShowinSomeCountry") {
+        listCountry = countryShowLis.map((item) => ({
+          countryID: item.countryID,
+        }));
+      } else if (selectedOption === "HideinSomeCountry") {
+        listCountry = countryHideList.map((item) => ({
+          countryID: item.countryID,
+        }));
+      }
+
+      const formData = {
+        productID: ID,
+        storeID: (storeID as string) || "",
+        categoryID: CategoryMainID,
+        subCategoryDetailID: FurtherCategorySubID,
+        subCategoryID: CategorySubID,
+        unitID: UnitID,
+        productName: productName,
+        description: description,
+        width: Number(Width),
+        height: Number(Height),
+        depth: Number(Depth),
+        weight: Number(Weight),
+        percentage: 0,
+        currentStock: Number(TotalQuantity),
+        threshold: Number(Threshold),
+        discount: Number(discount),
+        showinAllCountry: selectedOption === "ShowinAllCountry",
+        showinCountry: selectedOption === "ShowinSomeCountry",
+        notShowinCountry: selectedOption === "HideinSomeCountry",
+        listCountry: listCountry,
+      };
+      const token = localStorage.getItem("token");
+      const response = await ModifyProductBasicInfo(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        // Reset logic...
+        setProductAbout(false);
+        setCurrentStep(1);
+        getProduct();
+        setProductName("");
+        setDiscount("");
+        setThreshold("");
+        setTotalQuantity("");
+        setWidth("");
+        setHeight("");
+        setDepth("");
+        setWeight("");
+        setDescription("");
+        setCountryHideList([]);
+        setCountryShowList([]);
+        setSelectedOption("ShowinAllCountry");
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+      console.log(formData);
+    } catch (error) {
+      console.log("Error in basicInfo:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredProducts = (productList || []).filter((product) => {
     if (selectedOption2 === "Both") return true;
     if (selectedOption2 === "OnlineStore")
@@ -75,6 +246,161 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
   if (loading) return <Spinner />;
 
+  const hanldeAddShowCountry = () => {
+    // const data = countryShowLis.find((item) => item.countryID === id);
+    const updatedList = [
+      ...countryShowLis,
+      {
+        countryID: DisplayCountryID,
+        countryName: DisplayCountryName,
+      },
+    ];
+    setDisplayCountryID("");
+    setCountryShowList(updatedList);
+  };
+
+  const handleRemoveShowCountry = (index: number) => {
+    setCountryShowList(countryShowLis.filter((_, i) => i !== index));
+  };
+
+  const hanldeAddHideCountry = () => {
+    // const data = countryShowLis.find((item) => item.countryID === id);
+    const updatedList = [
+      ...countryHideList,
+      {
+        countryID: HideCountryID,
+        countryName: HideCountryName,
+      },
+    ];
+    setHideCountryID("");
+    setCountryHideList(updatedList);
+  };
+
+  const handleRemoveHideCountry = (index: number) => {
+    setCountryHideList(countryHideList.filter((_, i) => i !== index));
+  };
+
+  const handleAddMainVariant = () => {
+    if (!mainVarientName.trim()) {
+      alert("Please enter a Variant Name");
+      return;
+    }
+    if (currentAttributes.length === 0) {
+      alert("Please add at least one attribute");
+      return;
+    }
+
+    const updatedList = [
+      ...listVarient,
+      {
+        varientName: mainVarientName.trim(),
+        varientAttributes: currentAttributes,
+      },
+    ];
+    setListVarient(updatedList);
+    // Reset inputs for next variant
+    setMainVarientName("");
+    setCurrentAttributes([]);
+  };
+
+  // Add new attribute row to currentAttributes
+  const handleAddAttribute = () => {
+    if (!newAttribute.varientValue.trim()) {
+      alert("Please enter Attribute Name");
+      return;
+    }
+    setCurrentAttributes([...currentAttributes, newAttribute]);
+    setNewAttribute({ varientValue: "", qty: 0, amount: 0 });
+  };
+
+  // Update newAttribute inputs (for the input row)
+  const handleNewAttributeChange = (
+    field: keyof VarientAttribute,
+    value: string | number
+  ) => {
+    setNewAttribute({ ...newAttribute, [field]: value });
+  };
+
+  // Remove an attribute from currentAttributes by index
+  const handleRemoveAttribute = (index: number) => {
+    setCurrentAttributes(currentAttributes.filter((_, i) => i !== index));
+  };
+
+  const getCountry = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCountry(String(token));
+    if (response.status === 201 || response.status === 200) {
+      const data = response.data as CountrygetApiResponse;
+      setListofCountry(data.countryList);
+    } else if (response.status === 401) return router.push("/sellerogin");
+  };
+  const getCategroyMain = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      setCatgeoryMainList(data.categoryList);
+      getCategorySub(data.categoryList[0].categoryID);
+      setCategoryMainID(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const getCategorySub = async (ID: string) => {
+    const formData = {
+      categoryID: ID,
+      storeID: storeID,
+    };
+    const token = localStorage.getItem("token");
+    const response = await GetCategorySub(String(token), formData);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategorySubApiResponse;
+      setCatgeorySubList(data.categoryList);
+      setCategorySubID(data.categoryList[0].subCategoryID);
+      getFurtherSub(data.categoryList[0].subCategoryID);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const getFurtherSub = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const formData = {
+      subCategoryID: ID,
+      storeID: storeID,
+    };
+    const response = await GetFurtherSub(String(token), formData);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as FurtherSubApiResponse;
+
+      // Make sure every item has units array
+      const safeList = data.categoryList.map((item) => ({
+        ...item,
+        units: Array.isArray(item.unit) ? item.unit : [],
+      }));
+      setFurtherSubList(safeList);
+      setFurtherCategorySubID(data.categoryList[0].subCategoryDetailID);
+      getUnits(data.categoryList[0].subCategoryDetailID);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const getUnits = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const formData = {
+      subCategoryDetailID: ID,
+      storeID: storeID,
+    };
+    const response = await GetUnitByID(String(token), formData);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as UnitIDApiResponse;
+      setUnitList(data.unitsList);
+      setUnitID(data.unitsList[0].unitID);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
   return (
     <>
       {isOpen && (
@@ -106,6 +432,669 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {productAbout && (
+        <>
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+            <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-end items-end mb-4">
+                <button
+                  className="cursor-pointer"
+                  onClick={() => setProductAbout(false)}
+                >
+                  {" "}
+                  <X className="hover:text-red-600" />
+                </button>
+              </div>
+              <div className="flex items-center justify-center mb-6">
+                <div className="flex items-center">
+                  {/* Step 1 */}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm 
+                                    ${
+                                      currentStep === 1
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-300 text-black"
+                                    }`}
+                  >
+                    1
+                  </div>
+                  <span
+                    className={`mx-2 text-sm font-medium ${
+                      currentStep === 1 ? "text-blue-600" : "text-gray-500"
+                    }`}
+                  >
+                    Product Info
+                  </span>
+
+                  {/* Line to Step 2 */}
+                  <div
+                    className={`h-1 w-10 ${
+                      currentStep === 2 ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  ></div>
+
+                  {/* Step 2 */}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm 
+                                    ${
+                                      currentStep === 2
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-300 text-black"
+                                    }`}
+                  >
+                    2
+                  </div>
+                  <span
+                    className={`mx-2 text-sm font-medium ${
+                      currentStep === 2 ? "text-blue-600" : "text-gray-500"
+                    }`}
+                  >
+                    Category Info
+                  </span>
+                </div>
+              </div>
+              {currentStep === 1 && (
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                  <legend className="text-lg font-semibold text-gray-800 px-2">
+                    Product Info
+                  </legend>
+
+                  {/* Row 1 */}
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Product Name
+                      </label>
+                      <input
+                        type="text"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        placeholder="Enter product name"
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Discount
+                      </label>
+                      <input
+                        type="number"
+                        value={discount}
+                        onChange={(e) => setDiscount(e.target.value)}
+                        placeholder="Enter discount (%)"
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Total Quantity
+                      </label>
+                      <input
+                        type="text"
+                        value={TotalQuantity}
+                        onChange={(e) => setTotalQuantity(e.target.value)}
+                        placeholder="Enter Qunatity"
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Threshold
+                      </label>
+                      <input
+                        type="number"
+                        value={Threshold}
+                        onChange={(e) => setThreshold(e.target.value)}
+                        placeholder="Enter Threshold"
+                        className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  {(selectedOption2 === "Both" ||
+                    selectedOption2 === "OnlineStore") && (
+                    <div className="flex flex-col md:flex-row gap-4 mb-4">
+                      <div className="w-full">
+                        <label className="block text-gray-700 font-medium mb-1">
+                          Width
+                        </label>
+                        <input
+                          type="text"
+                          value={Width}
+                          onChange={(e) => setWidth(e.target.value)}
+                          placeholder="Enter Width"
+                          className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="w-full">
+                        <label className="block text-gray-700 font-medium mb-1">
+                          Height
+                        </label>
+                        <input
+                          type="number"
+                          value={Height}
+                          onChange={(e) => setHeight(e.target.value)}
+                          placeholder="Enter Height "
+                          className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="w-full">
+                        <label className="block text-gray-700 font-medium mb-1">
+                          Depth
+                        </label>
+                        <input
+                          value={Depth}
+                          onChange={(e) => setDepth(e.target.value)}
+                          type="number"
+                          placeholder="Enter Depth "
+                          className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="w-full">
+                        <label className="block text-gray-700 font-medium mb-1">
+                          Weight
+                        </label>
+                        <input
+                          value={Weight}
+                          onChange={(e) => setWeight(e.target.value)}
+                          type="number"
+                          placeholder="Enter Weight "
+                          className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {(selectedOption2 === "Both" ||
+                    selectedOption2 === "OnlineStore") && (
+                    <div className="p-3 rounded-xl max-w-md">
+                      <h2 className="text-md text-gray-800 mb-4">
+                        Show in Country
+                      </h2>
+
+                      <div className="flex flex-wrap flex-col gap-4 ">
+                        {/* Option 1 */}
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="ShowinCountry"
+                            value="ShowinAllCountry"
+                            checked={selectedOption === "ShowinAllCountry"}
+                            onChange={(e) => setSelectedOption(e.target.value)}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            onClick={() => {
+                              setCountryHideList([]);
+                              setCountryShowList([]);
+                            }}
+                          />
+
+                          <span className="ml-2 text-gray-700 text-sm font-medium">
+                            Show in All Country
+                          </span>
+                        </label>
+
+                        {/* Option 2 */}
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="ShowinCountry"
+                            value="ShowinSomeCountry"
+                            checked={selectedOption === "ShowinSomeCountry"}
+                            onChange={(e) => setSelectedOption(e.target.value)}
+                            onClick={() => setCountryHideList([])}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-gray-700 text-sm font-medium">
+                            Show in Some Country
+                          </span>
+                        </label>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="ShowinCountry"
+                            value="HideinSomeCountry"
+                            checked={selectedOption === "HideinSomeCountry"}
+                            onChange={(e) => setSelectedOption(e.target.value)}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                            onClick={() => setCountryShowList([])}
+                          />
+                          <span className="ml-2 text-gray-700 text-sm font-medium">
+                            Hide in Some Country
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                  {selectedOption === "ShowinSomeCountry" && (
+                    <>
+                      <div className=" gap-4 mb-4">
+                        <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                          Display Country
+                        </label>
+                        <div className="flex gap-2">
+                          <select
+                            value={DisplayCountryID}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              setDisplayCountryID(id);
+                              const data = listofCountry.find(
+                                (item) => item.countryID === id
+                              );
+                              if (data) {
+                                setDisplayCountryName(data.countryName);
+                              }
+                            }}
+                            className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Country</option>
+                            {listofCountry.map((item) => (
+                              <option
+                                key={item.countryID}
+                                value={item.countryID}
+                              >
+                                {item.countryName}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => hanldeAddShowCountry()}
+                            className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
+                          >
+                            <Plus />
+                          </button>
+                        </div>
+                      </div>
+                      {countryShowLis.map((item, index) => (
+                        <div
+                          key={index}
+                          className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
+                        >
+                          <span>{item.countryName}</span>
+                          <X
+                            size={16}
+                            className="cursor-pointer hover:text-red-500 transition"
+                            onClick={() => handleRemoveShowCountry(index)}
+                          />
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {selectedOption === "HideinSomeCountry" && (
+                    <>
+                      <div className=" gap-4 mb-4">
+                        <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                          Hide Country
+                        </label>
+                        <div className="flex gap-2">
+                          <select
+                            value={HideCountryID}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              setHideCountryID(id);
+                              const data = listofCountry.find(
+                                (item) => item.countryID === id
+                              );
+                              if (data) {
+                                setHideCountryName(data.countryName);
+                              }
+                            }}
+                            className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Country</option>
+                            {listofCountry.map((item) => (
+                              <option
+                                key={item.countryID}
+                                value={item.countryID}
+                              >
+                                {item.countryName}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={hanldeAddHideCountry}
+                            className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
+                          >
+                            <Plus />
+                          </button>
+                        </div>
+                      </div>
+                      {countryHideList.map((item, index) => (
+                        <div
+                          key={index}
+                          className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
+                        >
+                          <span>{item.countryName}</span>
+                          <X
+                            size={16}
+                            className="cursor-pointer hover:text-red-500 transition"
+                            onClick={() => handleRemoveHideCountry(index)}
+                          />
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Description */}
+                  <div>
+                    <label className=" mt-2 block text-gray-700 font-medium mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Enter product description"
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </fieldset>
+              )}
+              {currentStep === 2 && (
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                  <legend className="text-lg font-semibold text-gray-800 px-2">
+                    Category Info
+                  </legend>
+
+                  {/* Main Category */}
+                  <div className=" md:flex-row gap-4 mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Main Category
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={CategoryMainID}
+                      onChange={(e) => {
+                        setCategoryMainID(e.target.value);
+                        getCategorySub(e.target.value);
+                      }}
+                    >
+                      {catgeorySubList.length !== 0 ? (
+                        <>
+                          {catgeoryMainList.map((item) => (
+                            <option
+                              key={item.categoryID}
+                              value={item.categoryID}
+                              className="p-2"
+                            >
+                              {item.categoryName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option> No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+
+                  {CategoryMainID && (
+                    <div className=" md:flex-row gap-4 mb-4">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Sub Category
+                      </label>
+                      <select
+                        className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        value={CategorySubID}
+                        onChange={(e) => {
+                          {
+                            setCategorySubID(e.target.value);
+                            getFurtherSub(e.target.value);
+                          }
+                        }}
+                      >
+                        {catgeorySubList.length !== 0 ? (
+                          <>
+                            {catgeorySubList.map((item) => (
+                              <option
+                                key={item.subCategoryID}
+                                value={item.subCategoryID}
+                                className="p-2"
+                              >
+                                {item.subCategoryName}
+                              </option>
+                            ))}
+                          </>
+                        ) : (
+                          <option> No Record Found</option>
+                        )}
+                      </select>
+                    </div>
+                  )}
+                  {CategorySubID && (
+                    <div className=" md:flex-row gap-4 mb-4">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Further Sub Category
+                      </label>
+                      <select
+                        className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        value={FurtherCategorySubID}
+                        onChange={(e) => {
+                          setFurtherCategorySubID(e.target.value);
+                          getUnits(e.target.value);
+                        }}
+                      >
+                        {FurtherSubList.length !== 0 ? (
+                          <>
+                            {FurtherSubList.map((item) => (
+                              <option
+                                key={item.subCategoryDetailID}
+                                value={item.subCategoryDetailID}
+                                className="p-2"
+                              >
+                                {item.name}
+                              </option>
+                            ))}
+                          </>
+                        ) : (
+                          <option> No Record Found</option>
+                        )}
+                      </select>
+                    </div>
+                  )}
+                  {FurtherCategorySubID && (
+                    <div className=" md:flex-row gap-4 mb-4">
+                      <label className="block text-gray-700 font-medium mb-1">
+                        Unit
+                      </label>
+                      <select
+                        className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                        value={UnitID}
+                        onChange={(e) => {
+                          setUnitID(e.target.value);
+                        }}
+                      >
+                        {UnitList.length !== 0 ? (
+                          <>
+                            {UnitList.map((item) => (
+                              <option
+                                key={item.unitID}
+                                value={item.unitID}
+                                className="p-2"
+                              >
+                                {item.unitName}
+                              </option>
+                            ))}
+                          </>
+                        ) : (
+                          <option> No Record Found</option>
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Image Upload */}
+                </fieldset>
+              )}
+              {currentStep === 1 && (
+                <div className="mt-6 flex justify-between gap-4">
+                  <button
+                    // onClick={() => setProductAbout(false)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-400 transition"
+                    disabled
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition flex items-center justify-center gap-2"
+                  >
+                    Next
+                    {/* {loading ? "Saving..." : "Save"} */}
+                  </button>
+                </div>
+              )}
+              {currentStep === 2 && (
+                <div className="mt-6 flex justify-between gap-4">
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 transition"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => basicInfo()}
+                    className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition flex items-center justify-center gap-2"
+                  >
+                    {loading ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+      {varinetAbout && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-end items-end mb-4">
+              <button
+                className="cursor-pointer"
+                onClick={() => setVarinetAbout(false)}
+              >
+                {" "}
+                <X className="hover:text-red-600" />
+              </button>
+            </div>
+
+            <fieldset className="p-4 border border-gray-300 rounded-lg">
+              <legend className="text-lg font-semibold mb-4">
+                Variant Info
+              </legend>
+
+              {/* Input for Main Variant Name and button */}
+              <div className="flex gap-2 items-center mb-4">
+                <input
+                  type="text"
+                  placeholder="Enter Variant Name (Main)"
+                  value={mainVarientName}
+                  onChange={(e) => setMainVarientName(e.target.value)}
+                  className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={handleAddMainVariant}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Save Variant
+                </button>
+              </div>
+
+              {/* Table of current attributes (sub-variants) */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border border-gray-300 rounded">
+                  <thead className="bg-gray-100 border-b border-gray-300">
+                    <tr>
+                      <th className="px-4 py-2">Attribute Name</th>
+                      <th className="px-4 py-2">Qty</th>
+                      <th className="px-4 py-2">Amount</th>
+                      <th className="px-4 py-2">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Existing attributes */}
+                    {currentAttributes.map((attr, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-gray-300 odd:bg-white even:bg-gray-50"
+                      >
+                        <td className="px-4 py-2">{attr.varientValue}</td>
+                        <td className="px-4 py-2">{attr.qty}</td>
+                        <td className="px-4 py-2">{attr.amount}</td>
+                        <td className="px-4 py-2">
+                          <button
+                            className="px-2 py-1 bg-red-600 text-white rounded"
+                            onClick={() => handleRemoveAttribute(i)}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Row for adding new attribute */}
+                    <tr>
+                      <td className="px-4 py-2">
+                        <input
+                          type="text"
+                          placeholder="Attribute Name"
+                          value={newAttribute.varientValue}
+                          onChange={(e) =>
+                            handleNewAttributeChange(
+                              "varientValue",
+                              e.target.value
+                            )
+                          }
+                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={newAttribute.qty}
+                          onChange={(e) =>
+                            handleNewAttributeChange(
+                              "qty",
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={newAttribute.amount}
+                          onChange={(e) =>
+                            handleNewAttributeChange(
+                              "amount",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={handleAddAttribute}
+                          className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
+                          title="Add Attribute"
+                        >
+                          <Plus className="mr-1" />
+                          Add
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </fieldset>
+            <button className="px-2 py-2 w-full bg-green-600 hover:bg-green-700 rounded-md text-white mt-4">
+              Save
+            </button>
           </div>
         </div>
       )}
@@ -202,9 +1191,13 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                         {/* Edit/Delete Buttons */}
                         <div className="flex gap-4">
                           <button
-                            onClick={() =>
-                              console.log("Edit", product.productID)
-                            }
+                            onClick={() => {
+                              fetchData(product.productID);
+                              setProductAbout(true);
+                              getCountry();
+                              getCategroyMain();
+                              getProduct();
+                            }}
                             className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
                           >
                             <Pencil className="w-5 h-5" />
@@ -226,9 +1219,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
               </div>
             );
           } else {
-            return (
-              <p className="text-gray-500 text-center mt-4">No records found</p>
-            );
+            <p className="text-gray-500 text-center mt-4">No records found</p>;
           }
         })()}
 
@@ -244,40 +1235,210 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                 <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
                   Online Store / Both
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {onlineProducts.map((product) => {
-                    const selectedVarIndex =
-                      selectedVariantIndex[product.productID] ?? 0;
-                    const selectedVariantValue =
-                      product.variants?.[0]?.variantValues?.[selectedVarIndex];
-                    const originalAmount = Number(
-                      selectedVariantValue?.amount || 0
-                    );
-                    const discountedAmount =
-                      originalAmount -
-                      (originalAmount * Number(product.discount || 0)) / 100;
-                    const mainImageIndex =
-                      selectedProductImageIndex[product.productID] ?? 0;
-                    const mainImageUrl =
-                      product.images?.[mainImageIndex]?.url ||
-                      "/placeholder-image.jpg";
 
-                    return (
-                      <div
-                        key={product.productID}
-                        className="bg-white rounded-xl shadow hover:shadow-lg p-4 transition w-full"
-                      >
-                        {/* ...rest of product card */}
-                      </div>
-                    );
-                  })}
-                </div>
+                {onlineProducts.length === 0 ? (
+                  <p className="text-center text-gray-500">No records found</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {onlineProducts.map((product) => {
+                      const selectedVarIndex =
+                        selectedVariantIndex[product.productID] ?? 0;
+
+                      const selectedVariant =
+                        product.variants?.[0]?.variantValues?.[
+                          selectedVarIndex
+                        ];
+
+                      const originalAmount = Number(
+                        selectedVariant?.amount || 0
+                      );
+                      const discount = Number(product.discount || 0);
+
+                      const finalPrice =
+                        originalAmount - (originalAmount * discount) / 100;
+
+                      const mainImageIndex =
+                        selectedProductImageIndex[product.productID] ?? 0;
+
+                      const mainImageUrl =
+                        product.images?.[mainImageIndex]?.url ||
+                        "/placeholder-image.jpg";
+
+                      return (
+                        <div
+                          key={product.productID}
+                          className="bg-white rounded-xl shadow hover:shadow-lg transition"
+                        >
+                          {/* IMAGE */}
+                          {/* IMAGE CONTAINER */}
+                          {/* IMAGE CONTAINER */}
+                          <div className="relative w-full h-64 bg-gray-50 rounded-t-xl overflow-hidden">
+                            {/* IMAGE */}
+                            <div className="w-full h-full flex items-center justify-center">
+                              <img
+                                src={mainImageUrl}
+                                alt={product.productName}
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            </div>
+
+                            {/* CAMERA BUTTON */}
+                            <button
+                              onClick={() =>
+                                console.log("Edit images:", product.productID)
+                              }
+                              className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white p-2 rounded-full transition"
+                            >
+                              <Camera size={18} />
+                            </button>
+                          </div>
+
+                          {/* THUMBNAILS */}
+                          {product.images && product.images.length > 1 && (
+                            <div className="flex gap-2 p-2 justify-center">
+                              {product.images.map((img, idx) => (
+                                <button
+                                  key={img.urlID}
+                                  onClick={() =>
+                                    setSelectedProductImageIndex((prev) => ({
+                                      ...prev,
+                                      [product.productID]: idx,
+                                    }))
+                                  }
+                                  className={`border rounded-md p-1 ${
+                                    (selectedProductImageIndex[
+                                      product.productID
+                                    ] ?? 0) === idx
+                                      ? "border-blue-600"
+                                      : "border-gray-300"
+                                  }`}
+                                >
+                                  <img
+                                    src={img.url}
+                                    alt="thumbnail"
+                                    className="w-12 h-12 object-contain"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* CONTENT */}
+                          <div className="p-2">
+                            <fieldset className="p-2 border border-gray-300 rounded-lg">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-800">
+                                    {product.productName}
+                                  </h3>
+                                  <p className="text-gray-600 mt-1 text-sm">
+                                    {product.description}
+                                  </p>
+                                  {/* PRICE */}
+                                  <div className="mt-1 flex gap-2">
+                                    {discount > 0 && (
+                                      <p className="text-sm text-gray-400 line-through">
+                                        ${originalAmount}
+                                      </p>
+                                    )}
+                                    <p className="text-green-600 font-bold text-lg">
+                                      ${finalPrice.toFixed(2)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <button
+                                    className="bg-yellow-500 p-2 rounded text-white hover:bg-yellow-600 transition"
+                                    title="Edit Product"
+                                    onClick={() => {
+                                      setProductAbout(true);
+                                      fetchData(product.productID);
+                                      getCountry();
+                                      getCategroyMain();
+                                    }}
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            </fieldset>
+                            <fieldset className="p-2 mt-2 border border-gray-300 rounded-lg">
+                              {/* VARIANTS */}
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  {product.variants?.[0] && (
+                                    <div className="mt-3">
+                                      <p className="text-sm font-medium">
+                                        {product.variants[0].variantName}
+                                      </p>
+
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        {product.variants[0].variantValues.map(
+                                          (v, idx) => (
+                                            <button
+                                              key={v.attributeID}
+                                              onClick={() =>
+                                                setSelectedVariantIndex(
+                                                  (prev) => ({
+                                                    ...prev,
+                                                    [product.productID]: idx,
+                                                  })
+                                                )
+                                              }
+                                              disabled={v.qty <= 0}
+                                              className={`px-2 py-1 text-xs rounded-full ${
+                                                selectedVarIndex === idx
+                                                  ? "bg-blue-600 text-white"
+                                                  : v.qty > 0
+                                                  ? "bg-gray-800 text-white"
+                                                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                              }`}
+                                            >
+                                              {v.varientValue}
+                                            </button>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <button
+                                    onClick={() => {
+                                      setVarinetAbout(true);
+                                      fetchData(product.productID);
+                                    }}
+                                    className="bg-yellow-500 p-2 rounded text-white hover:bg-yellow-600 transition"
+                                    title="Edit Variant"
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            </fieldset>
+
+                            {/* ACTIONS */}
+                            <div className="flex justify-end gap-3 mt-4">
+                              <button
+                                onClick={() => {
+                                  setID(product.productID);
+                                  setIsOpen(true);
+                                }}
+                                className="bg-red-500 p-2 rounded text-white"
+                              >
+                                <Trash size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           } else {
-            return (
-              <p className="text-gray-500 text-center mt-4">No records found</p>
-            );
+            <p className="text-gray-500 text-center mt-4">No records found</p>;
           }
         })()}
       </div>

@@ -1,11 +1,11 @@
 // Define the interface for the product add request payload
-export interface ProductAddRequest {
+export interface ProductModifyRequest {
   storeID: string;
   categoryID: string;
   productName: string;
-  unitID: string;
   subCategoryDetailID: string;
   subCategoryID: string;
+  unitID: string;
   discount: number;
   currentStock: number;
   threshold: number;
@@ -21,23 +21,9 @@ export interface ProductAddRequest {
   listCountry: {
     countryID: string;
   }[];
-  listImage: {
-    url: string;
-  }[];
-  listVarient: Varient[];
 }
 
-export interface Varient {
-  varientName: string;
-  varientAttributes: VarientAttribute[];
-}
-
-export interface VarientAttribute {
-  varientValue: string;
-  qty: number;
-  amount: number;
-}
-export interface ResponseAddProductData {
+export interface ResponseModifyProductData {
   status: string;
   message?: string;
 }
