@@ -13,6 +13,11 @@ import { useState, useEffect } from "react";
 import SearchCom from "@/useFullComponent/SearchComponent/page";
 import CartComponent from "@/useFullComponent/CartComponent/page";
 import { useRouter } from "next/navigation";
+import GetNavbar from "@/api/lib/HomePage/Navbar/Navbar";
+import {
+  Category,
+  NavbarApiResponse,
+} from "@/api/types/HomePage/Navbar/Navbar";
 
 export default function Navbar({
   onPageChange,
@@ -24,6 +29,7 @@ export default function Navbar({
   const [showOverlay, setShowOverlay] = useState(false);
   const [showOverlay2, setShowOverlay2] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const router = useRouter();
 
@@ -58,6 +64,21 @@ export default function Navbar({
   const wishlist = () => {
     window.location.href = "/WishList";
   };
+  const handleShowCategories = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetNavbar(token || "");
+    const data = response.data as NavbarApiResponse;
+    if (response.status === 200 || response.status === 201) {
+      console.log(data.categoryList);
+      setCategories(data?.categoryList ?? []);
+    } else {
+      setCategories([]);
+    }
+  };
+
+  useEffect(() => {
+    handleShowCategories();
+  }, []);
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
@@ -72,107 +93,36 @@ export default function Navbar({
         {/* --- Main Navbar Links (Desktop) --- */}
         <div className="hidden md:flex items-center gap-6 relative">
           <ul className="flex gap-6">
-            {[
-              {
-                label: "Men",
-                subcategories: [
-                  {
-                    title: "Clothing",
-                    items: ["Shirts", "Jeans", "Jackets", "Trousers"],
-                  },
-                  {
-                    title: "Accessories",
-                    items: ["Watches", "Wallets", "Belts"],
-                  },
-                  {
-                    title: "Footwear",
-                    items: ["Sneakers", "Loafers", "Sandals"],
-                  },
-                ],
-              },
-              {
-                label: "Women",
-                subcategories: [
-                  {
-                    title: "Clothing",
-                    items: ["Dresses", "Tops", "Skirts", "Jeans"],
-                  },
-                  {
-                    title: "Jewelry",
-                    items: ["Necklaces", "Earrings", "Bracelets"],
-                  },
-                  { title: "Footwear", items: ["Heels", "Flats", "Sneakers"] },
-                ],
-              },
-              {
-                label: "Children",
-                subcategories: [
-                  { title: "Boys", items: ["T-Shirts", "Shorts", "Jackets"] },
-                  { title: "Girls", items: ["Frocks", "Leggings", "Sweaters"] },
-                  { title: "Accessories", items: ["Bags", "Caps", "Shoes"] },
-                ],
-              },
-              {
-                label: "Teen",
-                subcategories: [
-                  {
-                    title: "Trendy",
-                    items: ["Hoodies", "Graphic Tees", "Joggers"],
-                  },
-                  {
-                    title: "Essentials",
-                    items: ["Denim", "Sneakers", "Backpacks"],
-                  },
-                ],
-              },
-              { label: "Shop", href: "/shop" }, // 👈 Now it’s a real link
-            ].map((category, idx) => (
-              <li key={idx} className="relative group">
-                {/* If it has href => Link, else button */}
-                {category.href ? (
-                  <a
-                    href={category.href}
-                    className="text-gray-800 font-bold hover:text-blue-500 transition"
-                  >
-                    {category.label}
-                  </a>
-                ) : (
-                  <button className="text-gray-800 font-bold hover:text-blue-500 transition">
-                    {category.label}
-                  </button>
-                )}
+            {categories.map((category) => (
+              <li key={category.subCategoryID} className="relative group">
+                {/* Category Name */}
+                <button className="text-gray-800 font-bold hover:text-blue-500 transition capitalize">
+                  {category.subCategoryName}
+                </button>
 
-                {/* --- Dropdown (only if it has subcategories) --- */}
-                {category.subcategories &&
-                  category.subcategories.length > 0 && (
-                    <div
-                      className="absolute left-0 top-full mt-2 w-[700px] bg-white shadow-lg rounded-md p-6 
-                       opacity-0 group-hover:opacity-100 group-hover:visible invisible
-                       transition-all duration-300 ease-in-out transform group-hover:translate-y-0 translate-y-3 z-50"
-                    >
-                      <div className="grid grid-cols-3 gap-6">
-                        {category.subcategories.map((sub, subIdx) => (
-                          <div key={subIdx}>
-                            <h3 className="text-gray-900 font-semibold mb-2 border-b border-gray-200 pb-1">
-                              {sub.title}
-                            </h3>
-                            <ul className="space-y-1">
-                              {sub.items.map((item, i) => (
-                                <li key={i}>
-                                  <a
-                                    href="#"
-                                    className="text-sm text-gray-600 hover:text-blue-500 transition"
-                                  >
-                                    {item}
-                                  </a>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                {/* Dropdown */}
+                {category.subCategory?.length > 0 ? (
+                  <div
+                    className="absolute left-0 top-full mt-2 w-64 bg-white shadow-lg rounded-md p-4 
+                    opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                    transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50"
+                  >
+                    <ul className="space-y-2">
+                      {category.subCategory.map((item: any) => (
+                        <li key={item.subCategoryDetailID}>
+                          <a
+                            // href={`/shop?category=${item.subCategoryDetailID}`}
+                            className="block text-sm text-gray-600 hover:text-blue-500 transition"
+                          >
+                            {item.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <ul className="space-y-2"></ul>
+                )}
               </li>
             ))}
           </ul>

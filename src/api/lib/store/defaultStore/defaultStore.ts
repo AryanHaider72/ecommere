@@ -1,28 +1,21 @@
 "use server";
 
 import { postRequest } from "@/api/authentication/main";
-import {
-  RequestStoreAddData,
-  ResponseStoreAddData,
-} from "@/api/types/Store/addStore";
 
-export default async function StoreCreation(
-  data: RequestStoreAddData,
-  token?: string
-) {
+export default async function StoreDefaultSet(data: string, token?: string) {
   const customHeader: Record<string, string> = {};
   if (token) customHeader.Authorization = `Bearer ${token}`;
 
   const response = await postRequest(
-    `/api/Stores/CreateStore`,
-    data,
+    `/api/Stores/Seller/DefaultStore/${data}`,
+    null,
     customHeader
   );
   if (response.success) {
     return {
-      data: response.data as ResponseStoreAddData,
+      data: response.data,
       status: response.status,
-      message: "Store Added successfully",
+      message: "Store Default successfully",
     };
   }
 

@@ -1,7 +1,7 @@
 // Main API response interface
 export interface ProductApiResponse {
   message: string;
-  list: Product[];
+  productList: Product[];
 }
 
 // A single product record

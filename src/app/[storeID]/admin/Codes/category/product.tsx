@@ -135,19 +135,28 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [selectedOption2, setSelectedOption2] = useState("OnlineStore");
 
   const getProduct = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return router.push("/sellerlogin");
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return router.push("/sellerlogin");
+      }
 
-    const response = await GetProduct(token, storeID);
+      const response = await GetProduct(token, storeID);
 
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as ProductApiResponse;
-      console.log(data.list);
-      setProductList(data.list);
-    } else if (response.status === 401) {
-      router.push("/sellerlogin");
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as ProductApiResponse;
+        console.log("Parsed data.list:", data.productList);
+        setProductList(data.productList);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      } else {
+        console.error("Unexpected status:", response.status, response.data);
+      }
+    } catch (error) {
+      console.error("Error in getProduct:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 import GetInitalStore from "@/api/authentication/StoreGet";
 import StoreCreation from "@/api/lib/store/createStore/createStore";
+import StoreDefaultSet from "@/api/lib/store/defaultStore/defaultStore";
 import GetUserData from "@/api/lib/userData/userDataGet/dataGet";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import { userDatagetApiResponse } from "@/api/types/userData/userDataType";
@@ -30,6 +31,8 @@ export default function SellerOverviewDashbaord() {
   const [storeEmail, setStoreEmail] = useState("");
   const [storeName, setStoreName] = useState("");
   const [storeDescription, setStoreDescription] = useState("");
+  const [selectedStore, setSelectedStore] = useState<string | null>(null);
+  const [defaultStoreset, setDefaultStoreset] = useState(false);
 
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const stats = [
@@ -125,6 +128,21 @@ export default function SellerOverviewDashbaord() {
       router.push("/sellerlogin");
     }
   };
+  const DefaultStore = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const response = await StoreDefaultSet(ID, String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      setResponseBack(1);
+      setStoreShow(true);
+      setDefaultStoreset(false);
+    }
+
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+    setResponseBack(4);
+  };
   const createStore = async () => {
     if (!storeDescription || !storeEmail) return setResponseBack(2);
     else {
@@ -136,6 +154,9 @@ export default function SellerOverviewDashbaord() {
       };
       const response = await StoreCreation(formData, String(token));
       if (response.status === 200 || response.status === 201) {
+        storesget();
+        setStoreShow(true);
+        setaddStoreForm(false);
         setStoreName("");
         setStoreDescription("");
         setResponseBack(1);
@@ -153,6 +174,19 @@ export default function SellerOverviewDashbaord() {
   useEffect(() => {
     storesget();
   }, []);
+
+  useEffect(() => {
+    if (
+      responseBack === 1 ||
+      responseBack === 2 ||
+      responseBack === 3 ||
+      responseBack === 4
+    ) {
+      setTimeout(() => {
+        setResponseBack(0);
+      }, 2000);
+    }
+  }, [responseBack]);
   return (
     <div className="w-full">
       <div className="w-full flex justify-end">
@@ -188,43 +222,56 @@ export default function SellerOverviewDashbaord() {
             </div>
 
             {storeList.length > 0 ? (
-              <div className="flex flex-col sm:flex-row gap-6">
-                {/* Store Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 flex-1">
-                  {storeList.map((item) => (
-                    <div
-                      key={item.storeID}
-                      onClick={() => router.push(`/${item.storeID}`)}
-                      className="relative bg-gray-50 shadow-md border border-gray-200 p-5 rounded-2xl 
+              <>
+                <div className="flex flex-col sm:flex-row gap-6">
+                  {/* Store Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 flex-1">
+                    {storeList.map((item) => (
+                      <div
+                        key={item.storeID}
+                        onClick={() => router.push(`/${item.storeID}`)}
+                        className="relative bg-gray-50 shadow-md border border-gray-200 p-5 rounded-2xl 
                         hover:shadow-lg hover:-translate-y-1 hover:bg-white transition-all cursor-pointer text-center flex flex-col justify-center items-center"
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {item.storeName}
-                      </h3>
-                      <span
-                        className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold 
-                              w-5 h-5 flex items-center justify-center rounded-full shadow"
                       >
-                        2
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {item.storeName}
+                        </h3>
+                        <span
+                          className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold 
+                              w-5 h-5 flex items-center justify-center rounded-full shadow"
+                        >
+                          2
+                        </span>
+                      </div>
+                    ))}
+                  </div>
 
-                {/* Create Store Sidebar */}
-                <div className="flex sm:flex-col justify-center items-center sm:items-start">
+                  {/* Create Store Sidebar */}
+                  <div className="flex sm:flex-col justify-center items-center sm:items-start">
+                    <button
+                      onClick={() => {
+                        setaddStoreForm(true);
+                        setStoreShow(false);
+                        getData();
+                      }}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition-all text-lg font-medium"
+                    >
+                      + Create Store
+                    </button>
+                  </div>
+                </div>
+                {storeList.length > 1 && (
                   <button
                     onClick={() => {
-                      setaddStoreForm(true);
+                      setDefaultStoreset(true);
                       setStoreShow(false);
-                      getData();
                     }}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition-all text-lg font-medium"
+                    className="mt-2 text-blue-400 hover:underline cursor-pointer"
                   >
-                    + Create Store
+                    Set-Up a Default Store
                   </button>
-                </div>
-              </div>
+                )}
+              </>
             ) : (
               // No stores: center the button
               <div className="flex justify-center items-center h-40">
@@ -335,6 +382,96 @@ export default function SellerOverviewDashbaord() {
                   className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition"
                 >
                   {loading ? "Creating..." : "Create Store"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {defaultStoreset && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
+            {/* Header */}
+            <div className="w-full flex justify-start ">
+              <button
+                onClick={() => {
+                  setDefaultStoreset(false);
+                  setStoreShow(true);
+                }}
+                className=" cursor-pointer hover:text-gray-900"
+              >
+                <ChevronLeft />
+              </button>
+            </div>
+            <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 border border-gray-200 mt-10">
+              <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                Set Default Store
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 flex-1">
+                {storeList.map((item) => {
+                  const isSelected = selectedStore === item.storeID;
+
+                  return (
+                    <label
+                      key={item.storeID}
+                      className={`
+                relative cursor-pointer rounded-2xl border p-5 text-center
+                transition-all flex flex-col items-center justify-center
+                ${
+                  isSelected
+                    ? "border-blue-600 ring-2 ring-blue-200 bg-white shadow-lg"
+                    : "border-gray-200 bg-gray-50 shadow-md hover:shadow-lg hover:-translate-y-1"
+                }
+              `}
+                    >
+                      {/* Hidden Radio */}
+                      <input
+                        type="radio"
+                        name="store"
+                        value={item.storeID}
+                        checked={isSelected}
+                        onChange={() => setSelectedStore(item.storeID)}
+                        className="hidden"
+                      />
+
+                      {/* Store Name */}
+                      <h3 className="text-lg font-semibold text-gray-900 px-3 ">
+                        {item.storeName}
+                      </h3>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="space-y-5">
+                {/* Messages */}
+                {responseBack === 2 && (
+                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
+                    Fill in All Required Fields
+                  </div>
+                )}
+                {responseBack === 1 && (
+                  <div className="w-full bg-green-100 text-green-800 p-3 rounded text-center">
+                    Store Default Successfully
+                  </div>
+                )}
+                {responseBack === 3 && (
+                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
+                    Store Limit Reached
+                  </div>
+                )}
+                {responseBack === 4 && (
+                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
+                    Network Error
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  onClick={() => DefaultStore(String(selectedStore))} // Your API call function
+                  type="button"
+                  className="w-full py-3 mt-2 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition"
+                >
+                  {loading ? "Saving..." : "Save Store"}
                 </button>
               </div>
             </div>

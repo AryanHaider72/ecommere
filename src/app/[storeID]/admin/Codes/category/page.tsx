@@ -59,36 +59,6 @@ interface CountryList {
   countryName: string;
 }
 
-const categoryData: CategoryTree = {
-  "Fashion & Apparel": {
-    "Men’s Clothing": [
-      "Tops",
-      "Bottoms",
-      "Outerwear",
-      "Suits & Formal Wear",
-      "Stitched Clothes",
-      "Unstitched Clothes",
-    ],
-    "Women’s Clothing": [
-      "Tops",
-      "Bottoms",
-      "Dresses & Jumpsuits",
-      "Outerwear",
-      "Lingerie & Hosiery",
-      "Stitched Clothes",
-      "Unstitched Clothes",
-    ],
-    "Kids’ Clothing": [
-      "Tops",
-      "Bottoms",
-      "Outerwear",
-      "Sleepwear",
-      "Stitched Clothes",
-      "Unstitched Clothes",
-    ],
-  },
-};
-
 export default function ProductControll({ storeID }: { storeID: string }) {
   const router = useRouter();
   const [showlist, setShowList] = useState(false);
