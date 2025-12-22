@@ -84,6 +84,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [Threshold, setThreshold] = useState("");
   const [discount, setDiscount] = useState("");
   const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
+  const [FeaturedProduct, setFeaturedProduct] = useState("");
   const [DisplayCountryID, setDisplayCountryID] = useState("");
   const [DisplayCountryName, setDisplayCountryName] = useState("");
   const [HideCountryID, setHideCountryID] = useState("");
@@ -145,8 +146,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ProductApiResponse;
-        console.log("Parsed data.list:", data.productList);
-        setProductList(data.productList);
+        console.log("Parsed data.list:", data.list);
+        setProductList(data.list);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       } else {
@@ -186,9 +187,12 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     getCategroyMain();
     const data = productList.find((item) => item.productID === ID);
     if (data) {
+      getCategorySub(data.categoryID);
+      getFurtherSub(data.subCategoryID);
       setCategoryMainID(data.categoryID);
       setCategorySubID(data.subCategoryID);
       setFurtherCategorySubID(data.subCategoryDetailID);
+      setFeaturedProduct(data.feturedProduct ? "Yes" : "No");
       setUnitID(data.unitID);
       setID(ID as string);
       setProductName(data.productName);
@@ -235,6 +239,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         unitID: UnitID,
         productName: productName,
         description: description,
+        feturedProduct: FeaturedProduct === "Yes",
         width: Number(Width),
         height: Number(Height),
         depth: Number(Depth),
@@ -285,8 +290,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       const response = await ModifyProductVarinet(payload, String(token), ID);
       if (response.status === 200 || response.status === 201) {
         getProduct();
-        getVarient();
-        setID("");
+        getVarient(ID);
+
         setShowList(false);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
@@ -295,8 +300,9 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       console.log("Error in basicInfo:", error);
     }
   };
-  const getVarient = async () => {
+  const getVarient = async (ID: string) => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
 
       const response = await GetVarinet(String(token), ID);
@@ -308,6 +314,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       }
     } catch (error) {
       console.log("Error in basicInfo:", error);
+    } finally {
+      setLoading(false);
     }
   };
   const deleteVarinet = async (ID: string) => {
@@ -316,7 +324,6 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     if (response.status === 200 || response.status === 201) {
       console.log(response);
       setShowList(false);
-      setID("");
       getProduct();
       setIsOpenVarinet(false);
       setGetVarinetList((item) => item.filter((emp) => emp.varientID !== ID));
@@ -810,6 +817,43 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                   </legend>
 
                   {/* Row 1 */}
+                  <div className="p-3 rounded-xl max-w-md">
+                    <h2 className="text-md text-gray-800 mb-4">
+                      Featured Product
+                    </h2>
+
+                    <div className="flex flex-wrap  gap-4 ">
+                      {/* Option 1 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="FeaturedProduct"
+                          value="No"
+                          checked={FeaturedProduct === "No"}
+                          onChange={(e) => setFeaturedProduct("No")}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          No
+                        </span>
+                      </label>
+
+                      {/* Option 2 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="FeaturedProduct"
+                          value="Yes"
+                          checked={FeaturedProduct === "Yes"}
+                          onChange={(e) => setFeaturedProduct("Yes")}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Yes
+                        </span>
+                      </label>
+                    </div>
+                  </div>
                   <div className="flex flex-col md:flex-row gap-4 mb-4">
                     <div className="w-full">
                       <label className="block text-gray-700 font-medium mb-1">
@@ -1212,20 +1256,14 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                           setUnitID(e.target.value);
                         }}
                       >
-                        {UnitList.length !== 0 ? (
-                          <>
-                            {UnitList.map((item) => (
-                              <option
-                                key={item.unitID}
-                                value={item.unitID}
-                                className="p-2"
-                              >
-                                {item.unitName}
-                              </option>
-                            ))}
-                          </>
+                        {UnitList?.length > 0 ? (
+                          UnitList.map((item) => (
+                            <option key={item.unitID} value={item.unitID}>
+                              {item.unitName}
+                            </option>
+                          ))
                         ) : (
-                          <option> No Record Found</option>
+                          <option>No Record Found</option>
                         )}
                       </select>
                     </div>
@@ -1278,7 +1316,9 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
             <div className="flex justify-end items-end mb-4">
               <button
                 className="cursor-pointer"
-                onClick={() => setVarinetAbout(false)}
+                onClick={() => {
+                  setVarinetAbout(false);
+                }}
               >
                 {" "}
                 <X className="hover:text-red-600" />
@@ -1983,8 +2023,9 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                   onClick={() => {
                                     setVarinetAbout(true);
                                     fetchData(product.productID);
-                                    setID(product.productID);
-                                    getVarient();
+
+                                    setShowList(false);
+                                    getVarient(product.productID);
                                   }}
                                   className="ml-4 h-fit bg-yellow-500 p-2 rounded-md text-white hover:bg-yellow-600 transition"
                                   title="Edit Variant"

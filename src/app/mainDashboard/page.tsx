@@ -23,6 +23,7 @@ import {
   Loader2,
   ChevronLeft,
   Coins,
+  Key,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SellerOverviewDashbaord from "./dashboard/page";
@@ -42,6 +43,7 @@ import CheckAuth from "@/api/authentication/checkAuth";
 // import { useRouter } from "next/navigation";
 // import ProfileManagement from "../profile/page";
 import ProfileSetting from "./setting/page";
+import HomePageSetting from "./StoreSetting/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
@@ -56,8 +58,9 @@ export default function CustomerPanel() {
 
   const navItems = [
     // { id: "Code", label: "Code", icon: Plus },
+    { id: "StoreSetting", label: "Store Setting", icon: Settings },
     { id: "payment", label: "Payment", icon: Coins },
-    { id: "setting", label: "Setting", icon: Settings },
+    { id: "password", label: "Change Password", icon: Key },
   ];
 
   const verfiy = async () => {
@@ -147,7 +150,8 @@ export default function CustomerPanel() {
         {activeTab === "payment" && <SellerPaymentInfo />}
         {/* {activeTab === "reviews" && <Review />}
         {activeTab === "orders" && <Order />} */}
-        {activeTab === "setting" && <ProfileSetting />}
+        {activeTab === "password" && <ProfileSetting />}
+        {activeTab === "StoreSetting" && <HomePageSetting />}
         {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "supplier" && <SupplierForm />}

@@ -7,4 +7,5 @@ export interface StoreApiResponse {
 export type storeInital = {
   storeID: string;
   storeName: string;
+  defaultStore: boolean;
 };

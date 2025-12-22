@@ -123,6 +123,7 @@ export default function CustomerForm({ storeID }: { storeID: string }) {
       const response = await UpdateSubCategory(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         console.log(response);
+        setUpdate(false);
         setShowList(true);
         setResponseBack(4);
         setsubCatName("");

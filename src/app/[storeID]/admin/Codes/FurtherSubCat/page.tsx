@@ -340,7 +340,7 @@ export default function FurtherSubCategory({ storeID }: { storeID: string }) {
                     {FurtherSubList.map((item) => (
                       <div
                         className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
-                        key={item.subCategoryID}
+                        key={item.subCategoryDetailID}
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">

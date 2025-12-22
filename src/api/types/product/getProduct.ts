@@ -1,7 +1,7 @@
 // Main API response interface
 export interface ProductApiResponse {
   message: string;
-  productList: Product[];
+  list: Product[];
 }
 
 // A single product record
@@ -14,6 +14,7 @@ export type Product = {
   unitID: string;
   productName: string;
   description: string;
+  feturedProduct: boolean;
   discount: number;
   currentStock: number;
   threshold: number;

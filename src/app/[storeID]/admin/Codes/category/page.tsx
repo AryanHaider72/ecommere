@@ -62,6 +62,7 @@ interface CountryList {
 export default function ProductControll({ storeID }: { storeID: string }) {
   const router = useRouter();
   const [showlist, setShowList] = useState(false);
+  const [product, setProduct] = useState(false);
   const [selectedMain, setSelectedMain] = useState("");
   const [selectedSub, setSelectedSub] = useState("");
   const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
@@ -82,6 +83,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [description, setDescription] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
   const [Loading, setLoading] = useState(false);
+  const [FeaturedProduct, setFeaturedProduct] = useState("No");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -385,6 +387,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     const response = await GetUnitByID(String(token), formData);
     if (response.status === 200 || response.status === 201) {
       const data = response.data as UnitIDApiResponse;
+
       setUnitList(data.unitsList);
       setUnitID(data.unitsList[0].unitID);
     } else if (response.status === 401) {
@@ -441,6 +444,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       showinAllCountry: selectedOption === "ShowinAllCountry",
       showinCountry: selectedOption === "ShowinSomeCountry",
       notShowinCountry: selectedOption === "HideinSomeCountry",
+      feturedProduct: FeaturedProduct === "Yes",
       description: description,
       width: Number(Width) || 0,
       height: Number(Height) || 0,
@@ -457,6 +461,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       const response = await AddProduct(payload, String(token));
       if (response.status === 200 || response.status === 201) {
         setResponseBack(1);
+        setFeaturedProduct("No");
         // Reset logic...
         setProductName("");
         setDiscount("");
@@ -587,7 +592,45 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                     </label>
                   </div>
                 </div>
+                {selectedOption2 !== "OfflineStore" && (
+                  <div className="p-3 rounded-xl max-w-md">
+                    <h2 className="text-md text-gray-800 mb-4">
+                      Featured Product
+                    </h2>
 
+                    <div className="flex flex-wrap  gap-4 ">
+                      {/* Option 1 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="FeaturedProduct"
+                          value="No"
+                          checked={FeaturedProduct === "No"}
+                          onChange={(e) => setFeaturedProduct("No")}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          No
+                        </span>
+                      </label>
+
+                      {/* Option 2 */}
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="FeaturedProduct"
+                          value="Yes"
+                          checked={FeaturedProduct === "Yes"}
+                          onChange={(e) => setFeaturedProduct("Yes")}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-gray-700 text-sm font-medium">
+                          Yes
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
                 {/* Row 1 */}
                 <div className="flex flex-col md:flex-row gap-4 mb-4">
                   <div className="w-full">
@@ -985,20 +1028,14 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                         setUnitID(e.target.value);
                       }}
                     >
-                      {UnitList.length !== 0 ? (
-                        <>
-                          {UnitList.map((item) => (
-                            <option
-                              key={item.unitID}
-                              value={item.unitID}
-                              className="p-2"
-                            >
-                              {item.unitName}
-                            </option>
-                          ))}
-                        </>
+                      {UnitList?.length > 0 ? (
+                        UnitList.map((item) => (
+                          <option key={item.unitID} value={item.unitID}>
+                            {item.unitName}
+                          </option>
+                        ))
                       ) : (
-                        <option> No Record Found</option>
+                        <option>No Record Found</option>
                       )}
                     </select>
                   </div>

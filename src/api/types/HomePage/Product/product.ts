@@ -25,6 +25,7 @@ export interface ProductHome {
   subCategoryDetailID: string;
   storeSale: string;
   unitID: string;
+  totalCount: number;
 
   productName: string;
   description: string;

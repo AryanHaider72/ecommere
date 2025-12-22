@@ -2,11 +2,11 @@
 
 import { getRequest, postRequest } from "@/api/authentication/main";
 
-export default async function GetProduct(token?: string, data?: string) {
+export default async function GetProductHomeFetured(token: string, data?: {}) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
   const response = await getRequest(
-    `/api/Product/Seller/GetProduct/${data}`,
+    `/api/Product/Customer/GetFeaturedProduct`,
     null,
     customHeaders
   );
@@ -14,7 +14,7 @@ export default async function GetProduct(token?: string, data?: string) {
     return {
       data: response.data,
       status: response.status,
-      message: "Product  Get",
+      message: "Product Get",
     };
   }
   const status = response.status;
@@ -38,6 +38,6 @@ export default async function GetProduct(token?: string, data?: string) {
   return {
     data: null,
     message: response.message || "Payment failed due to an unexpected error.",
-    status: response.status || 500,
+    status: response.status,
   };
 }

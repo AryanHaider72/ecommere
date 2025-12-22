@@ -97,7 +97,7 @@ export default function Navbar({
               <li key={category.subCategoryID} className="relative group">
                 {/* Category Name */}
                 <button className="text-gray-800 font-bold hover:text-blue-500 transition capitalize">
-                  {category.subCategoryName}
+                  {category.subCategoryName.toUpperCase()}
                 </button>
 
                 {/* Dropdown */}
@@ -112,9 +112,9 @@ export default function Navbar({
                         <li key={item.subCategoryDetailID}>
                           <a
                             // href={`/shop?category=${item.subCategoryDetailID}`}
-                            className="block text-sm text-gray-600 hover:text-blue-500 transition"
+                            className="flex flex-col gap-2 hover:scale-105 transition-transform duration-300 cursor-pointer"
                           >
-                            {item.name}
+                            {item.name.toUpperCase()}
                           </a>
                         </li>
                       ))}

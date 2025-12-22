@@ -9,8 +9,8 @@ import {
 
 export default async function ModifyProductVarinet(
   data: addVarinetPayload,
-  token?: string,
-  productID?: string
+  productID: string,
+  token?: string
 ) {
   const customHeader: Record<string, string> = {};
   if (token) customHeader.Authorization = `Bearer ${token}`;
