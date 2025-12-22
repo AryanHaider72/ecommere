@@ -19,6 +19,7 @@ import {
   Weight,
   ListChecksIcon,
   Settings,
+  NotepadText,
 } from "lucide-react";
 import Overview from "../overview/page";
 import AccountSettings from "../Codes/category/page";
@@ -34,6 +35,7 @@ import ProfileManagement from "../profile/page";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import GetInitalStore from "@/api/authentication/StoreGet";
 import ProductControll from "../Codes/category/page";
+import SupplierledgerForm from "../supplierledger/page";
 export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -44,7 +46,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
   const navItems = [
     { id: "Code", label: "Code", icon: Plus },
     { id: "orders", label: "Orders", icon: ShoppingCart },
-    // { id: "setting", label: "Setting", icon: Settings },
+    { id: "ledger", label: "Supplier Ledger", icon: NotepadText },
   ];
   const checkAuth = async () => {
     const token = localStorage.getItem("token");
@@ -232,6 +234,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
         {activeTab === "customer" && <CustomerForm storeID={storeID} />}
         {activeTab === "purchase" && <PurchaseForm />}
         {activeTab === "supplier" && <SupplierForm />}
+        {activeTab === "ledger" && <SupplierledgerForm />}
         {/* // {activeTab === "wishlist" && <Wishlist />}
         // {activeTab === "cart" && <Cart />} */}
       </main>
