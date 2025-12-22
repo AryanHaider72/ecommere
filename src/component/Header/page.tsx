@@ -1,4 +1,9 @@
-import { useState, useEffect } from "react";
+import GetLandingpageInfo from "@/api/lib/HomePage/LandingPage/ladingPage";
+import {
+  ladingPageDetail,
+  ladingPageDetailResponse,
+} from "@/api/types/HomePage/LandignPage/CarasoulText";
+import { useState, useEffect, use } from "react";
 
 const AutoCarousel = () => {
   const slides = [
@@ -9,6 +14,7 @@ const AutoCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [animateText, setAnimateText] = useState(true);
+  const [categories, setCategories] = useState<ladingPageDetail[]>([]);
 
   // Auto slide
   useEffect(() => {
@@ -26,10 +32,28 @@ const AutoCarousel = () => {
     return () => clearTimeout(timeout);
   }, [currentIndex]);
 
-  const goToPrev = () =>
-    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
-  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % slides.length);
+  const totalSlides = categories[0]?.listImg?.length || 0;
 
+  const goToPrev = () =>
+    setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+
+  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % totalSlides);
+
+  const HandleLandingPage = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetLandingpageInfo(token || "");
+    const data = response.data as ladingPageDetailResponse;
+    if (response.status === 200 || response.status === 201) {
+      console.log(data.storeGet);
+      setCategories(data?.storeGet ?? []);
+    } else {
+      setCategories([]);
+    }
+  };
+
+  useEffect(() => {
+    HandleLandingPage();
+  }, []);
   return (
     <div
       className="relative w-full overflow-hidden bg-gray-200"
@@ -38,51 +62,54 @@ const AutoCarousel = () => {
       role="region"
       aria-label="Image Carousel"
     >
-      {/* SLIDES */}
-      <div className="relative w-full aspect-[16/9] sm:aspect-[21/9]">
-        {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-              index === currentIndex
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-105"
-            }`}
-          >
-            <img
-              src={slide.src}
-              alt={slide.alt}
-              className="w-full h-full object-cover"
-            />
+      {categories.map((item) => (
+        <div key={item.userID}>
+          <div className="relative w-full aspect-[16/9] sm:aspect-[25/9]">
+            {item.listImg.map((slide, index) => (
+              <div
+                key={slide.imageID}
+                className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                  index === currentIndex
+                    ? "opacity-100 scale-100"
+                    : "opacity-0 scale-105"
+                }`}
+              >
+                <img
+                  src={slide.url}
+                  alt={"Carousel image ${index + 1}"}
+                  className="w-full h-full object-cover"
+                />
 
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-black/40" />
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-black/40" />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* TEXT CONTENT */}
-      <div className="absolute inset-0 flex items-center mx-5">
-        <div className="px-4 sm:px-10 md:px-16 max-w-xl text-white">
-          <h1
-            className={`text-xl sm:text-3xl lg:text-4xl font-extrabold leading-tight ${
-              animateText ? "animate-slide-in" : "opacity-0"
-            }`}
-          >
-            Discover Stylish Essentials – Up to 50% Off!
-          </h1>
+          {/* TEXT CONTENT */}
+          <div className="absolute inset-0 flex items-center mx-5">
+            <div className="px-4 sm:px-10 md:px-16 max-w-xl text-white">
+              <h1
+                className={`text-xl sm:text-3xl lg:text-4xl font-extrabold leading-tight ${
+                  animateText ? "animate-slide-in" : "opacity-0"
+                }`}
+              >
+                {item.headerText}
+              </h1>
 
-          <p
-            className={`mt-3 text-sm sm:text-base lg:text-lg ${
-              animateText ? "animate-slide-in" : "opacity-0"
-            }`}
-            style={{ animationDelay: "0.15s" }}
-          >
-            Elevate your wardrobe with our curated collection of trendy dresses
-            and accessories. Shop now and enjoy exclusive deals.
-          </p>
+              <p
+                className={`mt-3 text-sm sm:text-base lg:text-lg ${
+                  animateText ? "animate-slide-in" : "opacity-0"
+                }`}
+                style={{ animationDelay: "0.15s" }}
+              >
+                {item.subHeadingText}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
+      {/* SLIDES */}
 
       {/* CONTROLS */}
       <button

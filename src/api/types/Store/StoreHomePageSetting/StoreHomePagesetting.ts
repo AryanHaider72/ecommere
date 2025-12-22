@@ -12,3 +12,13 @@ export interface ResponseStoreHomePageData {
   status: string;
   message?: string;
 }
+
+export interface RequestStoreHomepageUpdateData {
+  logoUrl: string;
+  OtherText: string;
+  HeaderText: string;
+  SubHeadingText: string;
+}
+export interface RequestStoreHomepageUpdateDataImage {
+  imagelist: list[];
+}

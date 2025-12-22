@@ -23,7 +23,7 @@ import {
 import Overview from "../overview/page";
 import AccountSettings from "../Codes/category/page";
 import SellerOrders from "../order/page";
-import SupplierForm from "../Codes/FurtherSubCat/page";
+import SupplierForm from "../Codes/supplier/page";
 import CustomerForm from "../Codes/customer/page";
 import PurchaseForm from "../purchase/page";
 import UnitForm from "../Codes/Unit/page";
@@ -154,6 +154,11 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
                           icon: ListChecksIcon,
                         },
                         {
+                          id: "supplier",
+                          label: "Supplier",
+                          icon: User,
+                        },
+                        {
                           id: "setting",
                           label: "Product",
                           icon: ShoppingCart,
@@ -226,6 +231,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "customer" && <CustomerForm storeID={storeID} />}
         {activeTab === "purchase" && <PurchaseForm />}
+        {activeTab === "supplier" && <SupplierForm />}
         {/* // {activeTab === "wishlist" && <Wishlist />}
         // {activeTab === "cart" && <Cart />} */}
       </main>
