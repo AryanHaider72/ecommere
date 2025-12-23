@@ -20,6 +20,7 @@ import {
   ListChecksIcon,
   Settings,
   NotepadText,
+  Coins,
 } from "lucide-react";
 import Overview from "../overview/page";
 import AccountSettings from "../Codes/category/page";
@@ -47,6 +48,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
     { id: "Code", label: "Code", icon: Plus },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "ledger", label: "Supplier Ledger", icon: NotepadText },
+    { id: "purchase", label: "Purchase Module", icon: Coins },
   ];
   const checkAuth = async () => {
     const token = localStorage.getItem("token");
@@ -228,11 +230,11 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
         )}
         {/* {activeTab === "reviews" && <Review />}
         {activeTab === "orders" && <Order />} */}
+        {activeTab === "purchase" && <PurchaseForm storeID={storeID} />}
         {activeTab === "setting" && <ProductControll storeID={storeID} />}
         {activeTab === "unit" && <UnitForm storeID={storeID} />}
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "customer" && <CustomerForm storeID={storeID} />}
-        {activeTab === "purchase" && <PurchaseForm />}
         {activeTab === "supplier" && <SupplierForm />}
         {activeTab === "ledger" && <SupplierledgerForm />}
         {/* // {activeTab === "wishlist" && <Wishlist />}

@@ -27,3 +27,8 @@ export interface ResponseSupplierAddDataLedger {
   status: string;
   message?: string;
 }
+
+export interface ResponseSupplierLedgerGetData {
+  dateFrom: string;
+  dateTo: string;
+}

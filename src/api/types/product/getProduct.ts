@@ -47,7 +47,8 @@ export type Variant = {
 export type VariantValue = {
   attributeID: string;
   varientValue: string;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
   qty: number;
 };
 export type countryList = {

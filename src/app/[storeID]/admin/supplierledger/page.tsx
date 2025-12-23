@@ -14,6 +14,7 @@ import {
   Trash,
   Pencil,
   Coins,
+  Calendar,
 } from "lucide-react";
 import {
   ResponseSupplierGetData,
@@ -30,6 +31,7 @@ import Spinner from "@/component/spinner/page";
 import AddLedger from "@/api/lib/PosIntegration/SupplierLedegr/AddLedger";
 import ModifyLedger from "@/api/lib/PosIntegration/SupplierLedegr/ModifySupplier";
 import Deleteledger from "@/api/lib/PosIntegration/SupplierLedegr/DeleteLedger";
+import GetArrear from "@/api/lib/PosIntegration/SupplierLedegr/SupplierArrear";
 
 export default function SupplierledgerForm() {
   const router = useRouter();
@@ -44,11 +46,14 @@ export default function SupplierledgerForm() {
   const [SupplierList, setSupplierList] = useState<SupplierData[]>([]);
   const [LedgerList, setLedgerList] = useState<supplierLedgerGet[]>([]);
 
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [ID, setID] = useState("");
   const [supplierID, setSupplierID] = useState("");
   const [postingDate, setPostingDate] = useState("");
   const [Amount, setAmount] = useState("");
   const [Description, setDescription] = useState("");
+  const [arrear, setArrear] = useState("");
 
   const SupplierGet = async () => {
     try {
@@ -58,7 +63,7 @@ export default function SupplierledgerForm() {
         const data = response.data as ResponseSupplierGetData;
         setSupplierList(data.supplierList || []);
         setSupplierID(data.supplierList[0].supplierID);
-        Ledgerget(data.supplierList[0].supplierID);
+        // Ledgerget(data.supplierList[0].supplierID);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
@@ -66,11 +71,15 @@ export default function SupplierledgerForm() {
       // setResponseBack(3);
     }
   };
-  const Ledgerget = async (ID: string) => {
+  const Ledgerget = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await Getledger(String(token), ID);
+      const paylaod = {
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      };
+      const response = await Getledger(paylaod, String(token), supplierID);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ResponseSupplierLedgerGet;
         console.log(data);
@@ -85,6 +94,24 @@ export default function SupplierledgerForm() {
     }
   };
 
+  const ArrearGet = async (ID: string) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await GetArrear(String(token), ID);
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as any;
+        setArrear(data.supplierArrear[0].remaningAmount);
+        console.log(data);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
   const LedgerAdd = async () => {
     try {
       setLoading(true);
@@ -98,7 +125,7 @@ export default function SupplierledgerForm() {
       const response = await AddLedger(payload, String(token));
 
       if (response.status === 200 || response.status === 201) {
-        Ledgerget(supplierID);
+        Ledgerget();
         setIsSuccess(true);
         setResponseBack(response.data.message || "Supplier added successfully");
         setAmount("");
@@ -130,7 +157,7 @@ export default function SupplierledgerForm() {
 
       if (response.status === 200 || response.status === 201) {
         setIsSuccess(true);
-        Ledgerget(supplierID);
+        Ledgerget();
         setResponseBack(response.data.message || "Supplier added successfully");
         setAmount("");
         setID("");
@@ -165,6 +192,7 @@ export default function SupplierledgerForm() {
       const token = localStorage.getItem("token");
       const response = await Deleteledger(String(token), ID);
       if (response.status === 200 || response.status === 201) {
+        setIsOpen(false);
         setIsSuccess(true);
         setResponseBack(response.data.message || "Supplier added successfully");
         LedgerList.filter((item) => item.ledgerID !== ID);
@@ -261,7 +289,7 @@ export default function SupplierledgerForm() {
               value={supplierID}
               onChange={(e) => {
                 setSupplierID(e.target.value);
-                Ledgerget(e.target.value);
+                ArrearGet(e.target.value);
               }}
               className="text-black w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -279,8 +307,45 @@ export default function SupplierledgerForm() {
             </select>
           </div>
         </div>
+
         {showList ? (
           <>
+            <div className="flex gap-2 w-full">
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Date From
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 ">
+                  <Calendar className="text-gray-400 mr-2" size={18} />
+                  <input
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    type="date"
+                    className="text-black w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Date To
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 ">
+                  <Calendar className="text-gray-400 mr-2" size={18} />
+                  <input
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    type="date"
+                    className="text-black w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => Ledgerget()}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+            >
+              Search
+            </button>
             <>
               {loading ? (
                 <div className="flex justify-center py-10">
@@ -293,7 +358,7 @@ export default function SupplierledgerForm() {
                       {LedgerList.map((item) => (
                         <div
                           key={item.ledgerID}
-                          className="mt-2 mb-2 p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+                          className="mt-2 mb-2 p-4 border border-gray-200 rounded-md shadow-sm hover: transition flex justify-between items-center"
                         >
                           <div>
                             <h3 className="text-lg font-semibold text-gray-800">
@@ -376,6 +441,7 @@ export default function SupplierledgerForm() {
                 <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                   <Building2 className="text-gray-400 mr-2" size={18} />
                   <input
+                    value={arrear}
                     type="text"
                     name="arrear"
                     placeholder="0"

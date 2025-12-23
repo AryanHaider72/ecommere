@@ -1741,7 +1741,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     const selectedVariantValue =
                       product.variants?.[0]?.variantValues?.[selectedVarIndex];
                     const originalAmount = Number(
-                      selectedVariantValue?.amount || 0
+                      selectedVariantValue?.salePrice || 0
                     );
 
                     return (
@@ -1855,7 +1855,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                         ];
 
                       const originalAmount = Number(
-                        selectedVariant?.amount || 0
+                        selectedVariant?.salePrice || 0
                       );
                       const discount = Number(product.discount || 0);
 

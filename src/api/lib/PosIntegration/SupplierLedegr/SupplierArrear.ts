@@ -1,20 +1,15 @@
 "use server";
 
 import { getRequest, postRequest } from "@/api/authentication/main";
-import { ResponseSupplierLedgerGetData } from "@/api/types/PosIntegration/SupplierLedger/SupplierLedger";
 
-export default async function Getledger(
-  data: ResponseSupplierLedgerGetData,
-  token: string,
-  supplierID: string
-) {
+export default async function GetArrear(token: string, supplierID: string) {
   const customHeader: Record<string, string> = {};
   if (token) customHeader.Authorization = `Bearer ${token}`;
 
   try {
-    const response = await postRequest(
-      `/api/Supplier/seller/posIntegration/GetSupplierLedger/${supplierID}`,
-      data,
+    const response = await getRequest(
+      `/api/Supplier/seller/posIntegration/GetSupplierArrear/${supplierID}`,
+      null,
       customHeader
     );
 
