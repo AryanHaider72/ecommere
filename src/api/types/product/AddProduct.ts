@@ -35,7 +35,8 @@ export interface Varient {
 export interface VarientAttribute {
   varientValue: string;
   qty: number;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
 }
 export interface ResponseAddProductData {
   status: string;

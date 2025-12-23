@@ -1,6 +1,15 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Edit, Pencil, Plus, ShoppingBag, Trash, X } from "lucide-react";
+import {
+  Coins,
+  Edit,
+  Pencil,
+  Plus,
+  ShoppingBag,
+  ShoppingCart,
+  Trash,
+  X,
+} from "lucide-react";
 import convertImageToWebPWithWatermark from "@/api/OtherController/webConverter";
 import { SendDataToApi } from "@/api/OtherController/router";
 import {
@@ -30,6 +39,11 @@ import AddProduct from "@/api/lib/product/productAdd/productAdd";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
 import ProductCard from "./product";
+import GetSupplier from "@/api/lib/PosIntegration/Supplier/GetSupplier";
+import {
+  ResponseSupplierGetData,
+  SupplierData,
+} from "@/api/types/PosIntegration/Suppplier/addSupplier";
 
 type CategoryTree = {
   [mainCategory: string]: {
@@ -51,7 +65,8 @@ interface Varient {
 interface VarientAttribute {
   varientValue: string;
   qty: number;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
 }
 
 interface CountryList {
@@ -59,7 +74,53 @@ interface CountryList {
   countryName: string;
 }
 
+interface CartList {
+  productList: productList[];
+}
+interface productList {
+  supplierID: string;
+  storeID: string;
+  categoryID: string;
+  productName: string;
+  unitID: string;
+  subCategoryDetailID: string;
+  subCategoryID: string;
+  discount: number;
+  currentStock: number;
+  threshold: number;
+  percentage: number;
+  showinAllCountry: boolean;
+  showinCountry: boolean;
+  notShowinCountry: boolean;
+  description: string;
+  width: number;
+  height: number;
+  depth: number;
+  weight: number;
+  listCountry: {
+    countryID: string;
+  }[];
+  listImage: {
+    url: string;
+  }[];
+  listVarient: VarientCart[];
+}
+
+interface VarientCart {
+  varientName: string;
+  varientAttributes: VarientAttributeCart[];
+}
+
+interface VarientAttributeCart {
+  varientValue: string;
+  qty: number;
+  costPrice: number;
+  salePrice: number;
+}
+
 export default function ProductControll({ storeID }: { storeID: string }) {
+  const [cartList, setCartList] = useState<CartList[]>([]);
+
   const router = useRouter();
   const [showlist, setShowList] = useState(false);
   const [product, setProduct] = useState(false);
@@ -67,6 +128,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [selectedSub, setSelectedSub] = useState("");
   const [selectedOption, setSelectedOption] = useState("ShowinAllCountry");
   const [selectedOption2, setSelectedOption2] = useState("OnlineStore");
+  const [selectedOption3, setSelectedOption3] = useState("Yes");
 
   const [selectedSubSub, setSelectedSubSub] = useState("");
   const [Quantity, setQuantity] = useState(0);
@@ -74,6 +136,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
 
   const [images, setImages] = useState<(File | null)[]>([null, null, null]);
   const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
+  const [SupplierList, setSupplierList] = useState<SupplierData[]>([]);
+  const [supplierID, setSupplierID] = useState("");
 
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [productName, setProductName] = useState("");
@@ -127,7 +191,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [newAttribute, setNewAttribute] = useState<VarientAttribute>({
     varientValue: "",
     qty: 0,
-    amount: 0,
+    costPrice: 0,
+    salePrice: 0,
   });
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -174,7 +239,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       return;
     }
     setCurrentAttributes([...currentAttributes, newAttribute]);
-    setNewAttribute({ varientValue: "", qty: 0, amount: 0 });
+    setNewAttribute({ varientValue: "", qty: 0, costPrice: 0, salePrice: 0 });
   };
 
   // Update newAttribute inputs (for the input row)
@@ -226,14 +291,14 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     // Use the previously suggested function for uploading multiple images
     const uploadedUrls = await sendMultipleImages(filesToUpload);
     console.log("Uploaded URLs before setState:", uploadedUrls);
-    if (uploadedUrls && uploadedUrls.length > 0) {
-      setListImages((prevState) => ({
-        listImage: [
-          ...prevState.listImage,
-          ...uploadedUrls.map((url) => ({ url })),
-        ],
-      }));
-    }
+    // if (uploadedUrls && uploadedUrls.length > 0) {
+    //   setListImages((prevState) => ({
+    //     listImage: [
+    //       ...prevState.listImage,
+    //       ...uploadedUrls.map((url) => ({ url })),
+    //     ],
+    //   }));
+    // }
 
     return uploadedUrls || []; // Return the URLs directly (or empty array on failure)
   };
@@ -262,6 +327,12 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       const res = await SendDataToApi(webPBlob as unknown as File);
       if (res && res.data && res.data.secure_url) {
         uploadedUrls.push(res.data.secure_url);
+        setListImages((prevState) => ({
+          listImage: [
+            ...prevState.listImage,
+            ...uploadedUrls.map((url) => ({ url })),
+          ],
+        }));
       } else {
         alert(`Upload failed for image ${file.name}`);
       }
@@ -394,6 +465,21 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       router.push("/sellerlogin");
     }
   };
+  const SupplierGet = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await GetSupplier(String(token));
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as ResponseSupplierGetData;
+        setSupplierID(data.supplierList[0].supplierID);
+        setSupplierList(data.supplierList || []);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (err) {
+      // setResponseBack(3);
+    }
+  };
   //ProductAdd
   // ProductAdd
   const productAdd = async () => {
@@ -497,6 +583,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   useEffect(() => {
     getCategroyMain();
     getCountry();
+    SupplierGet();
   }, []);
   useEffect(() => {
     if (
@@ -510,6 +597,70 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       }, 2000);
     }
   }, [responseBack]);
+
+  const ProductListAdd = async () => {
+    let uploadedUrls: string[] = [];
+    if (selectedOption2 === "OnlineStore" || selectedOption2 === "Both") {
+      uploadedUrls = await handleUploadAll();
+      if (!uploadedUrls || uploadedUrls.length === 0) {
+        alert("Image upload failed. Please try again.");
+        return; // Stop if uploads failed
+      }
+    }
+
+    // Build the listCountry based on selectedOption
+    let listCountry: { countryID: string }[] = [];
+    if (selectedOption === "ShowinSomeCountry") {
+      listCountry = countryShowLis.map((item) => ({
+        countryID: item.countryID,
+      }));
+    } else if (selectedOption === "HideinSomeCountry") {
+      listCountry = countryHideList.map((item) => ({
+        countryID: item.countryID,
+      }));
+    }
+    const productData = {
+      supplierID: supplierID,
+      storeID: storeID,
+      storeSale: selectedOption2,
+      categoryID: CategoryMainID,
+      productName: productName,
+      subCategoryDetailID: FurtherCategorySubID,
+      subCategoryID: CategorySubID,
+      unitID: UnitID,
+      discount: Number(discount) || 0,
+      currentStock: Number(totalQuantity),
+      threshold: Number(Threshold),
+      percentage: 0,
+      showinAllCountry: selectedOption === "ShowinAllCountry",
+      showinCountry: selectedOption === "ShowinSomeCountry",
+      notShowinCountry: selectedOption === "HideinSomeCountry",
+      feturedProduct: FeaturedProduct === "Yes",
+      description: description,
+      width: Number(Width) || 0,
+      height: Number(Height) || 0,
+      depth: Number(Depth) || 0,
+      weight: Number(Weight) || 0,
+      listCountry: listCountry,
+      listImage: uploadedUrls.map((url) => ({ url })),
+      listVarient: listVarient,
+    };
+    console.log("Product Payload: ", productData);
+    setCartList((prev) => {
+      if (prev.length === 0) {
+        // First cart with first product
+        return [{ productList: [productData] }];
+      }
+      // Add product to the first cart
+      return [
+        {
+          ...prev[0],
+          productList: [...prev[0].productList, productData],
+        },
+      ];
+    });
+    console.log(cartList);
+  };
   return (
     <div className="w-full px-4 md:px-8 pb-10">
       <div className="flex justify-between items-center mb-6">
@@ -592,6 +743,73 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                     </label>
                   </div>
                 </div>
+                <div className="p-3 rounded-xl max-w-md">
+                  <h2 className="text-md text-gray-800 mb-4">Purchase</h2>
+
+                  <div className="flex flex-wrap  gap-4 ">
+                    {/* Option 1 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="supplier"
+                        value="Yes"
+                        checked={selectedOption3 === "Yes"}
+                        onChange={(e) => setSelectedOption3("Yes")}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Yes
+                      </span>
+                    </label>
+
+                    {/* Option 2 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="supplier"
+                        value="No"
+                        checked={selectedOption3 === "No"}
+                        onChange={(e) => setSelectedOption3("No")}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        No
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                {selectedOption3 === "Yes" && (
+                  <div className=" md:flex-row gap-4 mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Supplier
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={supplierID}
+                      onChange={(e) => {
+                        {
+                          setSupplierID(e.target.value);
+                        }
+                      }}
+                    >
+                      {SupplierList.length !== 0 ? (
+                        <>
+                          {SupplierList.map((item) => (
+                            <option
+                              key={item.supplierID}
+                              value={item.supplierID}
+                              className="p-2"
+                            >
+                              {item.supplierName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option> No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+                )}
                 {selectedOption2 !== "OfflineStore" && (
                   <div className="p-3 rounded-xl max-w-md">
                     <h2 className="text-md text-gray-800 mb-4">
@@ -1073,7 +1291,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                       <tr>
                         <th className="px-4 py-2">Attribute Name</th>
                         <th className="px-4 py-2">Qty</th>
-                        <th className="px-4 py-2">Amount</th>
+                        <th className="px-4 py-2">CP</th>
+                        <th className="px-4 py-2">SP</th>
                         <th className="px-4 py-2">Action</th>
                       </tr>
                     </thead>
@@ -1086,7 +1305,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                         >
                           <td className="px-4 py-2">{attr.varientValue}</td>
                           <td className="px-4 py-2">{attr.qty}</td>
-                          <td className="px-4 py-2">{attr.amount}</td>
+                          <td className="px-4 py-2">{attr.costPrice}</td>
+                          <td className="px-4 py-2">{attr.salePrice}</td>
                           <td className="px-4 py-2">
                             <button
                               className="px-2 py-1 bg-red-600 text-white rounded"
@@ -1133,10 +1353,25 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             type="number"
                             min={0}
                             step="0.01"
-                            value={newAttribute.amount}
+                            value={newAttribute.costPrice}
                             onChange={(e) =>
                               handleNewAttributeChange(
-                                "amount",
+                                "costPrice",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={newAttribute.salePrice}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "salePrice",
                                 parseFloat(e.target.value) || 0
                               )
                             }
@@ -1158,6 +1393,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                   </table>
                 </div>
               </fieldset>
+
               {(selectedOption2 === "OnlineStore" ||
                 selectedOption2 === "Both") && (
                 <fieldset className="p-4 border border-gray-300 rounded-lg">
@@ -1166,7 +1402,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                   </legend>
                   <div className="mb-4">
                     <label className="block text-gray-700 font-medium mb-1">
-                      Product Images (Max 3)
+                      Product Images
                     </label>
                     <div
                       onClick={handleClick}
@@ -1234,6 +1470,145 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                   </div>
                 </fieldset>
               )}
+              {selectedOption3 === "Yes" && (
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                  <legend className="text-lg font-semibold text-gray-800 px-2">
+                    Billing Information
+                  </legend>
+                  <div className="md:col-span-2">
+                    {" "}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                      {" "}
+                      {/* Total Bill */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Total Bill{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            name="totalBill"
+                            placeholder="Enter Total Bill"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Adjustment */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Adjustment{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            name="adjustment"
+                            placeholder="Enter Adjustment"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Amount Paid */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Amount Paid{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            name="amountPaid"
+                            placeholder="Enter Amount Paid"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Remaining Balance */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Remaining Balance{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            name="remainingBalance"
+                            placeholder="Auto Calculated"
+                            readOnly
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Total Payable */}{" "}
+                      <div className=" ">
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Total Payable{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            name="totalPayable"
+                            placeholder="Enter Total Payable"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                    </div>{" "}
+                  </div>
+                </fieldset>
+              )}
+              {/* Floating Cart Button */}
+              {selectedOption3 === "Yes" && (
+                <button
+                  onClick={() => ProductListAdd()}
+                  className="px-2 py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all relative"
+                >
+                  <div className="flex gap-2 items-center">
+                    <ShoppingCart />
+                    <span>Add To Cart</span>
+                  </div>
+
+                  {/* Floating number badge */}
+                  {cartList.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white font-bold w-5 h-5 flex items-center justify-center rounded-full text-xs shadow-md">
+                      {cartList.length}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {responseBack === 2 && (
                 <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
                   Fill in All Required Fields
@@ -1342,7 +1717,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                           {attr.qty <= 0 ? (
                             <button
                               key={index}
-                              onClick={() => setAmount(String(attr.amount))}
+                              onClick={() => setAmount(String(attr.costPrice))}
                               className="px-2 py-1 bg-gray-300 text-xs text-gray-600 rounded-full"
                               disabled
                             >
@@ -1351,7 +1726,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                           ) : (
                             <button
                               key={index}
-                              onClick={() => setAmount(String(attr.amount))}
+                              onClick={() => setAmount(String(attr.costPrice))}
                               className="px-2 py-1 bg-black text-xs text-white rounded-full"
                             >
                               {attr.varientValue}
