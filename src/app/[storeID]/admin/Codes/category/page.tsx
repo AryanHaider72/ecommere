@@ -50,7 +50,10 @@ type CategoryTree = {
     [subCategory: string]: string[];
   };
 };
-
+type ImageItem = {
+  file: File;
+  url: string;
+};
 interface ImagesList {
   listImage: urlTypes[];
 }
@@ -134,7 +137,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [Quantity, setQuantity] = useState(0);
   const [Threshold, setThreshold] = useState("");
 
-  const [images, setImages] = useState<(File | null)[]>([null, null, null]);
+  const [images, setImages] = useState<File[]>([]);
   const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
   const [SupplierList, setSupplierList] = useState<SupplierData[]>([]);
   const [supplierID, setSupplierID] = useState("");
@@ -177,6 +180,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [DisplayCountryID, setDisplayCountryID] = useState("");
   const [DisplayCountryName, setDisplayCountryName] = useState("");
   const [HideCountryName, setHideCountryName] = useState("");
+  const [adjustment, setAdjustment] = useState("");
+  const [AmountPaid, setAmountPaid] = useState("");
 
   const [listofCountry, setListofCountry] = useState<Countryget[]>([]);
 
@@ -258,19 +263,8 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   //-----------------------------------------------Image Function----------------------------------------------
 
   const handleImageChange = (files: FileList | null) => {
-    if (files) {
-      const fileArray = Array.from(files);
-      const newImages = [...images];
-      let idx = 0;
-      for (let file of fileArray) {
-        while (idx < 3 && newImages[idx] !== null) idx++;
-        if (idx < 3) {
-          newImages[idx] = file;
-          idx++;
-        }
-      }
-      setImages(newImages);
-    }
+    if (!files) return;
+    setImages((prev) => [...prev, ...Array.from(files)]);
   };
 
   const reorderImages = (from: number, to: number) => {
@@ -472,7 +466,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ResponseSupplierGetData;
         setSupplierID(data.supplierList[0].supplierID);
-        setSupplierList(data.supplierList || []);
+        setSupplierList(
+          data.supplierList.filter((item) => item.supplierName !== "SYSGEN")
+        );
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
@@ -565,7 +561,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
         setListImages({ listImage: [] });
         setCurrentAttributes([]);
         setMainVarientName("");
-        setImages([null, null, null]);
+        setImages([]);
         setMainImageIndex(0);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
@@ -628,6 +624,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       subCategoryDetailID: FurtherCategorySubID,
       subCategoryID: CategorySubID,
       unitID: UnitID,
+      costPrice: Number(costPrice) || 0,
+      adjustment: Number(adjustment) || 0,
+      amountPaid: Number(AmountPaid) || 0,
       discount: Number(discount) || 0,
       currentStock: Number(totalQuantity),
       threshold: Number(Threshold),
@@ -661,6 +660,12 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     });
     console.log(cartList);
   };
+  const costPrice = listVarient.reduce((total, variant) => {
+    return (
+      total +
+      variant.varientAttributes.reduce((sum, attr) => sum + attr.costPrice, 0)
+    );
+  }, 0);
   return (
     <div className="w-full px-4 md:px-8 pb-10">
       <div className="flex justify-between items-center mb-6">
@@ -1418,46 +1423,43 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                           : "border-gray-300"
                       }`}
                     >
-                      {images.map((img, i) => (
-                        <div
-                          key={i}
-                          draggable={!!img}
-                          onDragStart={() => setDragIndex(i)}
-                          onDragEnter={() => img && setHoverIndex(i)}
-                          onDragEnd={() => {
-                            if (
-                              dragIndex !== null &&
-                              hoverIndex !== null &&
-                              dragIndex !== hoverIndex
-                            ) {
-                              reorderImages(dragIndex, hoverIndex);
+                      <div className="flex flex-wrap gap-4">
+                        {images.map((img, i) => (
+                          <div
+                            key={i}
+                            draggable
+                            onDragStart={() => setDragIndex(i)}
+                            onDragEnter={() => setHoverIndex(i)}
+                            onDragEnd={() => {
+                              if (
+                                dragIndex !== null &&
+                                hoverIndex !== null &&
+                                dragIndex !== hoverIndex
+                              ) {
+                                reorderImages(dragIndex, hoverIndex);
+                              }
+                              setDragIndex(null);
+                              setHoverIndex(null);
+                            }}
+                            className={`relative w-20 h-20 rounded-md 
+                            ${
+                              hoverIndex === i
+                                ? "ring-2 ring-blue-500 scale-105"
+                                : ""
                             }
-                            setDragIndex(null);
-                            setHoverIndex(null);
-                          }}
-                          className={`relative w-20 h-20 rounded-md flex items-center justify-center 
-                      ${
-                        hoverIndex === i ? "ring-2 ring-blue-500 scale-105" : ""
-                      }
-                      transition-all duration-150`}
-                        >
-                          {img ? (
+                            transition-all duration-150`}
+                          >
                             <img
                               src={URL.createObjectURL(img)}
-                              alt={`Img ${i}`}
-                              className="w-full h-full object-cover rounded-md pointer-events-none"
+                              className="w-full h-full object-cover rounded-md"
                             />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
-                              Empty
-                            </div>
-                          )}
 
-                          <span className="absolute -bottom-5 text-xs text-gray-600">
-                            {i === 0 ? "Header Image" : `Image ${i + 1}`}
-                          </span>
-                        </div>
-                      ))}
+                            <span className="absolute -bottom-5 text-xs text-gray-600">
+                              {i === 0 ? "Header Image" : `Image ${i + 1}`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <input
                       ref={fileInputRef}
@@ -1494,6 +1496,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                           />{" "}
                           <input
                             type="number"
+                            value={costPrice}
                             name="totalBill"
                             placeholder="Enter Total Bill"
                             className="w-full bg-transparent outline-none text-gray-900"
@@ -1514,7 +1517,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             size={18}
                           />{" "}
                           <input
+                            value={adjustment}
                             type="number"
+                            onChange={(e) => setAdjustment(e.target.value)}
                             name="adjustment"
                             placeholder="Enter Adjustment"
                             className="w-full bg-transparent outline-none text-gray-900"
@@ -1535,7 +1540,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             size={18}
                           />{" "}
                           <input
+                            value={AmountPaid}
                             type="number"
+                            onChange={(e) => setAmountPaid(e.target.value)}
                             name="amountPaid"
                             placeholder="Enter Amount Paid"
                             className="w-full bg-transparent outline-none text-gray-900"
@@ -1557,6 +1564,11 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                           />{" "}
                           <input
                             type="number"
+                            value={
+                              Number(costPrice) -
+                                Number(AmountPaid) -
+                                Number(adjustment) || 0
+                            }
                             name="remainingBalance"
                             placeholder="Auto Calculated"
                             readOnly

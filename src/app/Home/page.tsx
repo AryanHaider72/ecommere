@@ -40,7 +40,8 @@ interface Varient {
 interface VarientAttribute {
   varientValue: string;
   qty: number;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
 }
 interface ImagesList {
   listImage: urlTypes[];
@@ -124,6 +125,7 @@ export default function MainHome() {
 
         if (data.productList && data.productList.length > 0) {
           setProductList(data.productList);
+          console.log(data.productList);
           setLoading(false);
         } else {
           setProductList([]);
@@ -150,7 +152,6 @@ export default function MainHome() {
         if (data.productList && data.productList.length > 0) {
           setProductListFeatured(data.productList);
           setLoading(false);
-          console.log(data.productList);
         } else {
           setProductListFeatured([]);
           setLoading(true);
@@ -177,9 +178,9 @@ export default function MainHome() {
         ),
       });
       if (data.variants[0].variantValues[0].qty === 0) {
-        setAmount(String(data.variants[0].variantValues[1].amount));
+        setAmount(String(data.variants[0].variantValues[1].salePrice));
       } else {
-        setAmount(String(data.variants[0].variantValues[0].amount));
+        setAmount(String(data.variants[0].variantValues[0].salePrice));
       }
       setListVarient(
         data.variants.map((variant) => ({
@@ -187,7 +188,8 @@ export default function MainHome() {
           varientAttributes: variant.variantValues.map((attr) => ({
             varientValue: attr.varientValue,
             qty: attr.qty,
-            amount: attr.amount,
+            salePrice: attr.salePrice,
+            costPrice: attr.costPrice,
           })),
         }))
       );
@@ -209,9 +211,9 @@ export default function MainHome() {
         ),
       });
       if (data.variants[0].variantValues[0].qty === 0) {
-        setAmount(String(data.variants[0].variantValues[1].amount));
+        setAmount(String(data.variants[0].variantValues[1].salePrice));
       } else {
-        setAmount(String(data.variants[0].variantValues[0].amount));
+        setAmount(String(data.variants[0].variantValues[0].salePrice));
       }
       setListVarient(
         data.variants.map((variant) => ({
@@ -219,7 +221,8 @@ export default function MainHome() {
           varientAttributes: variant.variantValues.map((attr) => ({
             varientValue: attr.varientValue,
             qty: attr.qty,
-            amount: attr.amount,
+            costPrice: attr.costPrice,
+            salePrice: attr.salePrice,
           })),
         }))
       );
@@ -799,10 +802,12 @@ export default function MainHome() {
                               </button>
                             ) : (
                               <button
-                                onClick={() => setAmount(String(attr.amount))}
+                                onClick={() =>
+                                  setAmount(String(attr.salePrice))
+                                }
                                 className={`min-w-[40px] h-10 font-bold text-sm px-3 py-1.5 shadow-md border border-gray-100 rounded-full cursor-pointer  flex items-center justify-center
                                 ${
-                                  amount === String(attr.amount)
+                                  amount === String(attr.salePrice)
                                     ? "bg-gray-800 text-white"
                                     : "text-gray-800"
                                 }

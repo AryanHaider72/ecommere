@@ -8,7 +8,8 @@ export interface ProductImage {
 export interface VariantValue {
   attributeID: string;
   varientValue: string;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
   qty: number;
 }
 
