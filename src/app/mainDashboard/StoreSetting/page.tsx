@@ -1,3 +1,4 @@
+"use client";
 import GetInitalStore from "@/api/authentication/StoreGet";
 import StoreHomePageGetSetting from "@/api/lib/store/DefaultStoreSetting/DefaultHomeStoreGet";
 import StoreHomePageSetting from "@/api/lib/store/DefaultStoreSetting/DefaultAddStore";

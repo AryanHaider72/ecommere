@@ -1,4 +1,4 @@
-"use server";
+
 import axios from "axios";
 
 export async function SendDataToApi(file: File) {

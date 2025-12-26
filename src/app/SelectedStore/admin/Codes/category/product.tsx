@@ -1,7 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Camera, Coins, CoinsIcon, Pencil, Plus, Trash, Upload, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Camera,
+  Coins,
+  CoinsIcon,
+  Pencil,
+  Plus,
+  Trash,
+  Upload,
+  X,
+} from "lucide-react";
 import DeleteProductApi from "@/api/lib/product/DeleteProduct/DeleteProduct";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import { useRouter } from "next/navigation";
@@ -78,6 +87,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [isOpenVarinet, setIsOpenVarinet] = useState(false);
   const [isOpenImage, setIsOpenImage] = useState(false);
   const [imageAbout, setImageAbout] = useState(false);
+  const [modify, setModify] = useState(false);
 
   const [ID, setID] = useState("");
   const [productName, setProductName] = useState("");
@@ -146,10 +156,10 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [selectedOption2, setSelectedOption2] = useState("OnlineStore");
   const [GettingVarinet, setGettingVarinet] = useState(false);
   const [selectedOption3, setSelectedOption3] = useState("No");
-    const [adjustment, setAdjustment] = useState("");
-    const [AmountPaid, setAmountPaid] = useState("");
-    const [totalBill, setTotalBill] = useState("");
-    const[Uploading,setUploading] = useState(false);
+  const [adjustment, setAdjustment] = useState("");
+  const [AmountPaid, setAmountPaid] = useState("");
+  const [totalBill, setTotalBill] = useState("");
+  const [Uploading, setUploading] = useState(false);
 
   const getProduct = async () => {
     try {
@@ -331,54 +341,52 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   };
 
   const addVarient = async () => {
+    const totalStock = listVarient.reduce((total, variant) => {
+      return (
+        total +
+        variant.varientAttributes.reduce(
+          (sum, attr) => sum + Number(attr.qty || 0),
+          0
+        )
+      );
+    }, 0);
 
-  const totalStock = listVarient.reduce((total, variant) => {
-    return (
-      total +
-      variant.varientAttributes.reduce(
-        (sum, attr) => sum + Number(attr.qty || 0),
-        0
-      )
-    );
-  }, 0);
+    const finalSupplierID =
+      selectedOption3 === "Yes"
+        ? supplierID
+        : "DC4F35C5-8B69-454B-B3C5-75F16B2C54BE";
 
-  const finalSupplierID =
-    selectedOption3 === "Yes"
-      ? supplierID
-      : "DC4F35C5-8B69-454B-B3C5-75F16B2C54BE";
-
-  const payload: addVarinetPayload = {
-    invoiceNo: "",
-    supplierID: finalSupplierID,
-    purchaseDate: new Date().toISOString(),
-    totalBill: Number(costPrice) || 0,
-    amountPaid: Number(AmountPaid) || 0,
-    adjustments: Number(adjustment) || 0,
-    totalStock: totalStock,
-    listVarient: listVarient,
-  };
+    const payload: addVarinetPayload = {
+      invoiceNo: "",
+      supplierID: finalSupplierID,
+      purchaseDate: new Date().toISOString(),
+      totalBill: Number(costPrice) || 0,
+      amountPaid: Number(AmountPaid) || 0,
+      adjustments: Number(adjustment) || 0,
+      totalStock: totalStock,
+      listVarient: listVarient,
+    };
 
     try {
-      setUploading(true)
+      setUploading(true);
       const token = localStorage.getItem("token");
 
-      const response = await ModifyProductVarinet(payload, ID ,String(token) );
+      const response = await ModifyProductVarinet(payload, ID, String(token));
       if (response.status === 200 || response.status === 201) {
         getProduct();
         getVarient(ID);
-        setListVarient([])
-        setAmountPaid("")
+        setListVarient([]);
+        setAmountPaid("");
         setAdjustment("");
         setShowList(false);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
     } catch (error) {
-      setUploading(false)
+      setUploading(false);
       console.log("Error in basicInfo:", error);
-    }
-    finally{
-      setUploading(false)
+    } finally {
+      setUploading(false);
     }
   };
   const getVarient = async (ID: string) => {
@@ -403,41 +411,39 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const deleteVarinet = async (varientID: string) => {
     const data = getVarinetList.find((item) => item.varientID === varientID);
     if (!data) return;
-    
-    const purchaseID =
-      data.varientAttributes[0].billingDetail[0].purchaseID ;
-      
+
+    const purchaseID = data.varientAttributes[0].billingDetail[0].purchaseID;
+
     const totalQuantity = data.varientAttributes.reduce(
       (total, attr) => total + Number(attr.qty || 0),
       0
     );
-    try{
+    try {
       setUploading(true);
-    const token = localStorage.getItem("token");
-    const payload = {
-      purchaseID: purchaseID,
-      productID: ID,
-      varientID: varientID,
-      totalQuantity: totalQuantity,
-    };
-    console.log(payload)
-    const response = await DeleteVarinetApi(payload, String(token));
-    if (response.status === 200 || response.status === 201) {
-      console.log(response);
-      setShowList(false);
-      getProduct();
-      setID("");
-      setPurchaseID("");
-      setIsOpenVarinet(false);
-      setGetVarinetList((item) => item.filter((emp) => emp.varientID !== ID));
-    }
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
-    }catch(error){
-      console.log(error)
-    }
-    finally{
+      const token = localStorage.getItem("token");
+      const payload = {
+        purchaseID: purchaseID,
+        productID: ID,
+        varientID: varientID,
+        totalQuantity: totalQuantity,
+      };
+      console.log(payload);
+      const response = await DeleteVarinetApi(payload, String(token));
+      if (response.status === 200 || response.status === 201) {
+        console.log(response);
+        setShowList(false);
+        getProduct();
+        setID("");
+        setPurchaseID("");
+        setIsOpenVarinet(false);
+        setGetVarinetList((item) => item.filter((emp) => emp.varientID !== ID));
+      }
+      if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
       setUploading(false);
     }
   };
@@ -488,35 +494,33 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     setCountryHideList(countryHideList.filter((_, i) => i !== index));
   };
 
-const handleAddMainVariant = () => {
-  if (!mainVarientName.trim()) {
-    alert("Please enter a Variant Name");
-    return;
-  }
+  const handleAddMainVariant = () => {
+    if (!mainVarientName.trim()) {
+      alert("Please enter a Variant Name");
+      return;
+    }
 
-  if (currentAttributes.length === 0) {
-    alert("Please add at least one attribute");
-    return;
-  }
+    if (currentAttributes.length === 0) {
+      alert("Please add at least one attribute");
+      return;
+    }
 
+    const updatedList: Varient[] = [
+      ...listVarient,
+      {
+        varientName: mainVarientName.trim(),
+        varientAttributes: currentAttributes,
+      },
+    ];
+    console.log(updatedList);
+    setListVarient(updatedList);
 
+    // Reset
+    setMainVarientName("");
+    setCurrentAttributes([]);
+  };
 
-  const updatedList: Varient[] = [
-    ...listVarient,
-    {
-      varientName: mainVarientName.trim(),
-      varientAttributes: currentAttributes,
-    },
-  ];
-console.log(updatedList)
-  setListVarient(updatedList);
-
-  // Reset
-  setMainVarientName("");
-  setCurrentAttributes([]);
-};
-
- const costPrice = listVarient.reduce((total, variant) => {
+  const costPrice = listVarient.reduce((total, variant) => {
     return (
       total +
       variant.varientAttributes.reduce((sum, attr) => sum + attr.costPrice, 0)
@@ -745,7 +749,7 @@ console.log(updatedList)
     } else if (response.status === 401) {
       router.push("/sellerlogin");
     }
-  }; 
+  };
   const deleteImages = async (ID: string) => {
     const token = localStorage.getItem("token");
     const response = await DeleteImageApi(ID, String(token));
@@ -818,7 +822,7 @@ console.log(updatedList)
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition flex items-center justify-center gap-2"
                 disabled={deleting} // disable while loading
               >
-                {Uploading ? <Spinner /> : 'Delete'}
+                {Uploading ? <Spinner /> : "Delete"}
               </button>
             </div>
           </div>
@@ -1538,11 +1542,11 @@ console.log(updatedList)
                       className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     />
                     <button
-                    onClick={handleAddMainVariant}
+                      onClick={handleAddMainVariant}
                       className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                     >
-                  Save Variant
-                </button>
+                      Save Variant
+                    </button>
                   </div>
 
                   {/* Table of current attributes (sub-variants) */}
@@ -1790,128 +1794,295 @@ console.log(updatedList)
               </>
             ) : (
               <>
-              {GettingVarinet ? (
-                <>
-                <Spinner />
-                </>
-              ):(
-              <>
-              {getVarinetList.length > 0 ? (
-                  <div className="space-y-4 mt-3">
-                    {getVarinetList.map((item) => (
-                      <div
-                        key={item.varientID}
-                        className="border border-gray-200 rounded-lg shadow-sm bg-white"
-                      >
-                        {/* Header */}
-                        <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-lg">
-                          <h3 className="text-base font-semibold text-gray-800 capitalize">
-                            {item.variantName}
-                          </h3>
-
-                          <button
-                            onClick={() => {
-                              setIsOpenVarinet(true);
-                              setID(item.varientID);
-                            }}
-                            className="text-red-600 hover:text-red-700 transition"
-                            title="Delete Variant"
-                          >
-                            <Trash className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        {/* Attributes Table */}
-                        <div className="px-4 py-3 overflow-x-auto">
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="text-xs font-semibold text-gray-600 border-b">
-                                <th className="text-left px-4 py-2">Value</th>
-                                <th className="text-left px-4 py-2">Qty</th>
-                                <th className="text-left px-4 py-2">
-                                  Cost Price
-                                </th>
-                                <th className="text-left px-4 py-2">
-                                  Sale Price
-                                </th>
-                                <th className="text-left px-4 py-2">Action</th>
-                              </tr>
-                            </thead>
-
-                            <tbody>
-                              {item.varientAttributes.map((attr) => (
-                                <tr
-                                  key={attr.attributeID}
-                                  className="text-sm border-b last:border-b-0"
-                                >
-                                  <td className="px-4 py-2 font-medium text-gray-800">
-                                    {attr.varientValue}
-                                  </td>
-
-                                  <td
-                                    className={`px-4 py-2 ${
-                                      attr.qty > 0
-                                        ? "text-green-600"
-                                        : "text-red-500"
-                                    }`}
-                                  >
-                                    {attr.qty}
-                                  </td>
-
-                                  <td className="px-4 py-2">
-                                    <input
-                                      type="text"
-                                      value={attr.costPrice}
-                                      // onChange={(e) =>
-                                      //   handleNewAttributeChange(
-                                      //     "costPrice",
-                                      //     e.target.value
-                                      //   )
-                                      // }
-                                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                    />
-                                  </td>
-
-                                  <td className="px-4 py-2">
-                                    <input
-                                      type="text"
-                                      value={attr.salePrice}
-                                      // onChange={(e) =>
-                                      //   handleNewAttributeChange(
-                                      //     "salePrice",
-                                      //     e.target.value
-                                      //   )
-                                      // }
-                                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                    />
-                                  </td>
-
-                                  <td className="px-4 py-2">
-                                    <div className="flex gap-2">
-                                      <button className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-md text-white">
-                                        <Pencil />
-                                      </button>
-                                      <button className="px-2 py-2 bg-red-500 hover:bg-red-600 rounded-md text-white">
-                                        <Trash />
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                {GettingVarinet ? (
+                  <>
+                    <Spinner />
+                  </>
                 ) : (
-                  <p className="text-center text-gray-500 mt-4">
-                    No Record Found
-                  </p>
+                  <>
+                    {getVarinetList.length > 0 ? (
+                      <div className="space-y-4 mt-3">
+                        {getVarinetList.map((item) => (
+                          <div
+                            key={item.varientID}
+                            className="border border-gray-200 rounded-lg shadow-sm bg-white"
+                          >
+                            {/* Header */}
+                            <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-lg">
+                              <h3 className="text-base font-semibold text-gray-800 capitalize">
+                                {item.variantName}
+                              </h3>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setModify(!modify);
+                                  }}
+                                  className={`${
+                                    !modify
+                                      ? `text-yellow-600 border border-yellow-500 hover:text-yellow-700`
+                                      : `text-red-600 border border-red-500 hover:text-red-700`
+                                  } p-1 rounded-md  transition`}
+                                  title="Modify Variant"
+                                >
+                                  {modify ? (
+                                    <X className="w-5 h-5" />
+                                  ) : (
+                                    <Pencil className="w-5 h-5" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setIsOpenVarinet(true);
+                                    setID(item.varientID);
+                                  }}
+                                  className="text-red-600 border border-red-500 p-1 rounded-md  hover:text-red-700 transition"
+                                  title="Delete Variant"
+                                >
+                                  <Trash className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Attributes Table */}
+                            <div className="px-4 py-3 overflow-x-auto">
+                              <table className="w-full border-collapse">
+                                <thead>
+                                  <tr className="text-xs font-semibold text-gray-600 border-b">
+                                    <th className="text-left px-4 py-2">
+                                      Value
+                                    </th>
+                                    <th className="text-left px-4 py-2">Qty</th>
+                                    <th className="text-left px-4 py-2">
+                                      Cost Price
+                                    </th>
+                                    <th className="text-left px-4 py-2">
+                                      Sale Price
+                                    </th>
+                                    <th className="text-left px-4 py-2">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
+
+                                <tbody>
+                                  {item.varientAttributes.map((attr) => (
+                                    <tr
+                                      key={attr.attributeID}
+                                      className="text-sm border-b last:border-b-0"
+                                    >
+                                      <td className="px-4 py-2 font-medium text-gray-800">
+                                        {attr.varientValue}
+                                      </td>
+
+                                      <td className={`px-4 py-2`}>
+                                        <input
+                                          type="text"
+                                          value={attr.qty || newAttribute.qty}
+                                          onChange={(e) =>
+                                            handleNewAttributeChange(
+                                              "qty",
+                                              e.target.value || 0
+                                            )
+                                          }
+                                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </td>
+
+                                      <td className="px-4 py-2">
+                                        <input
+                                          type="text"
+                                          value={attr.costPrice || newAttribute.costPrice}
+                                          onChange={(e) =>
+                                            handleNewAttributeChange(
+                                              "costPrice",
+                                              e.target.value || 0
+                                            )
+                                          }
+                                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </td>
+
+                                      <td className="px-4 py-2">
+                                        <input
+                                          type="text"
+                                          value={attr.salePrice || newAttribute.salePrice}
+                                          onChange={(e) =>
+                                            handleNewAttributeChange(
+                                              "salePrice",
+                                              e.target.value
+                                            )
+                                          }
+                                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </td>
+
+                                      <td className="px-4 py-2">
+                                        <div className="flex gap-2">
+                                          {/* <button className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-md text-white">
+                                            <Pencil />
+                                          </button> */}
+                                          <button className="px-2 py-2 bg-red-500 hover:bg-red-600 rounded-md text-white">
+                                            <Trash />
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            {modify && (
+                              <fieldset className="p-4 border border-gray-300 rounded-lg">
+                                <legend className="text-lg font-semibold text-gray-800 px-2">
+                                  Billing Information
+                                </legend>
+                                <div className="md:col-span-2">
+                                  {" "}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                                    {" "}
+                                    {/* Total Bill */}{" "}
+                                    <div>
+                                      {" "}
+                                      <label className="block text-gray-700 font-medium mb-2">
+                                        {" "}
+                                        Total Bill{" "}
+                                      </label>{" "}
+                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                                        {" "}
+                                        <Coins
+                                          className="text-gray-400 mr-2"
+                                          size={18}
+                                        />{" "}
+                                        <input
+                                          type="number"
+                                          value={item.varientAttributes.reduce(
+                                            (total, attr) => {
+                                              return (
+                                                total +
+                                                (Number(attr.costPrice) || 0) *
+                                                  (Number(attr.qty) || 1)
+                                              );
+                                            },
+                                            0
+                                          )}
+                                          name="totalBill"
+                                          placeholder="Enter Total Bill"
+                                          className="w-full bg-transparent outline-none text-gray-900"
+                                        />{" "}
+                                      </div>{" "}
+                                    </div>{" "}
+                                    {/* Adjustment */}{" "}
+                                    <div>
+                                      {" "}
+                                      <label className="block text-gray-700 font-medium mb-2">
+                                        {" "}
+                                        Adjustment{" "}
+                                      </label>{" "}
+                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                                        {" "}
+                                        <Coins
+                                          className="text-gray-400 mr-2"
+                                          size={18}
+                                        />{" "}
+                                        <input
+                                          value={adjustment}
+                                          type="number"
+                                          onChange={(e) =>
+                                            setAdjustment(e.target.value)
+                                          }
+                                          name="adjustment"
+                                          placeholder="Enter Adjustment"
+                                          className="w-full bg-transparent outline-none text-gray-900"
+                                        />{" "}
+                                      </div>{" "}
+                                    </div>{" "}
+                                    {/* Amount Paid */}{" "}
+                                    <div>
+                                      {" "}
+                                      <label className="block text-gray-700 font-medium mb-2">
+                                        {" "}
+                                        Amount Paid{" "}
+                                      </label>{" "}
+                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                                        {" "}
+                                        <Coins
+                                          className="text-gray-400 mr-2"
+                                          size={18}
+                                        />{" "}
+                                        <input
+                                          value={AmountPaid}
+                                          type="number"
+                                          onChange={(e) =>
+                                            setAmountPaid(e.target.value)
+                                          }
+                                          name="amountPaid"
+                                          placeholder="Enter Amount Paid"
+                                          className="w-full bg-transparent outline-none text-gray-900"
+                                        />{" "}
+                                      </div>{" "}
+                                    </div>{" "}
+                                    {/* Remaining Balance */}{" "}
+                                    <div>
+                                      {" "}
+                                      <label className="block text-gray-700 font-medium mb-2">
+                                        {" "}
+                                        Remaining Balance{" "}
+                                      </label>{" "}
+                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                                        {" "}
+                                        <CoinsIcon
+                                          className="text-gray-400 mr-2"
+                                          size={18}
+                                        />{" "}
+                                        <input
+                                          type="number"
+                                          value={
+                                            Number(costPrice) -
+                                              Number(AmountPaid) -
+                                              Number(adjustment) || 0
+                                          }
+                                          name="remainingBalance"
+                                          placeholder="Auto Calculated"
+                                          readOnly
+                                          className="w-full bg-transparent outline-none text-gray-900"
+                                        />{" "}
+                                      </div>{" "}
+                                    </div>{" "}
+                                    {/* Total Payable */}{" "}
+                                    <div className=" ">
+                                      {" "}
+                                      <label className="block text-gray-700 font-medium mb-2">
+                                        {" "}
+                                        Total Payable{" "}
+                                      </label>{" "}
+                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                                        {" "}
+                                        <Coins
+                                          className="text-gray-400 mr-2"
+                                          size={18}
+                                        />{" "}
+                                        <input
+                                          type="number"
+                                          name="totalPayable"
+                                          placeholder="Enter Total Payable"
+                                          className="w-full bg-transparent outline-none text-gray-900"
+                                        />{" "}
+                                      </div>{" "}
+                                    </div>{" "}
+                                  </div>{" "}
+                                </div>
+                              </fieldset>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-gray-500 mt-4">
+                        No Record Found
+                      </p>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-                
               </>
             )}
           </div>

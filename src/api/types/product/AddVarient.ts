@@ -8,7 +8,17 @@ export interface addVarinetPayload {
   totalStock: number;
   listVarient: Varient[];
 }
-
+export interface modifyVarinetPayload {
+  invoiceNo: string;
+  purchaseID: string;
+  varientID: string;
+  supplierID: string;
+  purchaseDate: string;
+  totalBill: number;
+  amountPaid: number;
+  adjustments: number;
+  listVarient: Varient[];
+}
 export interface Varient {
   varientName: string;
   varientAttributes: VarientAttribute[];

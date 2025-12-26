@@ -15,7 +15,7 @@ import {
   FileText,
   ScanEyeIcon,
 } from "lucide-react";
-// import SupplierForm from "../codes/supplier/page";
+import SupplierForm from "@/app/SelectedStore/admin/Codes/supplier/page";
 import PurchaseForm from "../purchase/page";
 import PurchaseReturnForm from "../purchaseReturn/page";
 

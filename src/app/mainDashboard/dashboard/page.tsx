@@ -229,7 +229,10 @@ export default function SellerOverviewDashbaord() {
                     {storeList.map((item) => (
                       <div
                         key={item.storeID}
-                        onClick={() => router.push(`/${item.storeID}`)}
+                        onClick={() => {
+                           sessionStorage.setItem("storeID", item.storeID);
+                          router.push(`/SelectedStore`)
+                        }}
                         className="relative bg-gray-50 shadow-md border border-gray-200 p-5 rounded-2xl 
                         hover:shadow-lg hover:-translate-y-1 hover:bg-white transition-all cursor-pointer text-center flex flex-col justify-center items-center"
                       >

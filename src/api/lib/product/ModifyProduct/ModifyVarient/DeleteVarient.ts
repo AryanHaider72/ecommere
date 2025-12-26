@@ -12,7 +12,7 @@ export default async function DeleteVarinetApi(
 
   const response = await postRequest(
     `/api/Product/Seller/ModifyProduct/VarientDelete`,
-    null,
+    data,
     customHeader
   );
   if (response.success) {
