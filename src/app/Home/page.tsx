@@ -228,10 +228,16 @@ export default function MainHome() {
       );
     }
   };
-  useEffect(() => {
+useEffect(() => {
+  const timer = setTimeout(() => {
     getProductFeatured();
     getProduct();
-  }, []);
+  }, 5000); // 5000 ms = 5 seconds
+
+  // Cleanup the timer if the component unmounts before timeout
+  return () => clearTimeout(timer);
+}, []);
+
 
   return (
     <div className="w-full min-h-screen bg-gray-100">
@@ -407,8 +413,8 @@ export default function MainHome() {
                             <button
                               onClick={scrollLefts}
                               className="absolute left-0 top-[42%] z-10 -translate-y-1/2
-               bg-white/90 hover:bg-white shadow-md rounded-full p-3
-               hidden md:flex"
+                              bg-white/90 hover:bg-white shadow-md rounded-full p-3
+                              hidden md:flex"
                             >
                               <ChevronLeft />
                             </button>
@@ -417,8 +423,8 @@ export default function MainHome() {
                             <button
                               onClick={scrollRight}
                               className="absolute right-0 top-[42%]  z-10 -translate-y-1/2
-               bg-white/90 hover:bg-white shadow-md rounded-full p-3
-               hidden md:flex"
+                            bg-white/90 hover:bg-white shadow-md rounded-full p-3
+                            hidden md:flex"
                             >
                               <ChevronRight />
                             </button>

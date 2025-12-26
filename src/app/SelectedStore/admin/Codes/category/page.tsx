@@ -309,16 +309,16 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      // Convert to WebP with watermark (your function)
-      const webPBlob = await convertImageToWebPWithWatermark(file, watermark);
+      // // Convert to WebP with watermark (your function)
+      // const webPBlob = await convertImageToWebPWithWatermark(file, watermark);
 
-      if (!webPBlob) {
-        alert(`Conversion failed for image ${file.name}`);
-        continue;
-      }
+      // if (!webPBlob) {
+      //   alert(`Conversion failed for image ${file.name}`);
+      //   continue;
+      // }
 
       // Upload to API
-      const res = await SendDataToApi(webPBlob as unknown as File);
+      const res = await SendDataToApi(file as unknown as File);
       if (res && res.data && res.data.secure_url) {
         uploadedUrls.push(res.data.secure_url);
         setListImages((prevState) => ({
