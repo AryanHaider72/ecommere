@@ -46,5 +46,6 @@ export interface ProductHome {
 
 export interface GetProductHomeApiResponse {
   message: string;
+  totalCount:number
   productList: ProductHome[];
 }

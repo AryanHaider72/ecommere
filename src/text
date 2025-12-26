@@ -1,214 +1,102 @@
-{(selectedOption2 === "Both" ||
-                  selectedOption2 === "OnlineStore") && (
-                  <div className="p-3 rounded-xl max-w-md">
-                    <h2 className="text-md text-gray-800 mb-4">
-                      Show in Country
-                    </h2>
+<div className="w-full bg-gray-700 py-2 px-6  flex justify-around items-center">
+        <div className="flex gap-4 items-center">
+          <div className="hidden lg:flex items-center">
+            <p className="text-white text-sm">Call-Us: +12-345-67890</p>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm text-gray-200">
+            Welcome To Our Platform{" "}
+            <a href="/login" className="text-blue-400">
+              Sign In
+            </a>{" "}
+          </p>
+        </div>
 
-                    <div className="flex flex-wrap flex-col gap-4 ">
-                      {/* Option 1 */}
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="ShowinCountry"
-                          value="ShowinAllCountry"
-                          checked={selectedOption === "ShowinAllCountry"}
-                          onChange={(e) => setSelectedOption(e.target.value)}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                          onClick={() => {
-                            setCountryHideList([]);
-                            setCountryShowList([]);
-                          }}
-                        />
+        {/* 🔹 Language & Currency */}
+        <div className="flex gap-3">
+          {/* Language */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsOpenLang(!isOpenLang);
+                setIsOpenCurrency(false);
+              }}
+              className="flex items-center text-white text-xs gap-1 focus:outline-none"
+            >
+              <span className="text-sm md:text-sm">{selectedLang}</span>
+              <ChevronDown
+                className={`w-4 h-4 transform transition-transform duration-300 ${
+                  isOpenLang ? "rotate-180" : "rotate-0"
+                }`}
+              />
+            </button>
 
-                        <span className="ml-2 text-gray-700 text-sm font-medium">
-                          Show in All Country
-                        </span>
-                      </label>
+            {isOpenLang && (
+              <div
+                className="absolute right-0 mt-2 w-28 bg-white text-gray-700 rounded-md shadow-lg origin-top z-100"
+                onMouseLeave={() => setIsOpenLang(false)}
+              >
+                <ul className="py-1 text-xs">
+                  {["English", "Urdu", "Hindi"].map((lang) => (
+                    <li
+                      key={lang}
+                      onClick={() => {
+                        setSelectedLang(lang);
+                        setIsOpenLang(false);
+                      }}
+                      className={`px-3 py-2 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${
+                        selectedLang === lang ? "bg-blue-100" : ""
+                      }`}
+                    >
+                      <span className="text-sm">{lang}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
-                      {/* Option 2 */}
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="ShowinCountry"
-                          value="ShowinSomeCountry"
-                          checked={selectedOption === "ShowinSomeCountry"}
-                          onChange={(e) => setSelectedOption(e.target.value)}
-                          onClick={() => setCountryHideList([])}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-700 text-sm font-medium">
-                          Show in Some Country
-                        </span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="ShowinCountry"
-                          value="HideinSomeCountry"
-                          checked={selectedOption === "HideinSomeCountry"}
-                          onChange={(e) => setSelectedOption(e.target.value)}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                          onClick={() => setCountryShowList([])}
-                        />
-                        <span className="ml-2 text-gray-700 text-sm font-medium">
-                          Hide in Some Country
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-                {selectedOption === "ShowinSomeCountry" && (
-                  <>
-                    <div className=" gap-4 mb-4">
-                      <label className=" mt-2 block text-gray-700 font-medium mb-1">
-                        Display Country
-                      </label>
-                      <div className="flex gap-2">
-                        <select
-                          value={DisplayCountryID}
-                          onChange={(e) => {
-                            const id = e.target.value;
-                            setDisplayCountryID(id);
-                            const data = listofCountry.find(
-                              (item) => item.countryID === id
-                            );
-                            if (data) {
-                              setDisplayCountryName(data.countryName);
-                            }
-                          }}
-                          className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select Country</option>
-                          {listofCountry.map((item) => (
-                            <option key={item.countryID} value={item.countryID}>
-                              {item.countryName}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => hanldeAddShowCountry()}
-                          className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
-                        >
-                          <Plus />
-                        </button>
-                      </div>
-                    </div>
-                    {countryShowLis.map((item, index) => (
-                      <div
-                        key={index}
-                        className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
-                      >
-                        <span>{item.countryName}</span>
-                        <X
-                          size={16}
-                          className="cursor-pointer hover:text-red-500 transition"
-                          onClick={() => handleRemoveShowCountry(index)}
-                        />
-                      </div>
-                    ))}
-                  </>
-                )}
-                {selectedOption === "HideinSomeCountry" && (
-                  <>
-                    <div className=" gap-4 mb-4">
-                      <label className=" mt-2 block text-gray-700 font-medium mb-1">
-                        Hide Country
-                      </label>
-                      <div className="flex gap-2">
-                        <select
-                          value={HideCountryID}
-                          onChange={(e) => {
-                            const id = e.target.value;
-                            setHideCountryID(id);
-                            const data = listofCountry.find(
-                              (item) => item.countryID === id
-                            );
-                            if (data) {
-                              setHideCountryName(data.countryName);
-                            }
-                          }}
-                          className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select Country</option>
-                          {listofCountry.map((item) => (
-                            <option key={item.countryID} value={item.countryID}>
-                              {item.countryName}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={hanldeAddHideCountry}
-                          className="text-white rounded-md px-2 bg-yellow-500 hover:bg-yellow-600"
-                        >
-                          <Plus />
-                        </button>
-                      </div>
-                    </div>
-                    {countryHideList.map((item, index) => (
-                      <div
-                        key={index}
-                        className="inline-flex mx-2  mt-1 items-center gap-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-300 shadow-sm"
-                      >
-                        <span>{item.countryName}</span>
-                        <X
-                          size={16}
-                          className="cursor-pointer hover:text-red-500 transition"
-                          onClick={() => handleRemoveHideCountry(index)}
-                        />
-                      </div>
-                    ))}
-                  </>
-                )}
+          {/* Currency */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsOpenCurrency(!isOpenCurrency);
+                setIsOpenLang(false);
+              }}
+              className="flex items-center text-white text-xs gap-1 focus:outline-none"
+            >
+              <span className="text-sm md:text-sm">{selectedCurrency}</span>
+              <ChevronDown
+                className={`w-4 h-4 transform transition-transform duration-300 ${
+                  isOpenCurrency ? "rotate-180" : "rotate-0"
+                }`}
+              />
+            </button>
 
-
-
-
-
-
-
-
-
-
-
-                // const hanldeAddShowCountry = () => {
-  //   // const data = countryShowLis.find((item) => item.countryID === id);
-  //   const updatedList = [
-  //     ...countryShowLis,
-  //     {
-  //       countryID: DisplayCountryID,
-  //       countryName: DisplayCountryName,
-  //     },
-  //   ];
-  //   setDisplayCountryID("");
-  //   setCountryShowList(updatedList);
-  // };
-
-  // const handleRemoveShowCountry = (index: number) => {
-  //   setCountryShowList(countryShowLis.filter((_, i) => i !== index));
-  // };
-
-  // const hanldeAddHideCountry = () => {
-  //   // const data = countryShowLis.find((item) => item.countryID === id);
-  //   const updatedList = [
-  //     ...countryHideList,
-  //     {
-  //       countryID: HideCountryID,
-  //       countryName: HideCountryName,
-  //     },
-  //   ];
-  //   setHideCountryID("");
-  //   setCountryHideList(updatedList);
-  // };
-
-  // const handleRemoveHideCountry = (index: number) => {
-  //   setCountryHideList(countryHideList.filter((_, i) => i !== index));
-  // };
-  // const getCountry = async () => {
-  //   const token = localStorage.getItem("token");
-  //   const response = await GetCountry(String(token));
-  //   if (response.status === 201 || response.status === 200) {
-  //     const data = response.data as CountrygetApiResponse;
-  //     setListofCountry(data.countryList);
-  //   } else if (response.status === 401) return router.push("/sellerogin");
-  // };
+            {isOpenCurrency && (
+              <div
+                className="absolute right-0 mt-2 w-28 bg-white text-gray-700 rounded-md shadow-lg origin-top z-100"
+                onMouseLeave={() => setIsOpenCurrency(false)}
+              >
+                <ul className="py-1 text-sm">
+                  {["Rupees", "Dollor"].map((currency) => (
+                    <li
+                      key={currency}
+                      onClick={() => {
+                        setSelectedCurrency(currency);
+                        setIsOpenCurrency(false);
+                      }}
+                      className={`px-3 py-2 cursor-pointer hover:bg-blue-500 hover:text-white transition-colors ${
+                        selectedCurrency === currency ? "bg-blue-100" : ""
+                      }`}
+                    >
+                      {currency}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>

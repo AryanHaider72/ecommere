@@ -21,8 +21,10 @@ import {
 
 export default function Navbar({
   onPageChange,
+  onCategoriesLoaded,
 }: {
   onPageChange: (page: string) => void;
+  onCategoriesLoaded?: (categories: Category[]) => void; // optional callback
 }) {
   const [searchComponentVisible, setSearchComponentVisible] = useState(false);
   const [cartComponentVisible, setCartComponentVisible] = useState(false);
@@ -71,8 +73,12 @@ export default function Navbar({
     if (response.status === 200 || response.status === 201) {
       console.log(data.categoryList);
       setCategories(data?.categoryList ?? []);
+      if (onCategoriesLoaded) {
+        onCategoriesLoaded(data?.categoryList ?? []); // pass categories to parent
+      }
     } else {
       setCategories([]);
+      if (onCategoriesLoaded) onCategoriesLoaded([]);
     }
   };
 
