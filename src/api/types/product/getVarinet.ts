@@ -13,8 +13,16 @@ export type VariantList = {
 
 // Variant value sub-type
 export type VariantValue = {
+  billingDetail: billingDetail[];
   attributeID: string;
   varientValue: string;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
   qty: number;
+};
+export type billingDetail = {
+  adjustments: number;
+  amountPaid: number;
+  purchaseID: string;
+  totalBill: number;
 };

@@ -1,13 +1,17 @@
 "use server";
 
 import { postRequest } from "@/api/authentication/main";
+import { deleteVarient } from "@/api/types/product/DeleteVarient";
 
-export default async function DeleteVarinetApi(data: string, token?: string) {
+export default async function DeleteVarinetApi(
+  data: deleteVarient,
+  token?: string
+) {
   const customHeader: Record<string, string> = {};
   if (token) customHeader.Authorization = `Bearer ${token}`;
 
   const response = await postRequest(
-    `/api/Product/Seller/ModifyProduct/VarientDelete/${data}`,
+    `/api/Product/Seller/ModifyProduct/VarientDelete`,
     null,
     customHeader
   );

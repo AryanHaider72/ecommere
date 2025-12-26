@@ -182,7 +182,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   const [HideCountryName, setHideCountryName] = useState("");
   const [adjustment, setAdjustment] = useState("");
   const [AmountPaid, setAmountPaid] = useState("");
-
+  const [totalBill, setTotalBill] = useState("");
   const [listofCountry, setListofCountry] = useState<Countryget[]>([]);
 
   const [responseBack, setResponseBack] = useState(0);
@@ -476,79 +476,98 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       // setResponseBack(3);
     }
   };
-  //ProductAdd
-  // ProductAdd
-  const productAdd = async () => {
+
+  useEffect(() => {
+    getCategroyMain();
+    getCountry();
+    SupplierGet();
+  }, []);
+  useEffect(() => {
     if (
-      !selectedOption2 ||
-      !productName ||
-      !CategoryMainID ||
-      !CategorySubID ||
-      !FurtherCategorySubID
+      responseBack === 1 ||
+      responseBack === 2 ||
+      responseBack === 3 ||
+      responseBack === 4
     ) {
-      return setResponseBack(2);
+      setTimeout(() => {
+        setResponseBack(0);
+      }, 2000);
     }
+  }, [responseBack]);
 
-    // Await the image upload only if images are required (for online or both)
-    let uploadedUrls: string[] = [];
-    if (selectedOption2 === "OnlineStore" || selectedOption2 === "Both") {
-      uploadedUrls = await handleUploadAll();
-      if (!uploadedUrls || uploadedUrls.length === 0) {
-        alert("Image upload failed. Please try again.");
-        return; // Stop if uploads failed
-      }
-    }
-
-    // Build the listCountry based on selectedOption
-    let listCountry: { countryID: string }[] = [];
-    if (selectedOption === "ShowinSomeCountry") {
-      listCountry = countryShowLis.map((item) => ({
-        countryID: item.countryID,
-      }));
-    } else if (selectedOption === "HideinSomeCountry") {
-      listCountry = countryHideList.map((item) => ({
-        countryID: item.countryID,
-      }));
-    }
-
-    const payload = {
-      storeID: storeID,
-      storeSale: selectedOption2,
-      categoryID: CategoryMainID,
-      productName: productName,
-      subCategoryDetailID: FurtherCategorySubID,
-      subCategoryID: CategorySubID,
-      unitID: UnitID,
-      discount: Number(discount) || 0,
-      currentStock: Number(totalQuantity),
-      threshold: Number(Threshold),
-      percentage: 0,
-      showinAllCountry: selectedOption === "ShowinAllCountry",
-      showinCountry: selectedOption === "ShowinSomeCountry",
-      notShowinCountry: selectedOption === "HideinSomeCountry",
-      feturedProduct: FeaturedProduct === "Yes",
-      description: description,
-      width: Number(Width) || 0,
-      height: Number(Height) || 0,
-      depth: Number(Depth) || 0,
-      weight: Number(Weight) || 0,
-      listCountry: listCountry,
-      listImage: uploadedUrls.map((url) => ({ url })), // Use the returned URLs directly
-      listVarient: listVarient,
-    };
-
+  const ProductListAdd = async () => {
     try {
       setLoading(true);
+      let uploadedUrls: string[] = [];
+      if (selectedOption2 === "OnlineStore" || selectedOption2 === "Both") {
+        uploadedUrls = await handleUploadAll();
+        if (!uploadedUrls || uploadedUrls.length === 0) {
+          alert("Image upload failed. Please try again.");
+          return; // Stop if uploads failed
+        }
+      }
+
+      // Build the listCountry based on selectedOption
+      let listCountry: { countryID: string }[] = [];
+      if (selectedOption === "ShowinSomeCountry") {
+        listCountry = countryShowLis.map((item) => ({
+          countryID: item.countryID,
+        }));
+      } else if (selectedOption === "HideinSomeCountry") {
+        listCountry = countryHideList.map((item) => ({
+          countryID: item.countryID,
+        }));
+      }
+      if (selectedOption3 === "Yes") {
+        setSupplierID(supplierID);
+      } else {
+        setSupplierID("DC4F35C5-8B69-454B-B3C5-75F16B2C54BE");
+      }
+      const productData = {
+        supplierID: supplierID,
+        storeID: storeID,
+        storeSale: selectedOption2,
+        categoryID: CategoryMainID,
+        invoiceNo: "",
+        productName: productName,
+        purchaseDate: new Date(),
+        subCategoryDetailID: FurtherCategorySubID,
+        subCategoryID: CategorySubID,
+        unitID: UnitID,
+        totalBill: Number(totalBill) || 0,
+        adjustments: Number(adjustment) || 0,
+        amountPaid: Number(AmountPaid) || 0,
+        discount: Number(discount) || 0,
+        currentStock: Number(total),
+        threshold: Number(Threshold),
+        percentage: 0,
+        showinAllCountry: selectedOption === "ShowinAllCountry",
+        showinCountry: selectedOption === "ShowinSomeCountry",
+        notShowinCountry: selectedOption === "HideinSomeCountry",
+        feturedProduct: FeaturedProduct === "Yes",
+        description: description,
+        width: Number(Width) || 0,
+        height: Number(Height) || 0,
+        depth: Number(Depth) || 0,
+        weight: Number(Weight) || 0,
+        listCountry: listCountry,
+        listImage: uploadedUrls.map((url) => ({ url })),
+        listVarient: listVarient,
+      };
+
       const token = localStorage.getItem("token");
-      const response = await AddProduct(payload, String(token));
+      const response = await AddProduct(productData, String(token));
       if (response.status === 200 || response.status === 201) {
         setResponseBack(1);
         setFeaturedProduct("No");
+        setTotalBill("");
         // Reset logic...
         setProductName("");
         setDiscount("");
         setThreshold("");
         setTotalQuantity("");
+        setAmountPaid("");
+        setAdjustment("");
         setWidth("");
         setHeight("");
         setDepth("");
@@ -576,96 +595,25 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     }
   };
 
-  useEffect(() => {
-    getCategroyMain();
-    getCountry();
-    SupplierGet();
-  }, []);
-  useEffect(() => {
-    if (
-      responseBack === 1 ||
-      responseBack === 2 ||
-      responseBack === 3 ||
-      responseBack === 4
-    ) {
-      setTimeout(() => {
-        setResponseBack(0);
-      }, 2000);
-    }
-  }, [responseBack]);
-
-  const ProductListAdd = async () => {
-    let uploadedUrls: string[] = [];
-    if (selectedOption2 === "OnlineStore" || selectedOption2 === "Both") {
-      uploadedUrls = await handleUploadAll();
-      if (!uploadedUrls || uploadedUrls.length === 0) {
-        alert("Image upload failed. Please try again.");
-        return; // Stop if uploads failed
-      }
-    }
-
-    // Build the listCountry based on selectedOption
-    let listCountry: { countryID: string }[] = [];
-    if (selectedOption === "ShowinSomeCountry") {
-      listCountry = countryShowLis.map((item) => ({
-        countryID: item.countryID,
-      }));
-    } else if (selectedOption === "HideinSomeCountry") {
-      listCountry = countryHideList.map((item) => ({
-        countryID: item.countryID,
-      }));
-    }
-    const productData = {
-      supplierID: supplierID,
-      storeID: storeID,
-      storeSale: selectedOption2,
-      categoryID: CategoryMainID,
-      productName: productName,
-      subCategoryDetailID: FurtherCategorySubID,
-      subCategoryID: CategorySubID,
-      unitID: UnitID,
-      costPrice: Number(costPrice) || 0,
-      adjustment: Number(adjustment) || 0,
-      amountPaid: Number(AmountPaid) || 0,
-      discount: Number(discount) || 0,
-      currentStock: Number(totalQuantity),
-      threshold: Number(Threshold),
-      percentage: 0,
-      showinAllCountry: selectedOption === "ShowinAllCountry",
-      showinCountry: selectedOption === "ShowinSomeCountry",
-      notShowinCountry: selectedOption === "HideinSomeCountry",
-      feturedProduct: FeaturedProduct === "Yes",
-      description: description,
-      width: Number(Width) || 0,
-      height: Number(Height) || 0,
-      depth: Number(Depth) || 0,
-      weight: Number(Weight) || 0,
-      listCountry: listCountry,
-      listImage: uploadedUrls.map((url) => ({ url })),
-      listVarient: listVarient,
-    };
-    console.log("Product Payload: ", productData);
-    setCartList((prev) => {
-      if (prev.length === 0) {
-        // First cart with first product
-        return [{ productList: [productData] }];
-      }
-      // Add product to the first cart
-      return [
-        {
-          ...prev[0],
-          productList: [...prev[0].productList, productData],
-        },
-      ];
-    });
-    console.log(cartList);
-  };
   const costPrice = listVarient.reduce((total, variant) => {
     return (
       total +
       variant.varientAttributes.reduce((sum, attr) => sum + attr.costPrice, 0)
     );
   }, 0);
+  const total = listVarient.reduce((total, variant) => {
+    return (
+      total + variant.varientAttributes.reduce((sum, attr) => sum + attr.qty, 0)
+    );
+  }, 0);
+  useEffect(() => {
+    if (selectedOption3 === "Yes") {
+      setTotalBill(costPrice.toString());
+    } else {
+      setTotalBill("0");
+    }
+  }, [costPrice, selectedOption3]);
+
   return (
     <div className="w-full px-4 md:px-8 pb-10">
       <div className="flex justify-between items-center mb-6">
@@ -888,9 +836,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                     </label>
                     <input
                       type="text"
-                      value={TotalQuantity}
-                      onChange={(e) => setTotalQuantity(e.target.value)}
+                      value={total || 0}
                       placeholder="Enter Qunatity"
+                      readOnly
                       className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -1601,25 +1549,6 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                   </div>
                 </fieldset>
               )}
-              {/* Floating Cart Button */}
-              {selectedOption3 === "Yes" && (
-                <button
-                  onClick={() => ProductListAdd()}
-                  className="px-2 py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all relative"
-                >
-                  <div className="flex gap-2 items-center">
-                    <ShoppingCart />
-                    <span>Add To Cart</span>
-                  </div>
-
-                  {/* Floating number badge */}
-                  {cartList.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white font-bold w-5 h-5 flex items-center justify-center rounded-full text-xs shadow-md">
-                      {cartList.length}
-                    </span>
-                  )}
-                </button>
-              )}
 
               {responseBack === 2 && (
                 <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
@@ -1642,7 +1571,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                 </div>
               )}
               <button
-                onClick={productAdd}
+                onClick={ProductListAdd}
                 className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
               >
                 {Loading ? "Saving.." : "Save"}
@@ -1687,7 +1616,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
               <p className="font-semibold text-gray-800 text-center">
                 {displayTitle}
               </p>
-              {Number(totalQuantity) > 0 ? (
+              {Number(total) > 0 ? (
                 <p className=" px-2 py-1 text-sm bg-green-200 text-green-500 text-center rounded-md">
                   Available in Stock
                 </p>

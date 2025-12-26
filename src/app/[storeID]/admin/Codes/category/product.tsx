@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Pencil, Plus, Trash, X } from "lucide-react";
+import { Camera, Coins, CoinsIcon, Pencil, Plus, Trash, Upload, X } from "lucide-react";
 import DeleteProductApi from "@/api/lib/product/DeleteProduct/DeleteProduct";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import { useRouter } from "next/navigation";
@@ -48,6 +48,11 @@ import { SendDataToApi } from "@/api/OtherController/router";
 import convertImageToWebPWithWatermark from "@/api/OtherController/webConverter";
 import { ImageApiRequest, ImagesList } from "@/api/types/product/addImages";
 import AddImageProduct from "@/api/lib/product/ModifyProduct/ModifyImage/addImages";
+import {
+  ResponseSupplierGetData,
+  SupplierData,
+} from "@/api/types/PosIntegration/Suppplier/addSupplier";
+import GetSupplier from "@/api/lib/PosIntegration/Supplier/GetSupplier";
 
 interface CountryList {
   countryID: string;
@@ -60,7 +65,8 @@ interface Varient {
 interface VarientAttribute {
   varientValue: string;
   qty: number;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
 }
 
 export default function ProductCard({ storeID }: { storeID?: string }) {
@@ -94,6 +100,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [countryHideList, setCountryHideList] = useState<CountryList[]>([]);
   const [countryShowLis, setCountryShowList] = useState<CountryList[]>([]);
   const [getVarinetList, setGetVarinetList] = useState<VariantList[]>([]);
+  const [supplierID, setSupplierID] = useState("");
+  const [SupplierList, setSupplierList] = useState<SupplierData[]>([]);
   const [ImageList, setImageList] = useState<ImageListID[]>([]);
   const [CategoryMainID, setCategoryMainID] = useState("");
   const [CategorySubID, setCategorySubID] = useState("");
@@ -103,6 +111,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [catgeorySubList, setCatgeorySubList] = useState<CategorySub[]>([]);
   const [FurtherSubList, setFurtherSubList] = useState<FurtherSub[]>([]);
   const [UnitList, setUnitList] = useState<UnitListID[]>([]);
+  const [purchaseID, setPurchaseID] = useState("");
   //VARIENT States
   const [listVarient, setListVarient] = useState<Varient[]>([]);
   const [mainVarientName, setMainVarientName] = useState("");
@@ -112,7 +121,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [newAttribute, setNewAttribute] = useState<VarientAttribute>({
     varientValue: "",
     qty: 0,
-    amount: 0,
+    costPrice: 0,
+    salePrice: 0,
   });
 
   const [images, setImages] = useState<(File | null)[]>([null, null, null]);
@@ -134,6 +144,12 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [deleting, setDeleting] = useState(false);
 
   const [selectedOption2, setSelectedOption2] = useState("OnlineStore");
+  const [GettingVarinet, setGettingVarinet] = useState(false);
+  const [selectedOption3, setSelectedOption3] = useState("No");
+    const [adjustment, setAdjustment] = useState("");
+    const [AmountPaid, setAmountPaid] = useState("");
+    const [totalBill, setTotalBill] = useState("");
+    const[Uploading,setUploading] = useState(false);
 
   const getProduct = async () => {
     try {
@@ -159,9 +175,41 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       setLoading(false);
     }
   };
+  const getCategroyMain = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
 
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      setCatgeoryMainList(data.categoryList);
+      getCategorySub(data.categoryList[0].categoryID);
+      setCategoryMainID(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
+  const SupplierGet = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await GetSupplier(String(token));
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as ResponseSupplierGetData;
+        setSupplierID(data.supplierList[0].supplierID);
+        setSupplierList(
+          data.supplierList.filter((item) => item.supplierName !== "SYSGEN")
+        );
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (err) {
+      // setResponseBack(3);
+    }
+  };
   useEffect(() => {
+    SupplierGet();
     getProduct();
+    getCategroyMain();
   }, []);
 
   const deleteProduct = async (productID: string) => {
@@ -184,7 +232,6 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   };
 
   const fetchData = (ID: String) => {
-    getCategroyMain();
     const data = productList.find((item) => item.productID === ID);
     if (data) {
       getCategorySub(data.categoryID);
@@ -283,31 +330,66 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     }
   };
 
-  const addVarient = async (payload: addVarinetPayload) => {
+  const addVarient = async () => {
+
+  const totalStock = listVarient.reduce((total, variant) => {
+    return (
+      total +
+      variant.varientAttributes.reduce(
+        (sum, attr) => sum + Number(attr.qty || 0),
+        0
+      )
+    );
+  }, 0);
+
+  const finalSupplierID =
+    selectedOption3 === "Yes"
+      ? supplierID
+      : "DC4F35C5-8B69-454B-B3C5-75F16B2C54BE";
+
+  const payload: addVarinetPayload = {
+    invoiceNo: "",
+    supplierID: finalSupplierID,
+    purchaseDate: new Date().toISOString(),
+    totalBill: Number(costPrice) || 0,
+    amountPaid: Number(AmountPaid) || 0,
+    adjustments: Number(adjustment) || 0,
+    totalStock: totalStock,
+    listVarient: listVarient,
+  };
+
     try {
+      setUploading(true)
       const token = localStorage.getItem("token");
 
-      const response = await ModifyProductVarinet(payload, String(token), ID);
+      const response = await ModifyProductVarinet(payload, ID ,String(token) );
       if (response.status === 200 || response.status === 201) {
         getProduct();
         getVarient(ID);
-
+        setListVarient([])
+        setAmountPaid("")
+        setAdjustment("");
         setShowList(false);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       }
     } catch (error) {
+      setUploading(false)
       console.log("Error in basicInfo:", error);
+    }
+    finally{
+      setUploading(false)
     }
   };
   const getVarient = async (ID: string) => {
     try {
-      setLoading(true);
+      setGettingVarinet(true);
       const token = localStorage.getItem("token");
 
       const response = await GetVarinet(String(token), ID);
       if (response.status === 200 || response.status === 201) {
         const data = response.data as VarinetApiResponse;
+        console.log(data);
         setGetVarinetList(data.vareintList);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
@@ -315,21 +397,48 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     } catch (error) {
       console.log("Error in basicInfo:", error);
     } finally {
-      setLoading(false);
+      setGettingVarinet(false);
     }
   };
-  const deleteVarinet = async (ID: string) => {
+  const deleteVarinet = async (varientID: string) => {
+    const data = getVarinetList.find((item) => item.varientID === varientID);
+    if (!data) return;
+    
+    const purchaseID =
+      data.varientAttributes[0].billingDetail[0].purchaseID ;
+      
+    const totalQuantity = data.varientAttributes.reduce(
+      (total, attr) => total + Number(attr.qty || 0),
+      0
+    );
+    try{
+      setUploading(true);
     const token = localStorage.getItem("token");
-    const response = await DeleteVarinetApi(ID, String(token));
+    const payload = {
+      purchaseID: purchaseID,
+      productID: ID,
+      varientID: varientID,
+      totalQuantity: totalQuantity,
+    };
+    console.log(payload)
+    const response = await DeleteVarinetApi(payload, String(token));
     if (response.status === 200 || response.status === 201) {
       console.log(response);
       setShowList(false);
       getProduct();
+      setID("");
+      setPurchaseID("");
       setIsOpenVarinet(false);
       setGetVarinetList((item) => item.filter((emp) => emp.varientID !== ID));
     }
     if (response.status === 401) {
       router.push("/sellerlogin");
+    }
+    }catch(error){
+      console.log(error)
+    }
+    finally{
+      setUploading(false);
     }
   };
   const filteredProducts = (productList || []).filter((product) => {
@@ -379,29 +488,40 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     setCountryHideList(countryHideList.filter((_, i) => i !== index));
   };
 
-  const handleAddMainVariant = () => {
-    if (!mainVarientName.trim()) {
-      alert("Please enter a Variant Name");
-      return;
-    }
-    if (currentAttributes.length === 0) {
-      alert("Please add at least one attribute");
-      return;
-    }
+const handleAddMainVariant = () => {
+  if (!mainVarientName.trim()) {
+    alert("Please enter a Variant Name");
+    return;
+  }
 
-    const updatedList = [
-      ...listVarient,
-      {
-        varientName: mainVarientName.trim(),
-        varientAttributes: currentAttributes,
-      },
-    ];
-    setListVarient(updatedList);
-    addVarient({ listVarient: updatedList });
-    // Reset inputs for next variant
-    setMainVarientName("");
-    setCurrentAttributes([]);
-  };
+  if (currentAttributes.length === 0) {
+    alert("Please add at least one attribute");
+    return;
+  }
+
+
+
+  const updatedList: Varient[] = [
+    ...listVarient,
+    {
+      varientName: mainVarientName.trim(),
+      varientAttributes: currentAttributes,
+    },
+  ];
+console.log(updatedList)
+  setListVarient(updatedList);
+
+  // Reset
+  setMainVarientName("");
+  setCurrentAttributes([]);
+};
+
+ const costPrice = listVarient.reduce((total, variant) => {
+    return (
+      total +
+      variant.varientAttributes.reduce((sum, attr) => sum + attr.costPrice, 0)
+    );
+  }, 0);
 
   // Add new attribute row to currentAttributes
   const handleAddAttribute = () => {
@@ -410,7 +530,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       return;
     }
     setCurrentAttributes([...currentAttributes, newAttribute]);
-    setNewAttribute({ varientValue: "", qty: 0, amount: 0 });
+    setNewAttribute({ varientValue: "", qty: 0, costPrice: 0, salePrice: 0 });
   };
 
   // Update newAttribute inputs (for the input row)
@@ -510,6 +630,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       console.log("Error in basicInfo:", error);
     }
   };
+
   const sendMultipleImages = async (files: File[]) => {
     if (!files || files.length === 0) {
       alert("Please select at least one file");
@@ -560,20 +681,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       setListofCountry(data.countryList);
     } else if (response.status === 401) return router.push("/sellerogin");
   };
-  const getCategroyMain = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetCategoryMain(String(token));
 
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as CategoryMainApiResponse;
-      setCatgeoryMainList(data.categoryList);
-      getCategorySub(data.categoryList[0].categoryID);
-      setCategoryMainID(data.categoryList[0].categoryID);
-    }
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
-  };
   const getCategorySub = async (ID: string) => {
     const formData = {
       categoryID: ID,
@@ -637,7 +745,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     } else if (response.status === 401) {
       router.push("/sellerlogin");
     }
-  };
+  }; 
   const deleteImages = async (ID: string) => {
     const token = localStorage.getItem("token");
     const response = await DeleteImageApi(ID, String(token));
@@ -710,8 +818,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition flex items-center justify-center gap-2"
                 disabled={deleting} // disable while loading
               >
-                {deleting && <Spinner />}
-                Delete
+                {Uploading ? <Spinner /> : 'Delete'}
               </button>
             </div>
           </div>
@@ -1312,7 +1419,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       )}
       {varinetAbout && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 px-2">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-end items-end mb-4">
               <button
                 className="cursor-pointer"
@@ -1348,6 +1455,74 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
             </div>
             {showList ? (
               <>
+                <div className="p-3 rounded-xl max-w-md">
+                  <h2 className="text-md text-gray-800 mb-4">Purchase</h2>
+
+                  <div className="flex flex-wrap  gap-4 ">
+                    {/* Option 1 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="supplier"
+                        value="Yes"
+                        checked={selectedOption3 === "Yes"}
+                        onChange={(e) => setSelectedOption3("Yes")}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        Yes
+                      </span>
+                    </label>
+
+                    {/* Option 2 */}
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="supplier"
+                        value="No"
+                        checked={selectedOption3 === "No"}
+                        onChange={(e) => setSelectedOption3("No")}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-700 text-sm font-medium">
+                        No
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                {selectedOption3 === "Yes" && (
+                  <div className=" md:flex-row gap-4 mb-4">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Supplier
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-300 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                      value={supplierID}
+                      onChange={(e) => {
+                        {
+                          setSupplierID(e.target.value);
+                        }
+                      }}
+                    >
+                      {SupplierList.length !== 0 ? (
+                        <>
+                          {SupplierList.map((item) => (
+                            <option
+                              key={item.supplierID}
+                              value={item.supplierID}
+                              className="p-2"
+                            >
+                              {item.supplierName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option> No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+                )}
+
                 <fieldset className="p-4 border border-gray-300 rounded-lg">
                   <legend className="text-lg font-semibold mb-4">
                     Variant Info
@@ -1362,12 +1537,12 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                       onChange={(e) => setMainVarientName(e.target.value)}
                       className="flex-grow p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     />
-                    {/* <button
-                  
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                >
+                    <button
+                    onClick={handleAddMainVariant}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                    >
                   Save Variant
-                </button> */}
+                </button>
                   </div>
 
                   {/* Table of current attributes (sub-variants) */}
@@ -1377,7 +1552,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                         <tr>
                           <th className="px-4 py-2">Attribute Name</th>
                           <th className="px-4 py-2">Qty</th>
-                          <th className="px-4 py-2">Amount</th>
+                          <th className="px-4 py-2">CP</th>
+                          <th className="px-4 py-2">SP</th>
                           <th className="px-4 py-2">Action</th>
                         </tr>
                       </thead>
@@ -1390,7 +1566,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                           >
                             <td className="px-4 py-2">{attr.varientValue}</td>
                             <td className="px-4 py-2">{attr.qty}</td>
-                            <td className="px-4 py-2">{attr.amount}</td>
+                            <td className="px-4 py-2">{attr.costPrice}</td>
+                            <td className="px-4 py-2">{attr.salePrice}</td>
                             <td className="px-4 py-2">
                               <button
                                 className="px-2 py-1 bg-red-600 text-white rounded"
@@ -1437,10 +1614,25 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               type="number"
                               min={0}
                               step="0.01"
-                              value={newAttribute.amount}
+                              value={newAttribute.costPrice}
                               onChange={(e) =>
                                 handleNewAttributeChange(
-                                  "amount",
+                                  "costPrice",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={newAttribute.salePrice}
+                              onChange={(e) =>
+                                handleNewAttributeChange(
+                                  "salePrice",
                                   parseFloat(e.target.value) || 0
                                 )
                               }
@@ -1462,16 +1654,149 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     </table>
                   </div>
                 </fieldset>
+                <fieldset className="p-4 border border-gray-300 rounded-lg">
+                  <legend className="text-lg font-semibold text-gray-800 px-2">
+                    Billing Information
+                  </legend>
+                  <div className="md:col-span-2">
+                    {" "}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                      {" "}
+                      {/* Total Bill */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Total Bill{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            value={costPrice}
+                            name="totalBill"
+                            placeholder="Enter Total Bill"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Adjustment */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Adjustment{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            value={adjustment}
+                            type="number"
+                            onChange={(e) => setAdjustment(e.target.value)}
+                            name="adjustment"
+                            placeholder="Enter Adjustment"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Amount Paid */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Amount Paid{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            value={AmountPaid}
+                            type="number"
+                            onChange={(e) => setAmountPaid(e.target.value)}
+                            name="amountPaid"
+                            placeholder="Enter Amount Paid"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Remaining Balance */}{" "}
+                      <div>
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Remaining Balance{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <CoinsIcon
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            value={
+                              Number(costPrice) -
+                                Number(AmountPaid) -
+                                Number(adjustment) || 0
+                            }
+                            name="remainingBalance"
+                            placeholder="Auto Calculated"
+                            readOnly
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                      {/* Total Payable */}{" "}
+                      <div className=" ">
+                        {" "}
+                        <label className="block text-gray-700 font-medium mb-2">
+                          {" "}
+                          Total Payable{" "}
+                        </label>{" "}
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          {" "}
+                          <Coins
+                            className="text-gray-400 mr-2"
+                            size={18}
+                          />{" "}
+                          <input
+                            type="number"
+                            name="totalPayable"
+                            placeholder="Enter Total Payable"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />{" "}
+                        </div>{" "}
+                      </div>{" "}
+                    </div>{" "}
+                  </div>
+                </fieldset>
                 <button
-                  onClick={handleAddMainVariant}
+                  onClick={addVarient}
                   className="px-2 py-2 w-full bg-green-600 hover:bg-green-700 rounded-md text-white mt-4"
                 >
-                  {loading ? "Saving..." : "Save"}
+                  {Uploading ? "Saving..." : "Save"}
                 </button>
               </>
             ) : (
               <>
-                {getVarinetList.length > 0 ? (
+              {GettingVarinet ? (
+                <>
+                <Spinner />
+                </>
+              ):(
+              <>
+              {getVarinetList.length > 0 ? (
                   <div className="space-y-4 mt-3">
                     {getVarinetList.map((item) => (
                       <div
@@ -1497,50 +1822,84 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                         </div>
 
                         {/* Attributes Table */}
-                        <div className="px-4 py-3">
-                          <div className="grid grid-cols-4 text-xs font-semibold text-gray-600 mb-2">
-                            <span>Value</span>
-                            <span>Qty</span>
-                            <span>Amount</span>
-                            <span>Status</span>
-                          </div>
+                        <div className="px-4 py-3 overflow-x-auto">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="text-xs font-semibold text-gray-600 border-b">
+                                <th className="text-left px-4 py-2">Value</th>
+                                <th className="text-left px-4 py-2">Qty</th>
+                                <th className="text-left px-4 py-2">
+                                  Cost Price
+                                </th>
+                                <th className="text-left px-4 py-2">
+                                  Sale Price
+                                </th>
+                                <th className="text-left px-4 py-2">Action</th>
+                              </tr>
+                            </thead>
 
-                          <div className="space-y-2">
-                            {item.varientAttributes.map((attr) => (
-                              <div
-                                key={attr.attributeID}
-                                className="grid grid-cols-4 items-center text-sm"
-                              >
-                                <span className="font-medium text-gray-800">
-                                  {attr.varientValue}
-                                </span>
-
-                                <span
-                                  className={`${
-                                    attr.qty > 0
-                                      ? "text-green-600"
-                                      : "text-red-500"
-                                  }`}
+                            <tbody>
+                              {item.varientAttributes.map((attr) => (
+                                <tr
+                                  key={attr.attributeID}
+                                  className="text-sm border-b last:border-b-0"
                                 >
-                                  {attr.qty}
-                                </span>
+                                  <td className="px-4 py-2 font-medium text-gray-800">
+                                    {attr.varientValue}
+                                  </td>
 
-                                <span className="text-gray-700">
-                                  ${attr.amount}
-                                </span>
+                                  <td
+                                    className={`px-4 py-2 ${
+                                      attr.qty > 0
+                                        ? "text-green-600"
+                                        : "text-red-500"
+                                    }`}
+                                  >
+                                    {attr.qty}
+                                  </td>
 
-                                <span
-                                  className={`text-xs px-2 py-0.5 rounded-full w-fit ${
-                                    attr.qty > 0
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-red-100 text-red-700"
-                                  }`}
-                                >
-                                  {attr.qty > 0 ? "In Stock" : "Out of Stock"}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="text"
+                                      value={attr.costPrice}
+                                      // onChange={(e) =>
+                                      //   handleNewAttributeChange(
+                                      //     "costPrice",
+                                      //     e.target.value
+                                      //   )
+                                      // }
+                                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                    />
+                                  </td>
+
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="text"
+                                      value={attr.salePrice}
+                                      // onChange={(e) =>
+                                      //   handleNewAttributeChange(
+                                      //     "salePrice",
+                                      //     e.target.value
+                                      //   )
+                                      // }
+                                      className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                    />
+                                  </td>
+
+                                  <td className="px-4 py-2">
+                                    <div className="flex gap-2">
+                                      <button className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-md text-white">
+                                        <Pencil />
+                                      </button>
+                                      <button className="px-2 py-2 bg-red-500 hover:bg-red-600 rounded-md text-white">
+                                        <Trash />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     ))}
@@ -1550,6 +1909,9 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     No Record Found
                   </p>
                 )}
+              </>
+            )}
+                
               </>
             )}
           </div>
@@ -2023,14 +2385,18 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                   onClick={() => {
                                     setVarinetAbout(true);
                                     fetchData(product.productID);
-
+                                    setID(product.productID);
                                     setShowList(false);
                                     getVarient(product.productID);
                                   }}
                                   className="ml-4 h-fit bg-yellow-500 p-2 rounded-md text-white hover:bg-yellow-600 transition"
                                   title="Edit Variant"
                                 >
-                                  <Pencil size={16} />
+                                  {GettingVarinet ? (
+                                    <Spinner />
+                                  ) : (
+                                    <Pencil size={16} />
+                                  )}
                                 </button>
                               </div>
                             </fieldset>

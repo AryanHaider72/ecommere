@@ -1,4 +1,11 @@
 export interface addVarinetPayload {
+  invoiceNo: string;
+  supplierID: string;
+  purchaseDate: string;
+  totalBill: number;
+  amountPaid: number;
+  adjustments: number;
+  totalStock: number;
   listVarient: Varient[];
 }
 
@@ -9,7 +16,8 @@ export interface Varient {
 export interface VarientAttribute {
   varientValue: string;
   qty: number;
-  amount: number;
+  costPrice: number;
+  salePrice: number;
 }
 export interface ResponseModifyProductData {
   status: string;
