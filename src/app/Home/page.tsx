@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Ellipsis,
   Filter,
   Heart,
   Info,
@@ -36,7 +37,18 @@ import ProductSkeleton from "./reveal";
 import GetProductHome from "@/api/lib/HomePage/Product/Product";
 import GetProductHomeFetured from "@/api/lib/HomePage/Product/FeturedProduct";
 import Spinner from "@/component/spinner/page";
-import { Category } from "@/api/types/HomePage/Navbar/Navbar";
+import {
+  Category,
+  NavbarApiResponse,
+} from "@/api/types/HomePage/Navbar/Navbar";
+import { CartData, cartList } from "@/api/types/Cart/CartData";
+import {
+  addToServerCart,
+  clearServerCart,
+  getServerCart,
+} from "@/api/lib/Cart/AddCart";
+import GetNavbar from "@/api/lib/HomePage/Navbar/Navbar";
+import CartComponent from "@/useFullComponent/CartComponent/page";
 
 interface Varient {
   varientName: string;
@@ -57,6 +69,8 @@ type urlTypes = {
 };
 
 export default function MainHome() {
+  const [cartOpen, setCartOpen] = useState(false);
+  const [uploading, setUplaoding] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
@@ -89,6 +103,7 @@ export default function MainHome() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [CartData, setCartData] = useState<CartData[]>([]);
 
   const [totalCount, setTotalCount] = useState(0);
   const [productList, setProductList] = useState<ProductHome[]>([]);
@@ -98,12 +113,7 @@ export default function MainHome() {
   const [listVarient, setListVarient] = useState<Varient[]>([]);
   const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
   const [imageUrl, setImageUrl] = useState("");
-
-  const [selectedProductImageIndex, setSelectedProductImageIndex] = useState<
-    Record<string, number>
-  >({});
-
-  const [active, setActive] = useState("Women");
+  const [cartList, setCartList] = useState<CartData[]>([]);
 
   const toggleAccordion = (index: number) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -128,7 +138,7 @@ export default function MainHome() {
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as GetProductHomeApiResponse;
-
+        console.log(data.productList);
         setTotalCount(data.totalCount);
 
         if (data.productList && data.productList.length > 0) {
@@ -232,8 +242,10 @@ export default function MainHome() {
     }
   };
   useEffect(() => {
+    handleShowCategories();
     getProductFeatured();
     getProduct(1);
+    serverCartData();
   }, []);
 
   useEffect(() => {
@@ -260,11 +272,79 @@ export default function MainHome() {
     return true;
   });
 
+  const addToCart = async (ID: string) => {
+    try {
+      setUplaoding(true);
+
+      const data = productList.find((item) => item.productID === ID);
+      if (!data) return;
+
+      const price =
+        data.variants[0].variantValues[0].salePrice === 0
+          ? data.variants[0].variantValues[1].salePrice
+          : data.variants[0].variantValues[0].salePrice;
+
+      const newItem: CartData = {
+        productID: data.productID,
+        productName: data.productName,
+        description: data.description,
+        quantity: 1,
+        discount: data.discount,
+        salePrice: price,
+        image: data.images?.[0]?.url,
+      };
+
+      const currentCart = await getServerCart();
+      const updatedCart = [...currentCart, newItem];
+
+      await addToServerCart(updatedCart);
+      serverCartData();
+      setCartList(updatedCart);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setUplaoding(false);
+    }
+  };
+
+  const handleShowCategories = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetNavbar(token || "");
+    const data = response.data as NavbarApiResponse;
+    if (response.status === 200 || response.status === 201) {
+      console.log(data.categoryList);
+      setCategories(data?.categoryList ?? []);
+      setSelectedCategoryId(data.categoryList[0].subCategoryID);
+    } else {
+      setCategories([]);
+    }
+  };
+  useEffect(() => {
+    if (CartData.length === 0) return;
+    addToServerCart(CartData);
+  }, [CartData]);
+
+  const serverCartData = async () => {
+    const cart = await getServerCart();
+    setCartList(cart);
+  };
+
+  const onClear = async () => {
+    await clearServerCart();
+    const freshCart = await getServerCart();
+    setCartList(freshCart);
+  };
   return (
     <div className="w-full min-h-screen bg-gray-100">
       <Navbar
         onPageChange={(page) => console.log("Navigate to:", page)}
-        onCategoriesLoaded={(categories) => setCategories(categories)}
+        SubCategoryID={(page) => console.log("Navigate to:", page)}
+        onCategoriesLoaded={(categories) =>
+          console.log("Categories loaded:", categories)
+        }
+        cartList={cartList} // Pass full cartList, not just length
+        setCartList={setCartList} // Pass setter so Navbar can update
+        onClear={onClear} // Pass clear handler
       />
 
       <main className="">
@@ -483,9 +563,58 @@ export default function MainHome() {
                                 <p className="text-gray-500 text-sm line-clamp-2">
                                   {item.description}
                                 </p>
+                                {/* <p className="text-lg font-semibold mt-3 text-gray-900">
+                                  {item.variants[0].variantValues[0]
+                                    .salePrice === 0 ? (
+                                    <>
+                                      {
+                                        item.variants[0].variantValues[1]
+                                          .salePrice
+                                      }
+                                    </>
+                                  ) : (
+                                    <>
+                                      {
+                                        item.variants[0].variantValues[0]
+                                          .salePrice
+                                      }
+                                    </>
+                                  )}{" "}
+                                  -/
+                                  {}
+                                </p> */}
+                                <p className="text-lg font-semibold mt-3 text-gray-900">
+                                  <span className="text-gray-900">
+                                    Rs.{" "}
+                                    {Number(
+                                      item.variants[0].variantValues[0]
+                                        .salePrice
+                                    ) -
+                                      (Number(
+                                        item.variants[0].variantValues[0]
+                                          .salePrice
+                                      ) *
+                                        Number(item.discount)) /
+                                        100}{" "}
+                                    <del className="text-gray-500 ml-2 text-base font-normal">
+                                      Rs.{" "}
+                                      {
+                                        item.variants[0].variantValues[0]
+                                          .salePrice
+                                      }
+                                    </del>
+                                  </span>
+                                </p>
                               </div>
                               <div className="w-full flex justify-end mb-1">
-                                <button className="mx-2 mb-1 p-2 bg-black text-white rounded-full shadow-md hover:bg-white hover:text-black border border-black transition-all duration-300 flex items-center justify-center">
+                                <button
+                                  onClick={() => {
+                                    addToCart(item.productID);
+                                  }}
+                                  className="mx-2 mb-1 p-2 bg-black text-white rounded-full shadow-md
+                                            hover:bg-white hover:text-black border border-black
+                                            transition-all duration-300 flex items-center justify-center"
+                                >
                                   <ShoppingCartIcon className="w-5 h-5" />
                                 </button>
                               </div>
@@ -743,7 +872,7 @@ export default function MainHome() {
               className={`
                 fixed top-0 left-0 z-50 h-full 
                 bg-white shadow-xl transform transition-transform duration-500 ease-in-out
-                w-[90vw] sm:w-[70vw] md:w-[50vw] lg:w-[35vw] xl:w-[30vw]
+                w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[30vw] xl:w-[20vw]
                 flex flex-col
               `}
             >

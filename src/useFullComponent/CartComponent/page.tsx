@@ -1,29 +1,86 @@
-import { CreditCard, ShoppingCart, Trash } from "lucide-react";
+import { clearServerCart, getServerCart } from "@/api/lib/Cart/AddCart";
+import { CartData, cartList } from "@/api/types/Cart/CartData";
+import { CreditCard, Minus, Plus, ShoppingCart, Trash } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export default function CartComponent() {
+interface CartComponentProps {
+  cartList: CartData[];
+  onClear: () => void;
+  setCartList: React.Dispatch<React.SetStateAction<CartData[]>>;
+}
+export default function CartComponent({
+  cartList,
+  setCartList,
+  onClear,
+}: CartComponentProps) {
+  const [NumberofProduct, setNumberofProduct] = useState(1);
+
   const checkOut = () => {
     window.location.href = "/checkOut";
   };
+
+  const updateQuantity = (index: any, newQuantity: any) => {
+    if (newQuantity < 1) return;
+    setCartList((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, quantity: newQuantity } : item
+      )
+    );
+  };
+  const cartData = async () => {
+    const cart = await getServerCart();
+    setCartList(cart);
+  };
+  const clearCart = () => {
+    onClear();
+  };
+
+  useEffect(() => {
+    cartData();
+  }, []);
+
+  const total = cartList.reduce(
+    (sum, item) =>
+      sum +
+      (item.salePrice - (item.salePrice * item.discount) / 100) *
+        (item.quantity || 1),
+    0
+  );
+  const targetAmount = 2000;
+  const remainingAmount = Math.max(Number(targetAmount) - total, 0);
+  const progressPercent = Math.min((total / Number(targetAmount)) * 100, 100);
+
   return (
     <div className="w-full h-[100vh] bg-white p-4 flex flex-col">
-      <h1 className="text-xl font-bold">My Cart (3)</h1>
+      <h1 className="text-xl font-bold">My Cart {cartList.length}</h1>
       <hr className="mt-2 mb-1 text-gray-300" />
       <div className="flex flex-col justify-between flex-grow">
         <div className="flex flex-col">
-          <h3 className="text-md text-gray-600 mt-4 mb-1 ">
-            Spend Rs:2000-/ More and enjoy Free Shipping !
-          </h3>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-1 mb-2 ">
+          {remainingAmount > 0 ? (
+            <h3 className="text-md text-gray-600 mt-4 mb-1">
+              Spend Rs:{remainingAmount} more and enjoy Free Shipping!
+            </h3>
+          ) : (
+            <h3 className="text-md text-gray-600 mt-4 mb-1">
+              Congrats! You qualify for Free Shipping.
+            </h3>
+          )}
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-1 mb-2">
             <div
-              className="bg-orange-400 h-2 rounded-full w-3/4"
+              className="bg-orange-400 h-2 rounded-full"
               role="progressbar"
-              aria-valuenow={75}
+              aria-valuenow={progressPercent}
               aria-valuemin={0}
               aria-valuemax={100}
+              style={{
+                width: `${progressPercent}%`,
+                transition: "width 0.5s ease-in-out",
+              }}
             ></div>
           </div>
           <hr className="mt-3 mb-3 text-gray-300" />
           <h1
+            onClick={clearCart}
             className="text-lg flex justify-end text-end text-gray-900 "
             style={{ cursor: "pointer" }}
           >
@@ -31,38 +88,81 @@ export default function CartComponent() {
           </h1>
 
           <div className="mt-5">
-            <div className="flex justify-between p-2 rounded">
-              <div className="flex">
-                <div>
-                  <img src={"/fashion_103.jpg"} width={80} height={50} />
+            {cartList.map((item, index) => (
+              <>
+                <div
+                  key={item.productID}
+                  className="flex justify-between p-2 rounded"
+                >
+                  <div className="flex">
+                    <div>
+                      <img src={item.image} width={80} height={50} />
+                    </div>
+                    <div className="ml-4 flex flex-col">
+                      <h3 className="text-lg mt-2">{item.productName}</h3>
+                      {/* <p className="text-gray-500">{item.description}</p> */}
+                      <p className="text-gray-500">
+                        {(item.salePrice -
+                          (item.salePrice * item.discount) / 100) *
+                          (item.quantity || 1)}
+                        -/
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col justify-between items-end">
+                    <div>
+                      {/* <button className="bg-gray-100 p-1 text-lg font-bold rounded">
+                        <Trash className="w-4 h-4 text-gray-800 hover:text-gray-900" />
+                      </button> */}
+                    </div>
+                    <div className="flex items-center justify-between w-32 border border-gray-300 rounded-md shadow-sm bg-gray-200 px-3 py-2">
+                      {NumberofProduct !== 1 ? (
+                        <button
+                          onClick={() => setNumberofProduct(NumberofProduct)}
+                          className="p-1  bg-white  shadow-sm rounded"
+                        >
+                          <Minus size={16} color="gray" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            updateQuantity(index, (item.quantity || 1) - 1)
+                          }
+                          disabled={(item.quantity || 1) === 1}
+                          className={`p-1 bg-white shadow-sm rounded ${
+                            (item.quantity || 1) === 1
+                              ? "opacity-50 cursor-not-allowed"
+                              : "hover:bg-gray-200"
+                          }`}
+                        >
+                          <Minus
+                            size={16}
+                            color={
+                              (item.quantity || 1) === 1 ? "gray" : "black"
+                            }
+                          />
+                        </button>
+                      )}
+                      <p className="text-lg font-medium">
+                        {item.quantity || 1}
+                      </p>
+                      <button
+                        onClick={() =>
+                          updateQuantity(index, (item.quantity || 1) + 1)
+                        }
+                        className="p-1 bg-white hover:bg-gray-100 shadow-sm rounded"
+                      >
+                        <Plus size={16} color="black" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="ml-4 flex flex-col">
-                  <h3 className="text-lg mt-2">Versatile Shacket</h3>
-                  <p className="text-gray-500">2500-/</p>
-                </div>
-              </div>
-              <div className="flex flex-col justify-between items-end">
-                <div>
-                  <button className="bg-gray-100 p-1 text-lg font-bold rounded">
-                    <Trash className="w-4 h-4 text-gray-800 hover:text-gray-900" />
-                  </button>
-                </div>
-                <div className="flex gap-2 item-center bg-gray-100 p-2 gap-3">
-                  <button className="bg-gray-200 hover:bg-gray-300 rounded-full w-6 h-6 text-center">
-                    -
-                  </button>
-                  <span className="text-center">1</span>
-                  <button className="bg-gray-200 hover:bg-gray-300 rounded-full w-6 h-6 text-center">
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
+                <hr className="mt-2 mb-2 text-gray-300" />
+              </>
+            ))}
           </div>
 
-          <hr className="mt-2 mb-2 text-gray-300" />
-
-          <div className="mt-5">
+          {/* <div className="mt-5">
             <div className="flex justify-between p-2 rounded">
               <div className="flex">
                 <div>
@@ -90,14 +190,16 @@ export default function CartComponent() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex flex-col ">
           <hr className="mt-1 text-gray-300" />
           <div className="flex justify-between mt-2">
             <span className="text-lg text-gray-800">Sub Total: </span>
-            <span className="text-lg text-gray-900 font-extrabold">3500-/</span>
+            <span className="text-lg text-gray-900 font-extrabold">
+              {total}-/
+            </span>
           </div>
           <hr className="mt-1 mb-2 text-gray-300" />
 

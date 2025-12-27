@@ -18,13 +18,23 @@ import {
   Category,
   NavbarApiResponse,
 } from "@/api/types/HomePage/Navbar/Navbar";
+import { clearServerCart, getServerCart } from "@/api/lib/Cart/AddCart";
+import { CartData } from "@/api/types/Cart/CartData";
 
 export default function Navbar({
   onPageChange,
   onCategoriesLoaded,
+  SubCategoryID,
+  cartList,
+  setCartList,
+  onClear,
 }: {
   onPageChange: (page: string) => void;
-  onCategoriesLoaded?: (categories: Category[]) => void; // optional callback
+  onCategoriesLoaded?: (categories: Category[]) => void;
+  SubCategoryID: (SubCategoryID: string) => void;
+  cartList: CartData[];
+  setCartList: React.Dispatch<React.SetStateAction<CartData[]>>;
+  onClear: () => void;
 }) {
   const [searchComponentVisible, setSearchComponentVisible] = useState(false);
   const [cartComponentVisible, setCartComponentVisible] = useState(false);
@@ -32,7 +42,7 @@ export default function Navbar({
   const [showOverlay2, setShowOverlay2] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-
+  const [subCategoryID, setsubCategoryID] = useState("");
   const router = useRouter();
 
   // ✅ Automatically close mobile menu when resizing to desktop
@@ -71,8 +81,8 @@ export default function Navbar({
     const response = await GetNavbar(token || "");
     const data = response.data as NavbarApiResponse;
     if (response.status === 200 || response.status === 201) {
-      console.log(data.categoryList);
       setCategories(data?.categoryList ?? []);
+      setsubCategoryID(data.categoryList[0].subCategoryID);
       if (onCategoriesLoaded) {
         onCategoriesLoaded(data?.categoryList ?? []); // pass categories to parent
       }
@@ -85,6 +95,12 @@ export default function Navbar({
   useEffect(() => {
     handleShowCategories();
   }, []);
+  // const onClear = async () => {
+  //   await clearServerCart();
+  //   const freshCart = await getServerCart();
+  //   setCartList(freshCart);
+  // };
+
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
@@ -165,7 +181,7 @@ export default function Navbar({
             <button className="relative group" title="Cart" onClick={openCart}>
               <ShoppingCart className="w-5 h-5 group-hover:text-blue-500 transition" />
               <span className="absolute -top-2 -right-2 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
-                1
+                {cartList.length}
               </span>
             </button>
           </div>
@@ -187,7 +203,9 @@ export default function Navbar({
             <h1 className="text-xl font-bold">Menu</h1>
             <button
               className="text-gray-600"
-              onClick={() => setMenuOpen(false)}
+              onClick={() => {
+                setMenuOpen(false);
+              }}
             >
               <X size={24} />
             </button>
@@ -288,7 +306,11 @@ export default function Navbar({
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <CartComponent />
+            <CartComponent
+              cartList={cartList}
+              setCartList={setCartList}
+              onClear={onClear}
+            />
             <button
               title="Close"
               className="absolute top-4 right-6 text-gray-500 hover:text-red-500"
