@@ -46,6 +46,7 @@ export default function Login() {
       const token = response.data?.token;
       localStorage.setItem("token", token as string);
       verfiedSeller(String(token));
+      console.log(response);
     }
     if (response?.status === 400 || response?.status === 401) {
       setResponseBack(1);

@@ -43,12 +43,14 @@ import {
 } from "@/api/types/HomePage/Navbar/Navbar";
 import { CartData, cartList } from "@/api/types/Cart/CartData";
 import {
+  AddToCart,
   addToServerCart,
   clearServerCart,
   getServerCart,
 } from "@/api/lib/Cart/AddCart";
 import GetNavbar from "@/api/lib/HomePage/Navbar/Navbar";
 import CartComponent from "@/useFullComponent/CartComponent/page";
+import CheckAuth from "@/api/authentication/checkAuth";
 
 interface Varient {
   varientName: string;
@@ -69,19 +71,10 @@ type urlTypes = {
 };
 
 export default function MainHome() {
-  const [cartOpen, setCartOpen] = useState(false);
   const [uploading, setUplaoding] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const scrollLeft = useRef(0);
 
   const [activePage, setActivePage] = useState("home");
-  const [activeSize, setActiveSize] = useState("");
-  const [selectedLang, setSelectedLang] = useState("English");
-  const [selectedCurrency, setSelectedCurrency] = useState("Dollor");
-  const [isOpenLang, setIsOpenLang] = useState(false);
-  const [isOpenCurrency, setIsOpenCurrency] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -140,6 +133,7 @@ export default function MainHome() {
         const data = response.data as GetProductHomeApiResponse;
         console.log(data.productList);
         setTotalCount(data.totalCount);
+        setLoading1(false);
 
         if (data.productList && data.productList.length > 0) {
           setProductList((prev) => [...prev, ...data.productList]);
@@ -179,7 +173,7 @@ export default function MainHome() {
   };
 
   const fetchData = (productID: string) => {
-    const data = productList.find((item) => item.productID === productID);
+    const data = filteredProducts.find((item) => item.productID === productID);
     if (data) {
       setProductName(data.productName);
       setDiscount(data.discount.toString());
@@ -271,11 +265,30 @@ export default function MainHome() {
 
     return true;
   });
-
+  const checkAuth = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const response = await CheckAuth(token as string);
+    console.log("Response from CheckAuth API:", response);
+    if (response?.status === 200 || response?.status === 201) {
+      const data = response.data as any;
+      if (data.loggedBy === "Customer") {
+        setUplaoding(true);
+        const data = productList.find((item) => item.productID === ID);
+        const token = localStorage.getItem("token");
+        if (data) {
+          const formData = {
+            productID: data.productID,
+            qty: 1,
+          };
+          await AddToCart(formData, String(token));
+        }
+      } else {
+        setUplaoding(false);
+      }
+    }
+  };
   const addToCart = async (ID: string) => {
     try {
-      setUplaoding(true);
-
       const data = productList.find((item) => item.productID === ID);
       if (!data) return;
 
@@ -297,13 +310,14 @@ export default function MainHome() {
       const currentCart = await getServerCart();
       const updatedCart = [...currentCart, newItem];
 
-      await addToServerCart(updatedCart);
+      const res = await addToServerCart(updatedCart);
+      if (res) {
+        checkAuth(ID);
+      }
       serverCartData();
       setCartList(updatedCart);
     } catch (error) {
       console.log(error);
-    } finally {
-      setUplaoding(false);
     }
   };
 
@@ -312,7 +326,6 @@ export default function MainHome() {
     const response = await GetNavbar(token || "");
     const data = response.data as NavbarApiResponse;
     if (response.status === 200 || response.status === 201) {
-      console.log(data.categoryList);
       setCategories(data?.categoryList ?? []);
       setSelectedCategoryId(data.categoryList[0].subCategoryID);
     } else {
@@ -500,13 +513,13 @@ export default function MainHome() {
                     <Filter className="w-5 h-5" />
                   </button>
                 </div>
-                {(loading2 || filteredProducts.length > 0) && (
+                {(loading1 || filteredProducts.length > 0) && (
                   <>
                     <hr className="w-full border-gray-400 mt-2 mb-6" />
 
                     {/* GRID */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {loading2
+                      {loading1
                         ? Array.from({ length: 8 }).map((_, i) => (
                             <ProductSkeleton key={i} />
                           ))

@@ -1,4 +1,10 @@
-import { clearServerCart, getServerCart } from "@/api/lib/Cart/AddCart";
+import {
+  clearServerCart,
+  getServerCart,
+  ModifyFromCart,
+  RemoveFromCart,
+  removeItemFromServerCart,
+} from "@/api/lib/Cart/AddCart";
 import { CartData, cartList } from "@/api/types/Cart/CartData";
 import { CreditCard, Minus, Plus, ShoppingCart, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -19,22 +25,30 @@ export default function CartComponent({
     window.location.href = "/checkOut";
   };
 
-  const updateQuantity = (index: any, newQuantity: any) => {
+  const updateQuantity = async (productID: any, newQuantity: any) => {
+    const token = localStorage.getItem("token");
     if (newQuantity < 1) return;
+    await ModifyFromCart(String(productID), Number(newQuantity), String(token));
     setCartList((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, quantity: newQuantity } : item
+        item.productID === productID ? { ...item, quantity: newQuantity } : item
       )
     );
   };
   const cartData = async () => {
     const cart = await getServerCart();
+    console.log(cart);
     setCartList(cart);
   };
   const clearCart = () => {
     onClear();
   };
-
+  const deleteProduct = async (productID: string) => {
+    const token = localStorage.getItem("token");
+    const updatedCart = await removeItemFromServerCart(productID);
+    await RemoveFromCart(productID, String(token));
+    setCartList(updatedCart);
+  };
   useEffect(() => {
     cartData();
   }, []);
@@ -111,11 +125,14 @@ export default function CartComponent({
                   </div>
                   <div className="flex flex-col justify-between items-end">
                     <div>
-                      {/* <button className="bg-gray-100 p-1 text-lg font-bold rounded">
+                      <button
+                        onClick={() => deleteProduct(item.productID)}
+                        className="bg-gray-100 p-1 text-lg font-bold rounded"
+                      >
                         <Trash className="w-4 h-4 text-gray-800 hover:text-gray-900" />
-                      </button> */}
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between w-32 border border-gray-300 rounded-md shadow-sm bg-gray-200 px-3 py-2">
+                    <div className="flex items-center justify-between w-25 border border-gray-300 rounded-md shadow-sm bg-gray-200 px-2 py-1">
                       {NumberofProduct !== 1 ? (
                         <button
                           onClick={() => setNumberofProduct(NumberofProduct)}
@@ -126,7 +143,10 @@ export default function CartComponent({
                       ) : (
                         <button
                           onClick={() =>
-                            updateQuantity(index, (item.quantity || 1) - 1)
+                            updateQuantity(
+                              item.productID,
+                              (item.quantity || 1) - 1
+                            )
                           }
                           disabled={(item.quantity || 1) === 1}
                           className={`p-1 bg-white shadow-sm rounded ${
@@ -148,7 +168,10 @@ export default function CartComponent({
                       </p>
                       <button
                         onClick={() =>
-                          updateQuantity(index, (item.quantity || 1) + 1)
+                          updateQuantity(
+                            item.productID,
+                            (item.quantity || 1) + 1
+                          )
                         }
                         className="p-1 bg-white hover:bg-gray-100 shadow-sm rounded"
                       >

@@ -4,6 +4,8 @@ import {
   ladingPageDetailResponse,
 } from "@/api/types/HomePage/LandignPage/CarasoulText";
 import { useState, useEffect, use } from "react";
+import Navbar from "../Navbar/page";
+import { CartData } from "@/api/types/Cart/CartData";
 
 const AutoCarousel = () => {
   const slides = [
@@ -15,7 +17,8 @@ const AutoCarousel = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [animateText, setAnimateText] = useState(true);
   const [categories, setCategories] = useState<ladingPageDetail[]>([]);
-
+  const [cartList, setCartList] = useState<CartData[]>([]);
+  const [isOpen, setisOpen] = useState(false);
   // Auto slide
   useEffect(() => {
     if (!isAutoPlaying) return;
@@ -44,7 +47,7 @@ const AutoCarousel = () => {
     const response = await GetLandingpageInfo(token || "");
     const data = response.data as ladingPageDetailResponse;
     if (response.status === 200 || response.status === 201) {
-      console.log(data.storeGet);
+      console.log(data.storeGet[0].logoUrl);
       setCategories(data?.storeGet ?? []);
     } else {
       setCategories([]);
@@ -54,6 +57,7 @@ const AutoCarousel = () => {
   useEffect(() => {
     HandleLandingPage();
   }, []);
+  const onClear = () => {};
   return (
     <div
       className="relative w-full overflow-hidden bg-gray-200"

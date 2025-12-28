@@ -2,6 +2,7 @@
 import {
   ChevronDown,
   Heart,
+  LayoutDashboard,
   Menu,
   Phone,
   Search,
@@ -20,6 +21,12 @@ import {
 } from "@/api/types/HomePage/Navbar/Navbar";
 import { clearServerCart, getServerCart } from "@/api/lib/Cart/AddCart";
 import { CartData } from "@/api/types/Cart/CartData";
+import GetLandingpageInfo from "@/api/lib/HomePage/LandingPage/ladingPage";
+import {
+  ladingPageDetail,
+  ladingPageDetailResponse,
+} from "@/api/types/HomePage/LandignPage/CarasoulText";
+import CheckAuth from "@/api/authentication/checkAuth";
 
 export default function Navbar({
   onPageChange,
@@ -39,9 +46,14 @@ export default function Navbar({
   const [searchComponentVisible, setSearchComponentVisible] = useState(false);
   const [cartComponentVisible, setCartComponentVisible] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [isCustomer, setIsCustomer] = useState(false);
   const [showOverlay2, setShowOverlay2] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [LadningPAgeInfo, setLadningPAgeInfo] = useState<ladingPageDetail[]>(
+    []
+  );
+  const [image, setImage] = useState("");
   const [subCategoryID, setsubCategoryID] = useState("");
   const router = useRouter();
 
@@ -91,10 +103,36 @@ export default function Navbar({
       if (onCategoriesLoaded) onCategoriesLoaded([]);
     }
   };
-
+  const HandleLandingPage = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetLandingpageInfo(token || "");
+    const data = response.data as ladingPageDetailResponse;
+    if (response.status === 200 || response.status === 201) {
+      setImage(data.storeGet[0].logoUrl);
+      setLadningPAgeInfo(data?.storeGet ?? []);
+    } else {
+      setLadningPAgeInfo([]);
+    }
+  };
+  const checkAuth = async () => {
+    const token = localStorage.getItem("token");
+    const response = await CheckAuth(token as string);
+    console.log("Response from CheckAuth API:", response);
+    if (response?.status === 200 || response?.status === 201) {
+      const data = response.data as any;
+      if (data.loggedBy === "Customer") {
+        setIsCustomer(true);
+      } else {
+        setIsCustomer(false);
+      }
+    }
+  };
   useEffect(() => {
+    checkAuth();
+    HandleLandingPage();
     handleShowCategories();
   }, []);
+
   // const onClear = async () => {
   //   await clearServerCart();
   //   const freshCart = await getServerCart();
@@ -105,11 +143,9 @@ export default function Navbar({
     <>
       <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
         <a href="/" className="flex items-center">
-          <img
-            src="/logo.png"
-            alt="Logo"
-            className="h-8 w-auto object-contain"
-          />
+          {image && (
+            <img src={image} alt="Logo" className="h-8 w-auto object-contain" />
+          )}
         </a>
 
         {/* --- Main Navbar Links (Desktop) --- */}
@@ -156,16 +192,29 @@ export default function Navbar({
               <Search className="w-5 h-5 group-hover:text-blue-500 transition" />
             </button>
 
-            <button
-              className="group"
-              title="User"
-              onClick={() => {
-                onPageChange("login");
-                router.push("/login");
-              }}
-            >
-              <User className="w-5 h-5 group-hover:text-blue-500 transition" />
-            </button>
+            {isCustomer ? (
+              <button
+                className="group"
+                title="Dashboard"
+                onClick={() => {
+                  onPageChange("login");
+                  router.push("/customer/dashboard");
+                }}
+              >
+                <LayoutDashboard className="w-5 h-5 group-hover:text-blue-500 transition" />
+              </button>
+            ) : (
+              <button
+                className="group"
+                title="User"
+                onClick={() => {
+                  onPageChange("login");
+                  router.push("/login");
+                }}
+              >
+                <User className="w-5 h-5 group-hover:text-blue-500 transition" />
+              </button>
+            )}
 
             <button
               className="relative group"

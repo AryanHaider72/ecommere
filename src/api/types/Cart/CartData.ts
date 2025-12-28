@@ -10,3 +10,7 @@ export interface CartData {
   image?: string;
   discount: number;
 }
+export interface CartData2 {
+  productID: string;
+  qty: number;
+}

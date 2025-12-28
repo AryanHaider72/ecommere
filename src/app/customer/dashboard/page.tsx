@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Star,
@@ -17,8 +17,11 @@ import Order from "../order/page";
 import Setting from "../setting/page";
 import Wishlist from "../wishlist/page";
 import Cart from "../cart/page";
+import CheckAuth from "@/api/authentication/checkAuth";
+import { useRouter } from "next/navigation";
 
 export default function CustomerPanel() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -30,7 +33,19 @@ export default function CustomerPanel() {
     { id: "cart", label: "My Cart", icon: ShoppingCart },
     { id: "settings", label: "Account Settings", icon: UserCog },
   ];
-
+  const checkAuth = async () => {
+    const token = localStorage.getItem("token");
+    const response = await CheckAuth(token as string);
+    console.log("Response from CheckAuth API:", response);
+    if (response?.status === 200 || response?.status === 201) {
+      console.log("Welcome");
+    } else {
+      router.push("/");
+    }
+  };
+  useEffect(() => {
+    checkAuth();
+  }, []);
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen bg-gray-50 relative">
       {/* === Mobile Header === */}
