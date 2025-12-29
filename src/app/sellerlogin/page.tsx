@@ -13,6 +13,7 @@ import VerifyOtpPage from "./otpVerification/page";
 import OtpSend from "@/api/authentication/OtpSend";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import GetInitalStore from "@/api/authentication/StoreGet";
+import { useAsync } from "react-select/async";
 
 export default function Login() {
   const router = useRouter();
@@ -29,29 +30,37 @@ export default function Login() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [phoneNo, setphoneNo] = useState("");
 
-  const [responseBack, setResponseBack] = useState(0);
   const [createAccount, setCreateAccount] = useState(false);
   const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
   const [storeList, setStoreList] = useState<storeInital[]>([]);
-
+  const [loading, setLoading] = useState(false);
+  const [responseBack, setResponseBack] = useState("");
+  const [ShowMessage, setShowMessage] = useState(false);
   //Login Function
   const Login = async () => {
-    const formData = { Email, password };
-    const response = await LoginApi(formData);
-    console.log("Response from Login API:", response);
-    if (response?.status === 200 || response?.status === 201) {
-      setEmail("");
-      setPassword("");
-      setResponseBack(3);
-      const token = response.data?.token;
-      localStorage.setItem("token", token as string);
-      verfiedSeller(String(token));
-      console.log(response);
+    try {
+      setLoading(true);
+      const formData = { Email, password };
+      const response = await LoginApi(formData);
+      console.log("Response from Login API:", response);
+      if (response?.status === 200 || response?.status === 201) {
+        setEmail("");
+        setPassword("");
+        setShowMessage(true);
+        setResponseBack(response.message);
+        const token = response.data?.token;
+        localStorage.setItem("token", token as string);
+        verfiedSeller(String(token));
+        console.log(response);
+      } else {
+        setShowMessage(true);
+        setResponseBack(response.message);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
     }
-    if (response?.status === 400 || response?.status === 401) {
-      setResponseBack(1);
-    }
-    setResponseBack(4);
   };
 
   const verfiy = async () => {
@@ -88,12 +97,12 @@ export default function Login() {
       setphoneNo("");
       setPasswordSeller("");
       setPasswordConfirm("");
-      setResponseBack(4);
+      setResponseBack(response.message);
       setCreateAccount(false);
     }
     if (response?.status === 400 || response?.status === 401) {
-      setResponseBack(1);
-    } else setResponseBack(2);
+      setResponseBack(response.message);
+    } else setResponseBack(response.message);
   };
 
   const validate = () => {
@@ -117,12 +126,11 @@ export default function Login() {
   };
 
   useEffect(() => {
-    if (responseBack === 1 || responseBack === 2 || responseBack === 3) {
-      setTimeout(() => {
-        setResponseBack(0);
-      }, 2000);
-    }
-  }, [responseBack]);
+    setTimeout(() => {
+      setShowMessage(false);
+      setResponseBack("");
+    }, 2000);
+  }, [ShowMessage]);
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -253,20 +261,22 @@ export default function Login() {
               {errors.passwordConfirm && (
                 <p className="text-red-500 text-sm">{errors.passwordConfirm}</p>
               )}
-              {responseBack === 1 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Invalid Email/password
-                </div>
-              )}
-              {responseBack === 2 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Network Error
-                </div>
-              )}
-              {responseBack === 4 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  SignUp Successful! Please Login.
-                </div>
+              {ShowMessage && (
+                <>
+                  {responseBack && (
+                    <div
+                      className={`w-full text-center px-4 py-3 mb-2 rounded ${
+                        responseBack === "Record Added Successfully" ||
+                        responseBack === "Login Successfully" ||
+                        responseBack === "Request successful"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {responseBack}
+                    </div>
+                  )}
+                </>
               )}
               {passwordSeller !== passwordConfirm ? (
                 <button
@@ -347,34 +357,36 @@ export default function Login() {
                   </button>
                 </div>
               </div>
-              {responseBack === 3 && (
-                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
-                  UserLogin Successful
-                </div>
-              )}
-              {responseBack === 1 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Invalid Email/password
-                </div>
-              )}
-              {responseBack === 2 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Network Error
-                </div>
+              {ShowMessage && (
+                <>
+                  {responseBack && (
+                    <div
+                      className={`w-full text-center px-4 py-3 mb-2 rounded ${
+                        responseBack === "Record Added Successfully" ||
+                        responseBack === "Login Successfully" ||
+                        responseBack === "Request successful"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {responseBack}
+                    </div>
+                  )}
+                </>
               )}
               <button
                 type="submit"
                 onClick={Login}
                 className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-200"
               >
-                Login
+                {loading ? "logging in..." : "Login"}
               </button>
-              <div
+              {/* <div
                 onClick={() => setCreateAccount(!createAccount)}
                 className="text-blue-500 text-sm hover:underline mt-2 cursor-pointer"
               >
-                Create an Accont?
-              </div>
+                Create an Account?
+              </div> */}
             </div>
           </>
         )}

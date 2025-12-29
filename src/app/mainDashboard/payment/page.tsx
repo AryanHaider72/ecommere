@@ -40,6 +40,7 @@ export default function SubCategoryMobileModern() {
       console.log(response);
       if (response.status === 200 || response.status == 201) {
         setLoading(false);
+        getpayment();
         setResponseBack(1);
         setBankName("");
         setAccountTitle("");
@@ -149,7 +150,7 @@ export default function SubCategoryMobileModern() {
     <div className="min-h-screen bg-gray-50 p-4 font-sans">
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Sub-Categories</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Payment Management</h1>
         <button
           onClick={() => {
             setMode(mode === "list" ? "form" : "list");

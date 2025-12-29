@@ -77,9 +77,9 @@ export default function LoginPage() {
       const response = await CustomerLogin(formData);
 
       if (response.status === 200) {
-        // router.push("/");
+        router.push("/");
         console.log(response.data.token);
-        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("token1", response.data.token);
         setResponseBack(response.message);
         setShowMessage(true);
         setEmail("");

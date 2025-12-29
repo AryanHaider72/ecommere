@@ -63,6 +63,7 @@ export async function clearServerCart() {
   });
   return [];
 }
+
 export async function removeItemFromServerCart(productID: string) {
   const cookieStore = await cookies();
   const cart = cookieStore.get("cart")?.value;
@@ -116,6 +117,35 @@ export async function RemoveFromCart(data: string, token?: string) {
     status: response.status,
   };
 }
+
+export async function modifyCartServer(productID: string, qty: number) {
+  const cookieStore = await cookies();
+  const cart = cookieStore.get("cart")?.value;
+
+  if (!cart) return [];
+
+  const cartItems: CartData[] = JSON.parse(cart);
+
+  const updatedCart = cartItems.map((item) => {
+    if (item.productID === productID) {
+      return {
+        ...item,
+        quantity: qty,
+      };
+    }
+    return item;
+  });
+  const finalCart = updatedCart.filter((item) => item.quantity > 0);
+
+  cookieStore.set("cart", JSON.stringify(finalCart), {
+    httpOnly: true,
+    path: "/",
+    sameSite: "lax",
+  });
+
+  return finalCart;
+}
+
 export async function ModifyFromCart(
   data: string,
   qty: number,

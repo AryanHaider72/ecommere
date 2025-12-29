@@ -265,9 +265,12 @@ export default function MainHome() {
 
     return true;
   });
+
   const checkAuth = async (ID: string) => {
-    const token = localStorage.getItem("token");
-    const response = await CheckAuth(token as string);
+    const token1 = localStorage.getItem("token1");
+    console.log(token1);
+    const response = await CheckAuth(token1 as string);
+    // console.log(token1);
     console.log("Response from CheckAuth API:", response);
     if (response?.status === 200 || response?.status === 201) {
       const data = response.data as any;
@@ -352,9 +355,7 @@ export default function MainHome() {
       <Navbar
         onPageChange={(page) => console.log("Navigate to:", page)}
         SubCategoryID={(page) => console.log("Navigate to:", page)}
-        onCategoriesLoaded={(categories) =>
-          console.log("Categories loaded:", categories)
-        }
+        onCategoriesLoaded={(categories) => categories}
         cartList={cartList} // Pass full cartList, not just length
         setCartList={setCartList} // Pass setter so Navbar can update
         onClear={onClear} // Pass clear handler
