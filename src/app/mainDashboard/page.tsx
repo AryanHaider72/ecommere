@@ -80,9 +80,16 @@ export default function CustomerPanel() {
     <div className="flex flex-col lg:flex-row w-full min-h-screen bg-gray-50 relative">
       {/* === Mobile Header === */}
       <div className="flex items-center justify-between lg:hidden bg-white border-b border-gray-200 p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Seller Panel</h2>
+        <h2
+          onClick={() => window.location.reload()}
+          className="text-lg font-semibold text-gray-900"
+        >
+          Seller Panel
+        </h2>
         <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
+          onClick={() => {
+            setSidebarOpen(!sidebarOpen);
+          }}
           className="text-gray-800 p-2 rounded-md hover:bg-gray-100"
         >
           {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -97,11 +104,16 @@ export default function CustomerPanel() {
         }`}
       >
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-bold text-gray-900 hidden lg:block">
+          <h2
+            onClick={() => window.location.reload()}
+            className="text-xl font-bold text-gray-900 hidden lg:block"
+          >
             Seller Panel
           </h2>
           <button
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => {
+              setSidebarOpen(false);
+            }}
             className="lg:hidden text-gray-600 hover:text-gray-900"
           >
             <X size={20} />
