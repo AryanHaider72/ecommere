@@ -17,6 +17,7 @@ import { CustomerDetailResponse } from "@/api/types/HomePage/CustomerData/Custom
 
 export default function CheckOut() {
   const [activePage, setActivePage] = useState("login");
+  const [paymentID, setPaymentID] = useState("");
   const [selected, setSelected] = useState("COD");
   const [isShow, setIsShow] = useState(false);
   const [cartList, setCartList] = useState<CartData[]>([]);
@@ -28,6 +29,11 @@ export default function CheckOut() {
   const [fullName, setFullName] = useState("");
   const [Email, setEmail] = useState("");
   const [PhoneNo, setPhoneNo] = useState("");
+  const [country, setCountry] = useState("");
+  const [City, setCity] = useState("");
+  const [PostalCode, setPostalCode] = useState("");
+  const [Address, setAddress] = useState("");
+  const [customerID, setCustomerID] = useState("");
 
   const [promoCode, setPromoCode] = useState("PlaceOrder");
 
@@ -66,13 +72,32 @@ export default function CheckOut() {
     const response = await GetCustomerLoginData(String(token), {});
     if (response.status === 200 || response.status == 201) {
       const data = response.data as CustomerDetailResponse;
-      setFullName(data.customerData[0].userName);
+      setCustomerID(data.customerData[0].customerID);
+      setFullName(data.customerData[0].customerName);
       setEmail(data.customerData[0].email);
       setPhoneNo(data.customerData[0].phoneNo);
     } else {
       console.log();
     }
   };
+
+  const addOrder = async () => {
+    const formData = {
+      customerID: customerID,
+      customerName: fullName,
+      phoneNo: PhoneNo,
+      shippingAddress: Address,
+      email: Email,
+      city: City,
+      country: country,
+      postalCode: PostalCode,
+      orderDate: new Date().toISOString(),
+      paymentID: paymentID,
+      paymentStatus: "Unpaid",
+      delievryCharges: 0,
+    };
+  };
+
   return (
     <>
       {/* <Navbar onPageChange={setActivePage} /> */}
@@ -186,11 +211,13 @@ export default function CheckOut() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-gray-600 font-medium">
-                      Title
+                      Country
                     </label>
                     <input
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
                       type="text"
-                      placeholder="Mr / Ms"
+                      placeholder="Country"
                       className="w-full mt-1 p-2 text-sm text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
                     />
                   </div>
@@ -199,6 +226,8 @@ export default function CheckOut() {
                       Address
                     </label>
                     <input
+                      value={Address}
+                      onChange={(e) => setAddress(e.target.value)}
                       type="text"
                       placeholder="Street Address"
                       className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
@@ -209,6 +238,8 @@ export default function CheckOut() {
                       City
                     </label>
                     <input
+                      value={City}
+                      onChange={(e) => setCity(e.target.value)}
                       type="text"
                       placeholder="City"
                       className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
@@ -219,6 +250,8 @@ export default function CheckOut() {
                       Postal Code
                     </label>
                     <input
+                      value={PostalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
                       type="text"
                       placeholder="00000"
                       className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
@@ -233,31 +266,6 @@ export default function CheckOut() {
                   Payment Method
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <label
-                    className={`flex items-center justify-between border rounded-md p-3 cursor-pointer transition-all duration-200 ${
-                      selected === "COD"
-                        ? "border-gray-400 bg-gray-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value={"COD"}
-                        checked={selected === "COD"}
-                        onChange={() => setSelected("COD")}
-                        className="text-gray-500 focus:ring-gray-500"
-                      />
-                      <span
-                        className={`font-medium text-sm ${
-                          selected === "COD" ? "text-gray-600" : "text-gray-700"
-                        }`}
-                      >
-                        COD
-                      </span>
-                    </div>
-                  </label>
                   {paymentList.map((method) => (
                     <label
                       key={method.paymentID}
@@ -271,11 +279,12 @@ export default function CheckOut() {
                         <input
                           type="radio"
                           name="payment"
-                          value={method.bankName}
+                          value={paymentID}
                           checked={selected === method.bankName}
                           onClick={() => {
                             setIsShow(true);
                             fetchData(method.paymentID);
+                            setPaymentID(method.paymentID);
                           }}
                           onChange={() => setSelected(method.bankName)}
                           className="text-gray-500 focus:ring-gray-500"
@@ -295,45 +304,46 @@ export default function CheckOut() {
                 </div>
               </div>
               {/*EasyPaisa Detail*/}
-              {selected !== "COD" && isShow && (
-                <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
-                  <h2 className="text-lg font-semibold mb-4 text-gray-800">
-                    {bankName}
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-600 font-medium">
-                        Account Title
-                      </label>
-                      <input
-                        type="text"
-                        value={accountTitle}
-                        readOnly
-                        className="w-full mt-1 p-2 text-sm  border border-gray-200  rounded-md focus:ring-2 focus:ring-black/60 outline-none"
-                      />
+              {paymentID !== "42ff7114-37ef-4d2e-ab66-d2cdd539f5ec" &&
+                isShow && (
+                  <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
+                    <h2 className="text-lg font-semibold mb-4 text-gray-800">
+                      {bankName}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-600 font-medium">
+                          Account Title
+                        </label>
+                        <input
+                          type="text"
+                          value={accountTitle}
+                          readOnly
+                          className="w-full mt-1 p-2 text-sm  border border-gray-200  rounded-md focus:ring-2 focus:ring-black/60 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600 font-medium">
+                          Account Number
+                        </label>
+                        <input
+                          readOnly
+                          value={accountNumber}
+                          className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm text-gray-600 font-medium">
-                        Account Number
+                    <div className="mt-4">
+                      <label className=" text-sm text-gray-600 font-medium">
+                        Add Receipt
                       </label>
                       <input
-                        readOnly
-                        value={accountNumber}
+                        type="file"
                         className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
                       />
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <label className=" text-sm text-gray-600 font-medium">
-                      Add Receipt
-                    </label>
-                    <input
-                      type="file"
-                      className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
-                    />
-                  </div>
-                </div>
-              )}
+                )}
             </div>
             <div className="flex flex-col">
               {selectedOption2 === "AdvanceBooking" ? (

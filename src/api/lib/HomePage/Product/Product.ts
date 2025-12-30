@@ -2,7 +2,10 @@
 
 import { getRequest, postRequest } from "@/api/authentication/main";
 
-export default async function GetProductHome(token: string, pageNumber?: number) {
+export default async function GetProductHome(
+  token: string,
+  pageNumber?: number
+) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
   const response = await getRequest(

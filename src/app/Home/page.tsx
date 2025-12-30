@@ -290,6 +290,7 @@ export default function MainHome() {
       }
     }
   };
+
   const addToCart = async (ID: string) => {
     try {
       const data = productList.find((item) => item.productID === ID);

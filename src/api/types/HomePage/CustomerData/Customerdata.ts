@@ -4,7 +4,8 @@ export interface CustomerDetailResponse {
 }
 
 export interface CustomerDetail {
-  userName: string;
+  customerID: string;
+  customerName: string;
   email: string;
   phoneNo: string;
   isActive: boolean;

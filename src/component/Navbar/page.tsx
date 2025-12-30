@@ -115,7 +115,7 @@ export default function Navbar({
     }
   };
   const checkAuth = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token1");
     const response = await CheckAuth(token as string);
     console.log("Response from CheckAuth API:", response);
     if (response?.status === 200 || response?.status === 201) {
