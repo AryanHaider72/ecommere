@@ -24,6 +24,11 @@ import {
   ChevronLeft,
   Coins,
   Key,
+  Truck,
+  WholeWord,
+  Building,
+  Map,
+  Ship,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SellerOverviewDashbaord from "./dashboard/page";
@@ -44,6 +49,10 @@ import CheckAuth from "@/api/authentication/checkAuth";
 // import ProfileManagement from "../profile/page";
 import ProfileSetting from "./setting/page";
 import HomePageSetting from "./StoreSetting/page";
+import RegionManagement from "./Shippment/Region/page";
+import CityManagement from "./Shippment/City/page";
+import ZoneManagement from "./Shippment/Zone/page";
+import ShippingCityZoneManagemnet from "./Shippment/ShippingZone/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
@@ -58,6 +67,7 @@ export default function CustomerPanel() {
 
   const navItems = [
     // { id: "Code", label: "Code", icon: Plus },
+    { id: "Shippment", label: "Shippment ", icon: Truck },
     { id: "StoreSetting", label: "Store Setting", icon: Settings },
     { id: "payment", label: "Payment", icon: Coins },
     { id: "password", label: "Change Password", icon: Key },
@@ -123,20 +133,85 @@ export default function CustomerPanel() {
         <nav className="space-y-2">
           {navItems.map((item) => (
             <div key={item.id}>
-              <button
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setSidebarOpen(false);
-                }}
-                className={`flex items-center w-full gap-3 px-4 py-3 rounded-xl transition font-medium ${
-                  activeTab === item.id
-                    ? "bg-black text-white shadow"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
+              {item.id === "Shippment" ? (
+                <>
+                  <button
+                    onClick={() => setDropDown(!dropDown)}
+                    className={`flex justify-between items-center w-full gap-3 px-4 py-3 rounded-xl transition font-medium ${
+                      activeTab === item.id
+                        ? "bg-black text-white shadow"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.label}</span>
+                    </div>
+                    {dropDown ? (
+                      <ChevronDown className="w-5 h-5" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5" />
+                    )}
+                  </button>
+                  {dropDown && (
+                    <div className="ml-6 mt-2 space-y-1">
+                      {[
+                        {
+                          id: "region",
+                          label: "Region",
+                          icon: WholeWord,
+                        },
+                        {
+                          id: "city",
+                          label: "City",
+                          icon: Building,
+                        },
+                        {
+                          id: "zone",
+                          label: "Zone",
+                          icon: Map,
+                        },
+                        {
+                          id: "shippingZone",
+                          label: "Shipping Zone",
+                          icon: Ship,
+                        },
+                      ].map((subItem) => (
+                        <button
+                          key={subItem.id}
+                          onClick={() => {
+                            setActiveTab(subItem.id);
+                            setSidebarOpen(false);
+                          }}
+                          className={`flex items-center w-full gap-2 px-3 py-2 text-sm rounded-lg transition ${
+                            activeTab === subItem.id
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <subItem.icon className="w-4 h-4" />
+                          <span>{subItem.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`flex items-center w-full gap-3 px-4 py-3 rounded-xl transition font-medium ${
+                    activeTab === item.id
+                      ? "bg-black text-white shadow"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </button>
+              )}
             </div>
           ))}
         </nav>
@@ -164,6 +239,11 @@ export default function CustomerPanel() {
         {activeTab === "orders" && <Order />} */}
         {activeTab === "password" && <ProfileSetting />}
         {activeTab === "StoreSetting" && <HomePageSetting />}
+        {activeTab === "region" && <RegionManagement />}
+        {activeTab === "city" && <CityManagement />}
+        {activeTab === "zone" && <ZoneManagement />}
+        {activeTab === "shippingZone" && <ShippingCityZoneManagemnet />}
+
         {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}
         {activeTab === "supplier" && <SupplierForm />}
