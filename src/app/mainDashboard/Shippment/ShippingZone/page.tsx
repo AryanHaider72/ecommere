@@ -64,7 +64,6 @@ export default function ShippingCityZoneManagemnet() {
   const [RegionList, setRegionList] = useState<regionlist[]>([]);
   const [CityList, setCityList] = useState<citylist[]>([]);
   const [ShippingZone, setShippingZone] = useState<ShippingZone[]>([]);
-  const [list, setList] = useState<SelectedCity[]>([]);
   const [CityName, setCityName] = useState("");
   const [ID, setID] = useState("");
   const [isTrue, setIsTrue] = useState(false);
@@ -76,15 +75,11 @@ export default function ShippingCityZoneManagemnet() {
       const token = localStorage.getItem("token");
       const formData = {
         zoneID: ZoneID,
-        cityList: list.map((item) => ({
-          cityID: item.cityID,
-          cityName: item.cityName,
-        })),
+        cityID: CityID,
       };
       const response = await AddShippingZone(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         getShippingZone(ZoneID);
-        setList([]);
         setIsTrue(true);
         setResponseBack(response.data.message);
       } else if (response.status === 400) {
@@ -101,38 +96,36 @@ export default function ShippingCityZoneManagemnet() {
     }
   };
 
-  const ModifyShippingZone = async () => {
-    try {
-      setisLoading(true);
-      const token = localStorage.getItem("token");
-      const formData = {
-        zoneID: ZoneID,
-        cityList: list.map((item) => ({
-          cityID: item.cityID,
-          cityName: item.cityName,
-        })),
-      };
-      const response = await ModfiyShippingZone(formData, String(token));
-      if (response.status === 200 || response.status === 201) {
-        setUpdate(false);
-        setShowList(true);
-        setIsTrue(true);
-        setResponseBack(response.data[0].message);
-      } else if (response.status === 400) {
-        setIsTrue(true);
-        setResponseBack("Please Fill in Required Fileds");
-      } else {
-        setUpdate(true);
-        setShowList(false);
-        setIsTrue(true);
-        setResponseBack("Something Went Wrong. Please Try Again Later");
-      }
-    } catch (error) {
-      setisLoading(true);
-    } finally {
-      setisLoading(false);
-    }
-  };
+  // const ModifyShippingZone = async () => {
+  //   try {
+  //     setisLoading(true);
+  //     const token = localStorage.getItem("token");
+  //     const formData = {
+  //       zoneID: ZoneID,
+  //       cityID: CityID,
+  //     };
+  //     const response = await ModfiyShippingZone(formData, String(token));
+  //     if (response.status === 200 || response.status === 201) {
+  //       getShippingZone(ZoneID);
+  //       setUpdate(false);
+  //       setShowList(true);
+  //       setIsTrue(true);
+  //       setResponseBack(response.data[0].message);
+  //     } else if (response.status === 400) {
+  //       setIsTrue(true);
+  //       setResponseBack("Please Fill in Required Fileds");
+  //     } else {
+  //       setUpdate(true);
+  //       setShowList(false);
+  //       setIsTrue(true);
+  //       setResponseBack("Something Went Wrong. Please Try Again Later");
+  //     }
+  //   } catch (error) {
+  //     setisLoading(true);
+  //   } finally {
+  //     setisLoading(false);
+  //   }
+  // };
   const getShippingZone = async (ID: string) => {
     try {
       setLoading(true);
@@ -150,21 +143,21 @@ export default function ShippingCityZoneManagemnet() {
     }
   };
 
-  const fetchData = (ID: string) => {
-    setUpdate(true);
-    setShowList(false);
-    const data = ShippingZone.find((item) => item.cityZoneID === ID);
-    if (data) {
-      setID(data.cityZoneID);
-      setZoneID(data.zoneID);
-      setList(
-        data.cityZoneList.map((item) => ({
-          cityID: item.cityID,
-          cityName: item.cityName,
-        }))
-      );
-    }
-  };
+  // const fetchData = (ID: string) => {
+  //   setUpdate(true);
+  //   setShowList(false);
+  //   const data = ShippingZone.find((item) => item.cityZoneID === ID);
+  //   if (data) {
+  //     setID(data.cityZoneID);
+  //     setZoneID(data.zoneID);
+  //     setList(
+  //       data.cityList.map((item) => ({
+  //         cityID: item.cityID,
+  //         cityName: item.cityName,
+  //       }))
+  //     );
+  //   }
+  // };
 
   const deleteShippingZone = async (ID: string) => {
     try {
@@ -189,30 +182,6 @@ export default function ShippingCityZoneManagemnet() {
       setLoading(false);
     }
   };
-
-  //   const getRegion = async (ID: string) => {
-  //     const token = localStorage.getItem("token");
-  //     const response = await GetRegion(ID, String(token));
-  //     if (response.status === 200 || response.status === 201) {
-  //       const data = response.data as responseRegionList;
-  //       setRegionList(data.regionlist);
-  //       setRegionID(data.regionlist[0].regionID);
-  //       getCity(data.regionlist[0].regionID);
-  //     } else {
-  //       setRegionList([]);
-  //     }
-  //   };
-
-  //   const getCountry = async () => {
-  //     const token = localStorage.getItem("token");
-  //     const response = await GetCountry(String(token));
-  //     if (response.status === 201 || response.status === 200) {
-  //       const data = response.data as CountrygetApiResponse;
-  //       setCountries(data.countryList);
-  //       setCountryID(data.countryList[0].countryID);
-  //       getRegion(data.countryList[0].countryID);
-  //     } else if (response.status === 401) return router.push("/sellerogin");
-  //   };
 
   useEffect(() => {
     getCountry();
@@ -388,26 +357,21 @@ export default function ShippingCityZoneManagemnet() {
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
-                            {item.zoneName}
+                            {item.cityName}
                           </h3>
-                          {item.cityZoneList.map((sub) => (
-                            <span className="px-1 bg-blue-300 text-blue-600 rounded-lg">
-                              {sub.cityName}
-                            </span>
-                          ))}
                         </div>
                         <div className="flex gap-4">
-                          <button
-                            onClick={() => fetchData(item.cityZoneID)}
+                          {/* <button
+                            // onClick={() => fetchData(item.cityZoneID)}
                             className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
                             title="Edit"
                           >
                             <Pencil className="w-5 h-5" />
-                          </button>
+                          </button> */}
                           <button
                             onClick={() => {
                               setIsOpen(true);
-                              //   setID(item.cityID);
+                              setID(item.cityZoneID);
                             }}
                             className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
                             title="Delete"
@@ -464,7 +428,6 @@ export default function ShippingCityZoneManagemnet() {
                   onChange={(e) => {
                     setRegionID(e.target.value);
                     getCity(e.target.value);
-                    setList([]);
                   }}
                 >
                   {RegionList.length > 0 ? (
@@ -508,57 +471,8 @@ export default function ShippingCityZoneManagemnet() {
                     )}
                   </select>
                 </div>
-                <div>
-                  <button
-                    onClick={() => {
-                      if (!CityID) return;
-
-                      const selectedCity = CityList.find(
-                        (city) => city.cityID === CityID
-                      );
-
-                      if (!selectedCity) return;
-
-                      // prevent duplicate
-                      if (list.some((item) => item.cityID === CityID)) return;
-
-                      setList((prev) => [
-                        ...prev,
-                        {
-                          cityID: selectedCity.cityID,
-                          cityName: selectedCity.cityName,
-                        },
-                      ]);
-
-                      setCityID("");
-                    }}
-                    className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-md text-white"
-                  >
-                    <Plus />
-                  </button>
-                </div>
+                <div></div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {list.map((item) => (
-                <span
-                  key={item.cityID}
-                  className="px-3 py-1 bg-green-100 text-green-800 rounded-full flex items-center gap-2"
-                >
-                  {item.cityName}
-
-                  <button
-                    onClick={() =>
-                      setList((prev) =>
-                        prev.filter((u) => u.cityID !== item.cityID)
-                      )
-                    }
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
             </div>
 
             <div className="flex-1">
@@ -606,7 +520,7 @@ export default function ShippingCityZoneManagemnet() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={ModifyShippingZone}
+                  // onClick={ModifyShippingZone}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   {isLoading ? "Updating...." : "Update"}

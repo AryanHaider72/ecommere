@@ -1,5 +1,6 @@
 export interface RequestStoreAddData {
   email: string;
+  cityID: string;
   storeName: string;
   description: string;
 }

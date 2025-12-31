@@ -14,6 +14,14 @@ import {
 import GetPayment from "@/api/lib/payment/getPayment/getPayment";
 import GetCustomerLoginData from "@/api/lib/HomePage/CustomerData/CustomerGet";
 import { CustomerDetailResponse } from "@/api/types/HomePage/CustomerData/Customerdata";
+import GetPaymentCustomer from "@/api/lib/CheckOut/payment/payment";
+import GetCountry from "@/api/lib/country/countryList/countryListGet";
+import {
+  Countryget,
+  CountrygetApiResponse,
+} from "@/api/types/country/countryget";
+import { responseCityList } from "@/api/types/Shippment/City/City";
+import axios from "axios";
 
 export default function CheckOut() {
   const [activePage, setActivePage] = useState("login");
@@ -34,22 +42,26 @@ export default function CheckOut() {
   const [PostalCode, setPostalCode] = useState("");
   const [Address, setAddress] = useState("");
   const [customerID, setCustomerID] = useState("");
+  const [countryID, setCountryID] = useState("");
+  const [Countries, setCountries] = useState<Countryget[]>([]);
+  const [CityList, setCityList] = useState([]);
+  const [cityName, setCityName] = useState("");
 
   const [promoCode, setPromoCode] = useState("PlaceOrder");
 
   const onClear = async () => {};
 
   useEffect(() => {
-    getpayment();
+    getCountry();
     getCustomer();
+    getpayment();
     const data = localStorage.getItem("checkoutItems");
     if (data) {
       setCartList(JSON.parse(data));
     }
   }, []);
   const getpayment = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetPayment(String(token), {});
+    const response = await GetPaymentCustomer();
     if (response.status === 200 || response.status == 201) {
       const data = response.data as paymentgetApiResponse;
 
@@ -78,6 +90,30 @@ export default function CheckOut() {
       setPhoneNo(data.customerData[0].phoneNo);
     } else {
       console.log();
+    }
+  };
+  const getCountry = async () => {
+    const token = localStorage.getItem("token1");
+    const response = await GetCountry(String(token), {});
+    if (response.status === 200 || response.status == 201) {
+      const data = response.data as CountrygetApiResponse;
+      setCountries(data.countryList);
+      setCountryID(data.countryList[0].countryID);
+    } else {
+      console.log();
+    }
+  };
+  const getCities = async (name: string) => {
+    const response = await axios.post(
+      `https://countriesnow.space/api/v0.1/countries/cities`,
+      {
+        country: name,
+      }
+    );
+    if (response.status === 200) {
+      setCityList(response.data.data);
+    } else {
+      setCityList([]);
     }
   };
 
@@ -210,15 +246,55 @@ export default function CheckOut() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Country <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={countryID}
+                      onChange={(e) => {
+                        setCountryID(e.target.value);
+                        getCities(e.target.value);
+                      }}
+                      className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    >
+                      <option value="">Select City</option>
+                      {Countries.map((item) => (
+                        <option key={item.countryID} value={item.countryName}>
+                          {item.countryName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={cityName}
+                      onChange={(e) => {
+                        setCityName(e.target.value);
+                      }}
+                      className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    >
+                      <option value="">Select City</option>
+                      {CityList.map((item, index) => (
+                        <option key={index} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="text-sm text-gray-600 font-medium">
-                      Country
+                      Postal Code
                     </label>
                     <input
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
+                      value={PostalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
                       type="text"
-                      placeholder="Country"
-                      className="w-full mt-1 p-2 text-sm text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
+                      placeholder="00000"
+                      className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
                     />
                   </div>
                   <div>
@@ -230,30 +306,6 @@ export default function CheckOut() {
                       onChange={(e) => setAddress(e.target.value)}
                       type="text"
                       placeholder="Street Address"
-                      className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-600 font-medium">
-                      City
-                    </label>
-                    <input
-                      value={City}
-                      onChange={(e) => setCity(e.target.value)}
-                      type="text"
-                      placeholder="City"
-                      className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-600 font-medium">
-                      Postal Code
-                    </label>
-                    <input
-                      value={PostalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      type="text"
-                      placeholder="00000"
                       className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
                     />
                   </div>

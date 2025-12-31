@@ -53,6 +53,7 @@ import RegionManagement from "./Shippment/Region/page";
 import CityManagement from "./Shippment/City/page";
 import ZoneManagement from "./Shippment/Zone/page";
 import ShippingCityZoneManagemnet from "./Shippment/ShippingZone/page";
+import RateManagement from "./Shippment/ShippingRate/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
@@ -176,6 +177,11 @@ export default function CustomerPanel() {
                           label: "Shipping Zone",
                           icon: Ship,
                         },
+                        {
+                          id: "shippingRate",
+                          label: "Shipping Rate",
+                          icon: Coins,
+                        },
                       ].map((subItem) => (
                         <button
                           key={subItem.id}
@@ -243,6 +249,7 @@ export default function CustomerPanel() {
         {activeTab === "city" && <CityManagement />}
         {activeTab === "zone" && <ZoneManagement />}
         {activeTab === "shippingZone" && <ShippingCityZoneManagemnet />}
+        {activeTab === "shippingRate" && <RateManagement />}
 
         {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}

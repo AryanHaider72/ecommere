@@ -1,8 +1,10 @@
 "use client";
 import GetInitalStore from "@/api/authentication/StoreGet";
+import GetCitySeller from "@/api/lib/Shippment/City/CityGetSeller";
 import StoreCreation from "@/api/lib/store/createStore/createStore";
 import StoreDefaultSet from "@/api/lib/store/defaultStore/defaultStore";
 import GetUserData from "@/api/lib/userData/userDataGet/dataGet";
+import { citylist, responseCityList } from "@/api/types/Shippment/City/City";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import { userDatagetApiResponse } from "@/api/types/userData/userDataType";
 import {
@@ -33,6 +35,8 @@ export default function SellerOverviewDashbaord() {
   const [storeDescription, setStoreDescription] = useState("");
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [defaultStoreset, setDefaultStoreset] = useState(false);
+  const [CityList, setCityList] = useState<citylist[]>([]);
+  const [CityID, setCityID] = useState("");
 
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const stats = [
@@ -128,6 +132,20 @@ export default function SellerOverviewDashbaord() {
       router.push("/sellerlogin");
     }
   };
+  const getCity = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCitySeller(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      const user = response.data as responseCityList;
+      setCityList(user.citylist);
+      setCityID(user.citylist[0].cityID);
+    }
+
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
   const DefaultStore = async (ID: string) => {
     const token = localStorage.getItem("token");
     const response = await StoreDefaultSet(ID, String(token));
@@ -149,6 +167,7 @@ export default function SellerOverviewDashbaord() {
       const token = localStorage.getItem("token");
       const formData = {
         email: storeEmail,
+        cityID: CityID,
         storeName: storeName,
         description: storeDescription,
       };
@@ -173,6 +192,7 @@ export default function SellerOverviewDashbaord() {
 
   useEffect(() => {
     storesget();
+    getCity();
   }, []);
 
   useEffect(() => {
@@ -230,8 +250,8 @@ export default function SellerOverviewDashbaord() {
                       <div
                         key={item.storeID}
                         onClick={() => {
-                           sessionStorage.setItem("storeID", item.storeID);
-                          router.push(`/SelectedStore`)
+                          sessionStorage.setItem("storeID", item.storeID);
+                          router.push(`/SelectedStore`);
                         }}
                         className="relative bg-gray-50 shadow-md border border-gray-200 p-5 rounded-2xl 
                         hover:shadow-lg hover:-translate-y-1 hover:bg-white transition-all cursor-pointer text-center flex flex-col justify-center items-center"
@@ -294,103 +314,126 @@ export default function SellerOverviewDashbaord() {
         </div>
       )}
       {addStoreForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
-            {/* Header */}
-            <div className="w-full flex justify-start ">
-              <button
-                onClick={() => {
-                  setStoreShow(true);
-                  setaddStoreForm(false);
-                }}
-                className=" cursor-pointer hover:text-gray-900"
-              >
-                <ChevronLeft />
-              </button>
-            </div>
-            <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 border border-gray-200 mt-10">
-              <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-                Create New Store
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 relative">
+            {/* Back Button */}
+            <button
+              onClick={() => {
+                setStoreShow(true);
+                setaddStoreForm(false);
+              }}
+              className="absolute left-4 top-4 text-gray-600 hover:text-gray-900"
+            >
+              <ChevronLeft />
+            </button>
 
-              <div className="space-y-5">
-                {/* Email (Read-only) */}
-                <div>
-                  <label className="block text-gray-700 font-medium mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={storeEmail}
-                    readOnly
-                    placeholder="Enter store email"
-                    className="w-full px-3 py-3 border rounded-md border-gray-300 bg-gray-100"
-                  />
-                </div>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+              Create New Store
+            </h2>
 
-                {/* Store Name */}
-                <div>
-                  <label className="block text-gray-700 font-medium mb-1">
-                    Store Name
-                  </label>
-                  <input
-                    type="text"
-                    value={storeName}
-                    onChange={(e) => setStoreName(e.target.value)}
-                    placeholder="Enter store name"
-                    className="w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-gray-700 font-medium mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={storeDescription}
-                    onChange={(e) => setStoreDescription(e.target.value)}
-                    placeholder="Enter description..."
-                    rows={4}
-                    className="w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
-                  ></textarea>
-                </div>
-
-                {/* Messages */}
-                {responseBack === 2 && (
-                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
-                    Fill in All Required Fields
-                  </div>
-                )}
-                {responseBack === 1 && (
-                  <div className="w-full bg-green-100 text-green-800 p-3 rounded text-center">
-                    Store Created Successfully
-                  </div>
-                )}
-                {responseBack === 3 && (
-                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
-                    Store Limit Reached
-                  </div>
-                )}
-                {responseBack === 4 && (
-                  <div className="w-full bg-red-100 text-red-800 p-3 rounded text-center">
-                    Network Error
-                  </div>
-                )}
-
-                {/* Submit Button */}
-                <button
-                  onClick={createStore} // Your API call function
-                  type="button"
-                  className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition"
-                >
-                  {loading ? "Creating..." : "Create Store"}
-                </button>
+            <div className="space-y-5">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={storeEmail}
+                  readOnly
+                  className="w-full px-3 py-3 border rounded-md bg-gray-100 border-gray-300"
+                />
               </div>
+
+              {/* Store Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Store Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  placeholder="Enter store name"
+                  className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              {/* City */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={CityID}
+                  onChange={(e) => setCityID(e.target.value)}
+                  className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                >
+                  <option value="">Select City</option>
+                  {CityList.map((item) => (
+                    <option key={item.cityID} value={item.cityID}>
+                      {item.cityName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={storeDescription}
+                  onChange={(e) => setStoreDescription(e.target.value)}
+                  placeholder="Enter store description..."
+                  rows={4}
+                  className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Messages */}
+              {responseBack === 2 && (
+                <div className="bg-red-100 text-red-800 p-3 rounded text-center">
+                  Fill in all required fields
+                </div>
+              )}
+              {responseBack === 1 && (
+                <div className="bg-green-100 text-green-800 p-3 rounded text-center">
+                  Store created successfully
+                </div>
+              )}
+              {responseBack === 3 && (
+                <div className="bg-red-100 text-red-800 p-3 rounded text-center">
+                  Store limit reached
+                </div>
+              )}
+              {responseBack === 4 && (
+                <div className="bg-red-100 text-red-800 p-3 rounded text-center">
+                  Network error
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="button"
+                onClick={createStore}
+                disabled={loading}
+                className={`w-full py-3 rounded-xl font-semibold text-white transition
+            ${
+              loading
+                ? "bg-indigo-300 cursor-not-allowed"
+                : "bg-indigo-500 hover:bg-indigo-600"
+            }
+          `}
+              >
+                {loading ? "Creating..." : "Create Store"}
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {defaultStoreset && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
