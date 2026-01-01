@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Eye,
@@ -15,8 +15,18 @@ import {
   Clock,
   ShoppingCart,
 } from "lucide-react";
+import SellerOrderGet from "@/api/lib/Order/SellerOrdersGet";
+import {
+  SellerStoreListResponse,
+  storesListSeller,
+} from "@/api/types/order/GetStore";
+import Spinner from "@/component/spinner/page";
 
-export default function SellerOrders() {
+export default function SellerOrders({ storeID }: { storeID: string }) {
+  const [isLoading, setisLoading] = useState(false);
+  const [productList, setProuctList] = useState<storesListSeller[]>([]);
+  const [subProductList, setsubProductList] = useState<storesListSeller[]>([]);
+
   const [orders, setOrders] = useState([
     {
       id: "#1001",
@@ -78,7 +88,7 @@ export default function SellerOrders() {
         return "bg-green-100 text-green-700 border-green-200";
       case "Shipped":
         return "bg-blue-100 text-blue-700 border-blue-200";
-      case "Pending":
+      case "pending":
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
       case "Canceled":
         return "bg-red-100 text-red-700 border-red-200";
@@ -98,52 +108,88 @@ export default function SellerOrders() {
     }
   };
 
+  const getOrders = async () => {
+    try {
+      setisLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await SellerOrderGet(String(token), storeID);
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as SellerStoreListResponse;
+        setProuctList(data.storesList);
+      } else {
+        console.log(response.data);
+      }
+    } catch {
+    } finally {
+      setisLoading(false);
+    }
+  };
+  const fetchData = (orderDetailID: string) => {
+    setSelectedOrder(true);
+    const data = productList.filter(
+      (item) => item.orderDetailID === orderDetailID
+    );
+    if (data) {
+      setsubProductList(data);
+    }
+  };
+  useEffect(() => {
+    getOrders();
+  }, []);
+
   return (
     <div className="w-full relative">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
         Seller Order Management
       </h1>
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        <div className="space-y-5">
+          {productList.map((order) => (
+            <div
+              key={order.orderDetailID}
+              className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
+            >
+              {/* === LEFT: Customer Info === */}
+              <div className="flex flex-col w-full md:w-1/3">
+                <h3 className="font-semibold text-gray-900">
+                  {order.productName}
+                </h3>
+                <p className="text-sm text-gray-500">{order.customerName}</p>
+                <p className="text-xs text-gray-400">{order.email}</p>
+              </div>
 
-      <div className="space-y-5">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
-          >
-            {/* === LEFT: Customer Info === */}
-            <div className="flex flex-col w-full md:w-1/3">
-              <h3 className="font-semibold text-gray-900">{order.id}</h3>
-              <p className="text-sm text-gray-500">{order.customer}</p>
-              <p className="text-xs text-gray-400">{order.email}</p>
-            </div>
+              {/* === CENTER: Status + Date === */}
+              <div className="flex items-center gap-4 mt-3 md:mt-0 w-full md:w-1/3 justify-center">
+                <span
+                  className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                    order.status
+                  )}`}
+                >
+                  {order.status}
+                </span>
+                <p className="text-sm text-gray-500">
+                  {order.orderDate.split("T")}
+                </p>
+              </div>
 
-            {/* === CENTER: Status + Date === */}
-            <div className="flex items-center gap-4 mt-3 md:mt-0 w-full md:w-1/3 justify-center">
-              <span
-                className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
-                  order.status
-                )}`}
-              >
-                {order.status}
-              </span>
-              <p className="text-sm text-gray-500">{order.date}</p>
+              {/* === RIGHT: Controls === */}
+              <div className="flex items-center gap-3 mt-3 md:mt-0 w-full md:w-1/3 justify-end">
+                <p className="text-lg font-semibold text-gray-900">
+                  Rs. {order.salePrice}
+                </p>
+                <button
+                  onClick={() => fetchData(order.orderDetailID)}
+                  className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
+                >
+                  <Eye size={16} /> View
+                </button>
+              </div>
             </div>
-
-            {/* === RIGHT: Controls === */}
-            <div className="flex items-center gap-3 mt-3 md:mt-0 w-full md:w-1/3 justify-end">
-              <p className="text-lg font-semibold text-gray-900">
-                Rs. {order.total}
-              </p>
-              <button
-                onClick={() => setSelectedOrder(order)}
-                className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
-              >
-                <Eye size={16} /> View
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* === Order Detail Modal === */}
       {selectedOrder && (
@@ -157,120 +203,125 @@ export default function SellerOrders() {
             </button>
 
             {/* === Header === */}
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
-                Order Details
-              </h2>
-              <p className="text-sm text-gray-500">
-                Order ID: {selectedOrder.id} • {selectedOrder.date}
-              </p>
-            </div>
+            {subProductList.map((item) => (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">
+                    Order Details
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Order ID: {item.orderDetailID} • {item.orderDate}
+                  </p>
+                </div>
 
-            {/* === Customer Info === */}
-            <div className="flex items-center gap-3 mb-6">
-              <User className="w-5 h-5 text-gray-700" />
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  {selectedOrder.customer}
-                </h4>
-                <p className="text-sm text-gray-500">{selectedOrder.email}</p>
-              </div>
-            </div>
-
-            {/* === Items === */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">
-                Ordered Items
-              </h3>
-              <div className="space-y-3">
-                {selectedOrder.details.items.map((item: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between border border-gray-100 rounded-xl p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          width={56}
-                          height={56}
-                          className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-500">Qty: {item.qty}</p>
-                      </div>
-                    </div>
-                    <p className="font-semibold text-gray-900">
-                      Rs. {item.price}
-                    </p>
+                {/* === Customer Info === */}
+                <div className="flex items-center gap-3 mb-6">
+                  <User className="w-5 h-5 text-gray-700" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {item.customerName}
+                    </h4>
+                    <p className="text-sm text-gray-500">{item.email}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* === Delivery + Payment Info === */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gray-700 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Shipping Address
-                  </h4>
-                  <p className="text-gray-600 text-sm">
-                    {selectedOrder.details.address}
-                  </p>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Truck className="w-5 h-5 text-gray-700 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Delivery Method
-                  </h4>
-                  <p className="text-gray-600 text-sm">
-                    {selectedOrder.details.deliveryMethod}
-                  </p>
+                {/* === Items === */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Ordered Items
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border border-gray-100 rounded-xl p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
+                          <Image
+                            src={
+                              "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE="
+                            }
+                            alt={
+                              "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE="
+                            }
+                            width={56}
+                            height={56}
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {item.productName}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Qty: {item.qty}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="font-semibold text-gray-900">
+                        Rs. {item.salePrice}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <CreditCard className="w-5 h-5 text-gray-700 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Payment Method
-                  </h4>
-                  <p className="text-gray-600 text-sm">
-                    {selectedOrder.details.paymentMethod}
-                  </p>
+                {/* === Delivery + Payment Info === */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-gray-700 mt-1" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        Shipping Address
+                      </h4>
+                      <p className="text-gray-600 text-sm">
+                        {item.shippingAddress}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Truck className="w-5 h-5 text-gray-700 mt-1" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        Delivery Method
+                      </h4>
+                      <p className="text-gray-600 text-sm">
+                        Currenlty UnAvalibale
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="w-5 h-5 text-gray-700 mt-1" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        Payment Method
+                      </h4>
+                      <p className="text-gray-600 text-sm">
+                        {item.paymentName}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-gray-700 mt-1" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        Estimated Delivery
+                      </h4>
+                      <p className="text-gray-600 text-sm">4-5 Days</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-gray-700 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">
-                    Estimated Delivery
-                  </h4>
-                  <p className="text-gray-600 text-sm">
-                    {selectedOrder.details.estimatedDelivery}
-                  </p>
+                {/* === Summary === */}
+                <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
+                  <div className="flex justify-between">
+                    <span>Total</span>
+                    <span className="font-semibold text-gray-900 text-base">
+                      Rs. {item.totalAmount}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            {/* === Summary === */}
-            <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
-              <div className="flex justify-between">
-                <span>Total</span>
-                <span className="font-semibold text-gray-900 text-base">
-                  Rs. {selectedOrder.total}
-                </span>
-              </div>
-            </div>
+              </>
+            ))}
             <div className="flex justify-between items-center">
               <button className="px-4 py-2 mt-2 mb-2 bg-red-500 hover:bg-red-600 rounded-md text-white">
                 Reject

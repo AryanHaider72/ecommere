@@ -29,8 +29,10 @@ import {
   stores,
 } from "@/api/types/Shippment/Rates/rates";
 import AddOrder from "@/api/lib/Order/AddCustomerOrder";
+import { removeItemFromServerCart } from "@/api/lib/Cart/AddCart";
 
 export default function CheckOut() {
+  const router = useRouter();
   const [activePage, setActivePage] = useState("login");
   const [paymentID, setPaymentID] = useState("");
   const [selected, setSelected] = useState("COD");
@@ -53,6 +55,7 @@ export default function CheckOut() {
   const [Countries, setCountries] = useState<Countryget[]>([]);
   const [storePayload, setStorePayload] =
     useState<requestAddStoreToGetRate | null>(null);
+  const [ConfirmationBox, setConfirmationBox] = useState(false);
 
   const [isTrue, setIsTrue] = useState(false);
   const [responseBack, setResponseBack] = useState("");
@@ -189,8 +192,20 @@ export default function CheckOut() {
       };
       const response = await AddOrder(formData);
       if (response.status === 200 || response.status === 201) {
+        cartList.map((item) => {
+          removeItemFromServerCart(item.productID);
+        });
         setIsTrue(true);
         setResponseBack(response.data.message);
+        setCartList([]);
+        setAddress("");
+        setPhoneNo("");
+        setCountry("");
+        setCountryID("");
+        setCity("");
+        setCityList([]);
+        setPaymentID("");
+        setConfirmationBox(true);
       } else if (response.status === 200) {
         setIsTrue(true);
         setResponseBack("PLease Fill in Required Fields");
@@ -258,8 +273,71 @@ export default function CheckOut() {
     }, 0);
   };
 
+  const DURATION = 5;
+  const [timeLeft, setTimeLeft] = useState(DURATION);
+  useEffect(() => {
+    if (!ConfirmationBox) return;
+
+    setTimeLeft(DURATION);
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          router.push("/");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [ConfirmationBox, router]);
+  const progressPercentage = (timeLeft / DURATION) * 100;
   return (
     <>
+      {ConfirmationBox && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center animate-fadeIn">
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 flex items-center justify-center rounded-full bg-green-100 text-green-600 text-3xl">
+                ✓
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-gray-800">Thank You!</h2>
+
+            {/* Message */}
+            <p className="text-gray-500 mt-2">
+              Your action was completed successfully. You will be redirected
+              shortly.
+            </p>
+
+            {/* Progress Bar */}
+            <div className="mt-6">
+              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 transition-all duration-1000 ease-linear"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-400 mt-2">
+                Redirecting in {timeLeft}s
+              </p>
+            </div>
+
+            {/* Optional Button */}
+            <button
+              onClick={() => router.push("/")}
+              className="mt-6 px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+            >
+              Go Now
+            </button>
+          </div>
+        </div>
+      )}
       {/* <Navbar onPageChange={setActivePage} /> */}
       <Navbar
         onPageChange={(page) => console.log("Navigate to:", page)}
@@ -631,7 +709,7 @@ export default function CheckOut() {
                     onClick={() => addOrder()}
                     className="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition"
                   >
-                    Place Order
+                    {isLoading ? "Placing Order..." : "Place Order"}
                   </button>
                 </div>
               ) : (

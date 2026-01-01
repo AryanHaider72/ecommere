@@ -243,7 +243,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
         {activeTab === "purchase" && <PurchaseForm storeID={storeID} />}
         {activeTab === "setting" && <ProductControll storeID={storeID} />}
         {activeTab === "unit" && <UnitForm storeID={storeID} />}
-        {activeTab === "orders" && <SellerOrders />}
+        {activeTab === "orders" && <SellerOrders storeID={storeID} />}
         {activeTab === "customer" && <CustomerForm storeID={storeID} />}
         {activeTab === "supplier" && <SupplierForm />}
         {activeTab === "ledger" && <SupplierledgerForm />}
