@@ -1,22 +1,22 @@
-export interface RequestAddCity {
+export interface RequestAddZone {
   regionID: string;
-  cityName: string;
+  zoneName: string;
 }
 
-export interface RequestModifyCity {
+export interface RequestModifyZone {
   regionID: string;
-  cityID: string;
-  cityName: string;
+  zoneID: string;
+  zoneName: string;
 }
 
-export interface responseCityList {
+export interface responseZoneList {
   message: string;
-  citylist: citylist[];
+  zonelist: zonelist[];
 }
-export interface citylist {
+export interface zonelist {
   regionID: string;
-  cityID: string;
-  cityName: string;
+  zoneID: string;
+  zoneName: string;
   countryName: string;
   countryID: string;
   regionName: string;

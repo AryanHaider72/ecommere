@@ -17,7 +17,7 @@ import {
   Countryget,
   CountrygetApiResponse,
 } from "@/api/types/country/countryget";
-import { citylist, responseCityList } from "@/api/types/Shippment/City/City";
+// import { citylist, responseCityList } from "@/api/types/Shippment/City/City";
 import {
   regionlist,
   responseRegionList,
@@ -37,6 +37,10 @@ interface response {
   zonelist: zonelist[];
 }
 interface zonelist {
+  countryID: string;
+  countryName: string;
+  regionID: string;
+  regionName: string;
   zoneID: string;
   zoneName: string;
 }
@@ -52,17 +56,15 @@ export default function ShippingCityZoneManagemnet() {
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  const [Countries, setCountries] = useState<Countryget[]>([]);
   const [countryID, setCountryID] = useState("");
+  const [RegionList, setRegionList] = useState<regionlist[]>([]);
   const [RegionID, setRegionID] = useState("");
   const [isLoading, setisLoading] = useState(false);
 
-  const [CityID, setCityID] = useState("");
   const [ZoneID, setZoneID] = useState("");
 
   const [zonelist, setZoneList] = useState<zonelist[]>([]);
-  const [Countries, setCountries] = useState<Countryget[]>([]);
-  const [RegionList, setRegionList] = useState<regionlist[]>([]);
-  const [CityList, setCityList] = useState<citylist[]>([]);
   const [ShippingZone, setShippingZone] = useState<ShippingZone[]>([]);
   const [CityName, setCityName] = useState("");
   const [ID, setID] = useState("");
@@ -75,11 +77,12 @@ export default function ShippingCityZoneManagemnet() {
       const token = localStorage.getItem("token");
       const formData = {
         zoneID: ZoneID,
-        cityID: CityID,
+        cityName: CityName,
       };
       const response = await AddShippingZone(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         getShippingZone(ZoneID);
+        setCityName("");
         setIsTrue(true);
         setResponseBack(response.data.message);
       } else if (response.status === 400) {
@@ -126,6 +129,7 @@ export default function ShippingCityZoneManagemnet() {
   //     setisLoading(false);
   //   }
   // };
+
   const getShippingZone = async (ID: string) => {
     try {
       setLoading(true);
@@ -133,7 +137,7 @@ export default function ShippingCityZoneManagemnet() {
       const response = await GetShippingZone(ID, String(token));
       if (response.status === 200 || response.status === 201) {
         const data = response.data as responseShippingZone;
-        setShippingZone(data.cityZoneList);
+        setShippingZone(data.zonelist);
       } else {
         setShippingZone([]);
       }
@@ -143,32 +147,16 @@ export default function ShippingCityZoneManagemnet() {
     }
   };
 
-  // const fetchData = (ID: string) => {
-  //   setUpdate(true);
-  //   setShowList(false);
-  //   const data = ShippingZone.find((item) => item.cityZoneID === ID);
-  //   if (data) {
-  //     setID(data.cityZoneID);
-  //     setZoneID(data.zoneID);
-  //     setList(
-  //       data.cityList.map((item) => ({
-  //         cityID: item.cityID,
-  //         cityName: item.cityName,
-  //       }))
-  //     );
-  //   }
-  // };
-
   const deleteShippingZone = async (ID: string) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       const formData = {
-        cityZoneID: ID,
+        cityID: ID,
       };
       const response = await DeleteShippingZoneCity(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        setShippingZone(ShippingZone.filter((item) => item.cityZoneID !== ID));
+        setShippingZone(ShippingZone.filter((item) => item.cityID !== ID));
         setID("");
         setIsTrue(true);
         setResponseBack(response.data[0].message);
@@ -185,7 +173,6 @@ export default function ShippingCityZoneManagemnet() {
 
   useEffect(() => {
     getCountry();
-    getZone();
   }, []);
 
   const getRegion = async (ID: string) => {
@@ -195,22 +182,22 @@ export default function ShippingCityZoneManagemnet() {
       const data = response.data as responseRegionList;
       setRegionList(data.regionlist);
       setRegionID(data.regionlist[0].regionID);
-      getCity(data.regionlist[0].regionID);
+      getZone(data.regionlist[0].regionID);
     } else {
       setRegionList([]);
     }
   };
-  const getCity = async (ID: string) => {
+  const getZone = async (ID: string) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response = await GetCity(ID, String(token));
       if (response.status === 200 || response.status === 201) {
-        const data = response.data as responseCityList;
-        setCityList(data.citylist);
-        setCityID(data.citylist[0].cityID);
+        const data = response.data as response;
+        setZoneList(data.zonelist);
+        setZoneID(data.zonelist[0].zoneID);
       } else {
-        setCityList([]);
+        setZoneList([]);
       }
     } catch {
     } finally {
@@ -227,24 +214,6 @@ export default function ShippingCityZoneManagemnet() {
       setCountryID(data.countryList[0].countryID);
       getRegion(data.countryList[0].countryID);
     } else if (response.status === 401) return router.push("/sellerogin");
-  };
-  const getZone = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await GetZone(String(token));
-      if (response.status === 200 || response.status === 201) {
-        const data = response.data as response;
-        setZoneList(data.zonelist);
-        setZoneID(data.zonelist[0].zoneID);
-        getShippingZone(data.zonelist[0].zoneID);
-      } else {
-        setZoneList([]);
-      }
-    } catch {
-    } finally {
-      setLoading(false);
-    }
   };
 
   useEffect(() => {
@@ -321,6 +290,58 @@ export default function ShippingCityZoneManagemnet() {
           <>
             <div className="flex-1">
               <label className="block text-gray-700 font-medium mb-2">
+                Country
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  value={countryID}
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => {
+                    setCountryID(e.target.value);
+                    getRegion(e.target.value);
+                  }}
+                >
+                  {Countries.map((cat) => (
+                    <option key={cat.countryID} value={cat.countryID}>
+                      {cat.countryName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Region
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  value={RegionID}
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => {
+                    setRegionID(e.target.value);
+                    getZone(e.target.value);
+                  }}
+                >
+                  {RegionList.length > 0 ? (
+                    <>
+                      {RegionList.map((cat) => (
+                        <option key={cat.regionID} value={cat.regionID}>
+                          {cat.regionName}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option>No Record Found</option>
+                  )}
+                </select>
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
                 Zone
               </label>
 
@@ -353,7 +374,7 @@ export default function ShippingCityZoneManagemnet() {
                     {ShippingZone.map((item) => (
                       <div
                         className="p-4 border mt-2  border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
-                        key={item.cityZoneID}
+                        key={item.cityID}
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
@@ -371,7 +392,7 @@ export default function ShippingCityZoneManagemnet() {
                           <button
                             onClick={() => {
                               setIsOpen(true);
-                              setID(item.cityZoneID);
+                              setID(item.cityID);
                             }}
                             className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
                             title="Delete"
@@ -427,7 +448,7 @@ export default function ShippingCityZoneManagemnet() {
                   className="w-full bg-transparent outline-none text-gray-900 p-1"
                   onChange={(e) => {
                     setRegionID(e.target.value);
-                    getCity(e.target.value);
+                    getZone(e.target.value);
                   }}
                 >
                   {RegionList.length > 0 ? (
@@ -446,23 +467,23 @@ export default function ShippingCityZoneManagemnet() {
             </div>
             <div className="flex-1">
               <label className="block text-gray-700 font-medium mb-2">
-                City
+                Zone
               </label>
               <div className="flex gap-2">
                 <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                   <select
-                    value={CityID}
+                    value={ZoneID}
                     name="CategoryMain"
                     className="w-full bg-transparent outline-none text-gray-900 p-1"
                     onChange={(e) => {
-                      setCityID(e.target.value);
+                      setZoneID(e.target.value);
                     }}
                   >
-                    {CityList.length > 0 ? (
+                    {zonelist.length > 0 ? (
                       <>
-                        {CityList.map((cat) => (
-                          <option key={cat.cityID} value={cat.cityID}>
-                            {cat.cityName}
+                        {zonelist.map((cat) => (
+                          <option key={cat.zoneID} value={cat.zoneID}>
+                            {cat.zoneName}
                           </option>
                         ))}
                       </>
@@ -477,24 +498,19 @@ export default function ShippingCityZoneManagemnet() {
 
             <div className="flex-1">
               <label className="block text-gray-700 font-medium mb-2">
-                Zone
+                City Name
               </label>
 
               <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <select
-                  value={ZoneID}
-                  name="CategoryMain"
+                <input
+                  value={CityName}
+                  type="text"
+                  placeholder="Enter City Name"
                   className="w-full bg-transparent outline-none text-gray-900 p-1"
                   onChange={(e) => {
-                    setZoneID(e.target.value);
+                    setCityName(e.target.value);
                   }}
-                >
-                  {zonelist.map((cat) => (
-                    <option key={cat.zoneID} value={cat.zoneID}>
-                      {cat.zoneName}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 

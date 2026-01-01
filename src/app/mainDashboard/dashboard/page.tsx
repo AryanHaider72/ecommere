@@ -1,10 +1,20 @@
 "use client";
 import GetInitalStore from "@/api/authentication/StoreGet";
+import GetCountry from "@/api/lib/country/countryList/countryListGet";
+import GetCity from "@/api/lib/Shippment/City/CityGet";
 import GetCitySeller from "@/api/lib/Shippment/City/CityGetSeller";
+import GetRegion from "@/api/lib/Shippment/Region/GetRegion";
 import StoreCreation from "@/api/lib/store/createStore/createStore";
 import StoreDefaultSet from "@/api/lib/store/defaultStore/defaultStore";
 import GetUserData from "@/api/lib/userData/userDataGet/dataGet";
-import { citylist, responseCityList } from "@/api/types/Shippment/City/City";
+import {
+  Countryget,
+  CountrygetApiResponse,
+} from "@/api/types/country/countryget";
+import {
+  regionlist,
+  responseRegionList,
+} from "@/api/types/Shippment/Region/Region";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import { userDatagetApiResponse } from "@/api/types/userData/userDataType";
 import {
@@ -22,7 +32,18 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
+interface response {
+  message: string;
+  zonelist: zonelist[];
+}
+interface zonelist {
+  countryID: string;
+  countryName: string;
+  regionID: string;
+  regionName: string;
+  zoneID: string;
+  zoneName: string;
+}
 export default function SellerOverviewDashbaord() {
   const router = useRouter();
   const [storeShow, setStoreShow] = useState(false);
@@ -35,8 +56,14 @@ export default function SellerOverviewDashbaord() {
   const [storeDescription, setStoreDescription] = useState("");
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [defaultStoreset, setDefaultStoreset] = useState(false);
-  const [CityList, setCityList] = useState<citylist[]>([]);
-  const [CityID, setCityID] = useState("");
+  const [Countries, setCountries] = useState<Countryget[]>([]);
+  const [countryID, setCountryID] = useState("");
+  const [RegionList, setRegionList] = useState<regionlist[]>([]);
+  const [RegionID, setRegionID] = useState("");
+
+  const [ZoneID, setZoneID] = useState("");
+
+  const [zonelist, setZoneList] = useState<zonelist[]>([]);
 
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const stats = [
@@ -132,19 +159,45 @@ export default function SellerOverviewDashbaord() {
       router.push("/sellerlogin");
     }
   };
-  const getCity = async () => {
+  const getRegion = async (ID: string) => {
     const token = localStorage.getItem("token");
-    const response = await GetCitySeller(String(token));
-
+    const response = await GetRegion(ID, String(token));
     if (response.status === 200 || response.status === 201) {
-      const user = response.data as responseCityList;
-      setCityList(user.citylist);
-      setCityID(user.citylist[0].cityID);
+      const data = response.data as responseRegionList;
+      setRegionList(data.regionlist);
+      setRegionID(data.regionlist[0].regionID);
+      getZone(data.regionlist[0].regionID);
+    } else {
+      setRegionList([]);
     }
+  };
+  const getZone = async (ID: string) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await GetCity(ID, String(token));
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as response;
+        setZoneList(data.zonelist);
+        setZoneID(data.zonelist[0].zoneID);
+      } else {
+        setZoneList([]);
+      }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
+  const getCountry = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCountry(String(token));
+    if (response.status === 201 || response.status === 200) {
+      const data = response.data as CountrygetApiResponse;
+      setCountries(data.countryList);
+      setCountryID(data.countryList[0].countryID);
+      getRegion(data.countryList[0].countryID);
+    } else if (response.status === 401) return router.push("/sellerogin");
   };
   const DefaultStore = async (ID: string) => {
     const token = localStorage.getItem("token");
@@ -167,7 +220,7 @@ export default function SellerOverviewDashbaord() {
       const token = localStorage.getItem("token");
       const formData = {
         email: storeEmail,
-        cityID: CityID,
+        zoneID: ZoneID,
         storeName: storeName,
         description: storeDescription,
       };
@@ -192,7 +245,7 @@ export default function SellerOverviewDashbaord() {
 
   useEffect(() => {
     storesget();
-    getCity();
+    getCountry();
   }, []);
 
   useEffect(() => {
@@ -314,8 +367,11 @@ export default function SellerOverviewDashbaord() {
         </div>
       )}
       {addStoreForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto">
+          <div
+            className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 relative
+                    max-h-[90vh] overflow-y-auto"
+          >
             {/* Back Button */}
             <button
               onClick={() => {
@@ -360,22 +416,87 @@ export default function SellerOverviewDashbaord() {
               </div>
 
               {/* City */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City <span className="text-red-500">*</span>
+              <div className="flex-1">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Country
                 </label>
-                <select
-                  value={CityID}
-                  onChange={(e) => setCityID(e.target.value)}
-                  className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                >
-                  <option value="">Select City</option>
-                  {CityList.map((item) => (
-                    <option key={item.cityID} value={item.cityID}>
-                      {item.cityName}
-                    </option>
-                  ))}
-                </select>
+
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <select
+                    value={countryID}
+                    name="CategoryMain"
+                    className="w-full bg-transparent outline-none text-gray-900 p-1"
+                    onChange={(e) => {
+                      setCountryID(e.target.value);
+                      getRegion(e.target.value);
+                    }}
+                  >
+                    {Countries.map((cat) => (
+                      <option key={cat.countryID} value={cat.countryID}>
+                        {cat.countryName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Region
+                </label>
+
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <select
+                    value={RegionID}
+                    name="CategoryMain"
+                    className="w-full bg-transparent outline-none text-gray-900 p-1"
+                    onChange={(e) => {
+                      setRegionID(e.target.value);
+                      getZone(e.target.value);
+                    }}
+                  >
+                    {RegionList.length > 0 ? (
+                      <>
+                        {RegionList.map((cat) => (
+                          <option key={cat.regionID} value={cat.regionID}>
+                            {cat.regionName}
+                          </option>
+                        ))}
+                      </>
+                    ) : (
+                      <option>No Record Found</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Zone
+                </label>
+                <div className="flex gap-2">
+                  <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <select
+                      value={ZoneID}
+                      name="CategoryMain"
+                      className="w-full bg-transparent outline-none text-gray-900 p-1"
+                      onChange={(e) => {
+                        setZoneID(e.target.value);
+                      }}
+                    >
+                      {zonelist.length > 0 ? (
+                        <>
+                          {zonelist.map((cat) => (
+                            <option key={cat.zoneID} value={cat.zoneID}>
+                              {cat.zoneName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option>No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+                  <div></div>
+                </div>
               </div>
 
               {/* Description */}

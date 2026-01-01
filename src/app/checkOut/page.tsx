@@ -20,7 +20,6 @@ import {
   Countryget,
   CountrygetApiResponse,
 } from "@/api/types/country/countryget";
-import { responseCityList } from "@/api/types/Shippment/City/City";
 import axios from "axios";
 
 export default function CheckOut() {
@@ -44,6 +43,7 @@ export default function CheckOut() {
   const [customerID, setCustomerID] = useState("");
   const [countryID, setCountryID] = useState("");
   const [Countries, setCountries] = useState<Countryget[]>([]);
+  const [StoreList, setStoreList] = useState<string[]>([]);
   const [CityList, setCityList] = useState([]);
   const [cityName, setCityName] = useState("");
 
@@ -55,11 +55,23 @@ export default function CheckOut() {
     getCountry();
     getCustomer();
     getpayment();
+
     const data = localStorage.getItem("checkoutItems");
     if (data) {
-      setCartList(JSON.parse(data));
+      const parsedCart = JSON.parse(data);
+      setCartList(parsedCart);
+
+      // Prepare payload as required by the API
+      const payload = {
+        storeList: parsedCart.map((item: { storeID: string }) => ({
+          storeID: item.storeID,
+        })),
+      };
+      console.log(payload);
+      setStoreList(payload.storeList);
     }
   }, []);
+
   const getpayment = async () => {
     const response = await GetPaymentCustomer();
     if (response.status === 200 || response.status == 201) {
@@ -134,6 +146,9 @@ export default function CheckOut() {
     };
   };
 
+  const fetch = (cityName: string) => {
+    console.log(cityName);
+  };
   return (
     <>
       {/* <Navbar onPageChange={setActivePage} /> */}
@@ -273,6 +288,7 @@ export default function CheckOut() {
                       value={cityName}
                       onChange={(e) => {
                         setCityName(e.target.value);
+                        fetch(e.target.value);
                       }}
                       className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     >

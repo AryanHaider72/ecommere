@@ -8,7 +8,7 @@ export default async function GetCity(ID: string, token: string) {
     if (token) customHeader.Authorization = `Bearer ${token}`;
 
     const response = await getRequest(
-      `/api/Shippment/admin/GetCityRegion/${ID}`,
+      `/api/Shippment/admin/GetZoneRegion/${ID}`,
       null,
       customHeader
     );

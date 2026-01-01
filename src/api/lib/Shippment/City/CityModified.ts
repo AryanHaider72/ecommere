@@ -1,10 +1,10 @@
 "use server";
 
 import { postRequest } from "@/api/authentication/main";
-import { RequestModifyCity } from "@/api/types/Shippment/City/City";
+import { RequestModifyZone } from "@/api/types/Shippment/City/City";
 
 export default async function ModifyCity(
-  data: RequestModifyCity,
+  data: RequestModifyZone,
   token?: string
 ) {
   try {
@@ -12,7 +12,7 @@ export default async function ModifyCity(
     if (token) customHeader.Authorization = `Bearer ${token}`;
 
     const response = await postRequest(
-      `/api/Shippment/admin/ModifyCityRegion`,
+      `/api/Shippment/admin/ModifyZoneRegion`,
       data,
       customHeader
     );

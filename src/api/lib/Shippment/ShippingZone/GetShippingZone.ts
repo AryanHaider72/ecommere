@@ -8,7 +8,7 @@ export default async function GetShippingZone(data: string, token: string) {
     if (token) customHeader.Authorization = `Bearer ${token}`;
 
     const response = await getRequest(
-      `/api/Shippment/admin/GetShippingZoneCity/${data}`,
+      `/api/Shippment/admin/GetShippingZone/${data}`,
       null,
       customHeader
     );

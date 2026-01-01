@@ -1,14 +1,13 @@
 export interface RequestAddShippingZone {
   zoneID: string;
-  cityID: string;
+  cityName: string;
 }
 
 export interface responseShippingZone {
   message: string;
-  cityZoneList: ShippingZone[];
+  zonelist: ShippingZone[];
 }
 export interface ShippingZone {
-  cityZoneID: string;
   cityID: string;
   cityName: string;
 }

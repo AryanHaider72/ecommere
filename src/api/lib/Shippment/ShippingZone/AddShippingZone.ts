@@ -12,7 +12,7 @@ export default async function AddShippingZone(
     if (token) customHeader.Authorization = `Bearer ${token}`;
 
     const response = await postRequest(
-      `/api/Shippment/admin/AddShippingZoneCity`,
+      `/api/Shippment/admin/AddShippingZone`,
       data,
       customHeader
     );

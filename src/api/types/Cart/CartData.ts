@@ -2,6 +2,7 @@ export interface cartList {
   cartlist: CartData[];
 }
 export interface CartData {
+  storeID: string;
   productID: string;
   productName: string;
   description: string;

@@ -1,24 +1,27 @@
 "use client";
-import AddZone from "@/api/lib/Shippment/Zone/AddZone";
+import GetCountry from "@/api/lib/country/countryList/countryListGet";
+import AddCity from "@/api/lib/Shippment/City/CityAdd";
+import DeleteCity from "@/api/lib/Shippment/City/CityDelete";
+import GetCity from "@/api/lib/Shippment/City/CityGet";
+import ModifyCity from "@/api/lib/Shippment/City/CityModified";
+import AddRegion from "@/api/lib/Shippment/Region/AddRegion";
+import DeleteRegion from "@/api/lib/Shippment/Region/DeleteRegion";
 import GetRegion from "@/api/lib/Shippment/Region/GetRegion";
-
+import ModifyRegion from "@/api/lib/Shippment/Region/ModifyRegion";
+import {
+  Countryget,
+  CountrygetApiResponse,
+} from "@/api/types/country/countryget";
+import { responseZoneList, zonelist } from "@/api/types/Shippment/City/City";
+import {
+  regionlist,
+  responseRegionList,
+} from "@/api/types/Shippment/Region/Region";
 import Spinner from "@/component/spinner/page";
 import { ChevronLeft, ChevronRight, Pencil, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
-import ModifyZone from "@/api/lib/Shippment/Zone/ModifyZone";
-import GetZone from "@/api/lib/Shippment/Zone/GetZone";
-import DeleteZone from "@/api/lib/Shippment/Zone/DeleteZone";
-
-interface response {
-  message: string;
-  zonelist: zonelist[];
-}
-interface zonelist {
-  zoneID: string;
-  zoneName: string;
-}
 
 export default function ZoneManagement() {
   const router = useRouter();
@@ -26,31 +29,37 @@ export default function ZoneManagement() {
   const [loading, setLoading] = useState(true);
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  const [countryID, setCountryID] = useState("");
+  const [RegionID, setRegionID] = useState("");
   const [isLoading, setisLoading] = useState(false);
 
-  const [ZoneName, setZoneName] = useState("");
+  const [Countries, setCountries] = useState<Countryget[]>([]);
+  const [RegionList, setRegionList] = useState<regionlist[]>([]);
+  const [CityList, setCityList] = useState<zonelist[]>([]);
+  const [CityName, setCityName] = useState("");
   const [ID, setID] = useState("");
   const [isTrue, setIsTrue] = useState(false);
   const [responseBack, setResponseBack] = useState("");
-  const [zonelist, setZoneList] = useState<zonelist[]>([]);
 
-  const addZone = async () => {
+  const addCity = async () => {
     try {
       setisLoading(true);
       const token = localStorage.getItem("token");
       const formData = {
-        zoneName: ZoneName,
+        regionID: RegionID,
+        zoneName: CityName,
       };
-      const response = await AddZone(formData, String(token));
+      const response = await AddCity(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        getZone();
+        getCity(RegionID);
         setID("");
-        setZoneName("");
+        setCityName("");
         setIsTrue(true);
         setResponseBack(response.data.message);
       } else if (response.status === 200) {
         setIsTrue(true);
-        setResponseBack("PLease Fill in Required Fields");
+        setResponseBack("Please Fill in Required Fields");
       } else {
         setIsTrue(true);
         setResponseBack("Something Went Wrong. Please try again later.");
@@ -61,61 +70,20 @@ export default function ZoneManagement() {
       setisLoading(false);
     }
   };
-  const modifyZone = async () => {
+  const modifyRegion = async () => {
     try {
       setisLoading(true);
       const token = localStorage.getItem("token");
       const formData = {
+        regionID: RegionID,
         zoneID: ID,
-        zoneName: ZoneName,
+        zoneName: CityName,
       };
-      const response = await ModifyZone(formData, String(token));
+      const response = await ModifyCity(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        getZone();
-        setShowList(true);
+        getCity(RegionID);
         setID("");
-        setZoneName("");
-        setUpdate(false);
-        setShowList(true);
-        setIsTrue(true);
-        setResponseBack(response.data[0].message);
-      } else if (response.status === 400) {
-        setIsTrue(true);
-        setResponseBack("Please fill in all Fields.");
-      } else {
-        setUpdate(true);
-        setShowList(false);
-        setIsTrue(true);
-        setResponseBack("Something Went Wrong. Please Try Again Later");
-      }
-    } catch (error) {
-      setisLoading(true);
-    } finally {
-      setisLoading(false);
-    }
-  };
-
-  const fetchData = (ID: string) => {
-    setUpdate(true);
-    setShowList(false);
-    const data = zonelist.find((item) => item.zoneID === ID);
-    if (data) {
-      setID(data.zoneID);
-      setZoneName(data.zoneName);
-    }
-  };
-
-  const deleteZone = async (ID: string) => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const formData = {
-        zoneID: ID,
-      };
-      const response = await DeleteZone(formData, String(token));
-      if (response.status === 200 || response.status === 201) {
-        setZoneList(zonelist.filter((item) => item.zoneID !== ID));
-        setID("");
+        setCityName("");
         setUpdate(false);
         setShowList(true);
         setIsTrue(true);
@@ -127,30 +95,90 @@ export default function ZoneManagement() {
         setResponseBack(response.data[0].message);
       }
     } catch (error) {
-      setLoading(true);
+      setisLoading(true);
     } finally {
-      setLoading(false);
+      setisLoading(false);
     }
   };
-
-  const getZone = async () => {
+  const getCity = async (ID: string) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await GetZone(String(token));
+      const response = await GetCity(ID, String(token));
       if (response.status === 200 || response.status === 201) {
-        const data = response.data as response;
-        setZoneList(data.zonelist);
+        const data = response.data as responseZoneList;
+        setCityList(data.zonelist);
       } else {
-        setZoneList([]);
+        setCityList([]);
       }
     } catch {
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchData = (ID: string) => {
+    setUpdate(true);
+    setShowList(false);
+    const data = CityList.find((item) => item.zoneID === ID);
+    if (data) {
+      setCountryID(data.countryID);
+      setID(data.zoneID);
+      setRegionID(data.regionID);
+      setCityName(data.zoneName);
+    }
+  };
+
+  const deleteCity = async (ID: string) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const formData = {
+        zoneID: ID,
+      };
+      const response = await DeleteCity(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        setCityList(CityList.filter((item) => item.zoneID !== ID));
+        setID("");
+        setIsTrue(true);
+        setResponseBack(response.data[0].message);
+      } else {
+        setIsTrue(false);
+        setResponseBack(response.data[0].message);
+      }
+    } catch (error) {
+      setLoading(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRegion = async (ID: string) => {
+    const token = localStorage.getItem("token");
+    const response = await GetRegion(ID, String(token));
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as responseRegionList;
+      setRegionList(data.regionlist);
+      setRegionID(data.regionlist[0].regionID);
+      getCity(data.regionlist[0].regionID);
+    } else {
+      setRegionList([]);
+    }
+  };
+
+  const getCountry = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCountry(String(token));
+    if (response.status === 201 || response.status === 200) {
+      const data = response.data as CountrygetApiResponse;
+      setCountries(data.countryList);
+      setCountryID(data.countryList[0].countryID);
+      getRegion(data.countryList[0].countryID);
+    } else if (response.status === 401) return router.push("/sellerogin");
+  };
+
   useEffect(() => {
-    getZone();
+    getCountry();
   }, []);
 
   useEffect(() => {
@@ -188,7 +216,7 @@ export default function ZoneManagement() {
               </button>
               <button
                 onClick={() => {
-                  deleteZone(ID);
+                  deleteCity(ID);
                   setIsOpen(false);
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
@@ -225,15 +253,73 @@ export default function ZoneManagement() {
         </div>
         {showList ? (
           <>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Country
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  value={countryID}
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => {
+                    getRegion(e.target.value);
+                    setCountryID(e.target.value);
+                  }}
+                >
+                  {Countries.length > 0 ? (
+                    <>
+                      {Countries.map((cat) => (
+                        <option key={cat.countryID} value={cat.countryID}>
+                          {cat.countryName}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option>No Record Found</option>
+                  )}
+                </select>
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Region
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  value={RegionID}
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => {
+                    setRegionID(e.target.value);
+                    getCity(e.target.value);
+                  }}
+                >
+                  {RegionList.length > 0 ? (
+                    <>
+                      {RegionList.map((cat) => (
+                        <option key={cat.regionID} value={cat.regionID}>
+                          {cat.regionName}
+                        </option>
+                      ))}
+                    </>
+                  ) : (
+                    <option>No Record Found</option>
+                  )}
+                </select>
+              </div>
+            </div>
             {loading ? (
               <div className="flex justify-center py-10">
                 <Spinner />
               </div>
             ) : (
               <>
-                {zonelist.length > 0 ? (
+                {CityList.length > 0 ? (
                   <>
-                    {zonelist.map((item) => (
+                    {CityList.map((item) => (
                       <div
                         className="p-4 border mt-2  border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
                         key={item.zoneID}
@@ -275,16 +361,63 @@ export default function ZoneManagement() {
           </>
         ) : (
           <div className="space-y-5 mt-2">
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Country
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  value={countryID}
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => {
+                    getRegion(e.target.value);
+                    setCountryID(e.target.value);
+                  }}
+                >
+                  {Countries.map((cat) => (
+                    <option key={cat.countryID} value={cat.countryID}>
+                      {cat.countryName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-gray-700 font-medium mb-2">
+                Region
+              </label>
+
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <select
+                  value={RegionID}
+                  name="CategoryMain"
+                  className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  onChange={(e) => {
+                    setRegionID(e.target.value);
+                    getCity(e.target.value);
+                  }}
+                >
+                  {RegionList.map((cat) => (
+                    <option key={cat.regionID} value={cat.regionID}>
+                      {cat.regionName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* === Column: Sub Category === */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Zone Name <span className="text-red-500">*</span>
               </label>
               <input
-                value={ZoneName}
-                onChange={(e) => setZoneName(e.target.value)}
+                value={CityName}
+                onChange={(e) => setCityName(e.target.value)}
                 type="text"
-                name="Zone Name"
+                name="Region Name"
                 placeholder="Enter Zone Name"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
@@ -312,7 +445,7 @@ export default function ZoneManagement() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={modifyZone}
+                  onClick={modifyRegion}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   {isLoading ? "Updating...." : "Update"}
@@ -322,7 +455,7 @@ export default function ZoneManagement() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={addZone}
+                  onClick={addCity}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   {isLoading ? "Saving...." : "Save"}

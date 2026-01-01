@@ -1,15 +1,15 @@
 "use server";
 
 import { postRequest } from "@/api/authentication/main";
-import { RequestAddCity } from "@/api/types/Shippment/City/City";
+import { RequestAddZone } from "@/api/types/Shippment/City/City";
 
-export default async function AddCity(data: RequestAddCity, token?: string) {
+export default async function AddCity(data: RequestAddZone, token?: string) {
   try {
     const customHeader: Record<string, string> = {};
     if (token) customHeader.Authorization = `Bearer ${token}`;
 
     const response = await postRequest(
-      `/api/Shippment/admin/AddCityRegion`,
+      `/api/Shippment/admin/AddZoneRegion`,
       data,
       customHeader
     );

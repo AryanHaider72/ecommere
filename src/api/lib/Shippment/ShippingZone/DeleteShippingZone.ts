@@ -4,7 +4,7 @@ import { postRequest } from "@/api/authentication/main";
 import { RequestModifyRegion } from "@/api/types/Shippment/Region/Region";
 
 export default async function DeleteShippingZoneCity(
-  data: { cityZoneID: string },
+  data: { cityID: string },
   token?: string
 ) {
   try {
@@ -12,7 +12,7 @@ export default async function DeleteShippingZoneCity(
     if (token) customHeader.Authorization = `Bearer ${token}`;
 
     const response = await postRequest(
-      `/api/Shippment/admin/DeleteShippingZoneCity`,
+      `/api/Shippment/admin/DeleteShippingZone`,
       data,
       customHeader
     );

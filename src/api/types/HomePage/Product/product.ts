@@ -20,6 +20,7 @@ export interface ProductVariant {
 }
 
 export interface ProductHome {
+  storeID: string;
   productID: string;
   categoryID: string;
   subCategoryID: string;
@@ -46,6 +47,6 @@ export interface ProductHome {
 
 export interface GetProductHomeApiResponse {
   message: string;
-  totalCount:number
+  totalCount: number;
   productList: ProductHome[];
 }

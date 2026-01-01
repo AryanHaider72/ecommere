@@ -50,8 +50,8 @@ import CheckAuth from "@/api/authentication/checkAuth";
 import ProfileSetting from "./setting/page";
 import HomePageSetting from "./StoreSetting/page";
 import RegionManagement from "./Shippment/Region/page";
+import ZoneManagement from "./Shippment/Zone2/page";
 import CityManagement from "./Shippment/City/page";
-import ZoneManagement from "./Shippment/Zone/page";
 import ShippingCityZoneManagemnet from "./Shippment/ShippingZone/page";
 import RateManagement from "./Shippment/ShippingRate/page";
 
@@ -164,14 +164,14 @@ export default function CustomerPanel() {
                         },
                         {
                           id: "city",
-                          label: "City",
+                          label: "Zone",
                           icon: Building,
                         },
-                        {
-                          id: "zone",
-                          label: "Zone",
-                          icon: Map,
-                        },
+                        // {
+                        //   id: "zone",
+                        //   label: "Zone",
+                        //   icon: Map,
+                        // },
                         {
                           id: "shippingZone",
                           label: "Shipping Zone",
@@ -246,8 +246,8 @@ export default function CustomerPanel() {
         {activeTab === "password" && <ProfileSetting />}
         {activeTab === "StoreSetting" && <HomePageSetting />}
         {activeTab === "region" && <RegionManagement />}
-        {activeTab === "city" && <CityManagement />}
-        {activeTab === "zone" && <ZoneManagement />}
+        {activeTab === "city" && <ZoneManagement />}
+        {activeTab === "zone" && <CityManagement />}
         {activeTab === "shippingZone" && <ShippingCityZoneManagemnet />}
         {activeTab === "shippingRate" && <RateManagement />}
 

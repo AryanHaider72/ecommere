@@ -1,27 +1,24 @@
 "use client";
-import GetCountry from "@/api/lib/country/countryList/countryListGet";
-import AddCity from "@/api/lib/Shippment/City/CityAdd";
-import DeleteCity from "@/api/lib/Shippment/City/CityDelete";
-import GetCity from "@/api/lib/Shippment/City/CityGet";
-import ModifyCity from "@/api/lib/Shippment/City/CityModified";
-import AddRegion from "@/api/lib/Shippment/Region/AddRegion";
-import DeleteRegion from "@/api/lib/Shippment/Region/DeleteRegion";
+import AddZone from "@/api/lib/Shippment/Zone/AddZone";
 import GetRegion from "@/api/lib/Shippment/Region/GetRegion";
-import ModifyRegion from "@/api/lib/Shippment/Region/ModifyRegion";
-import {
-  Countryget,
-  CountrygetApiResponse,
-} from "@/api/types/country/countryget";
-import { citylist, responseCityList } from "@/api/types/Shippment/City/City";
-import {
-  regionlist,
-  responseRegionList,
-} from "@/api/types/Shippment/Region/Region";
+
 import Spinner from "@/component/spinner/page";
 import { ChevronLeft, ChevronRight, Pencil, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
+import ModifyZone from "@/api/lib/Shippment/Zone/ModifyZone";
+import GetZone from "@/api/lib/Shippment/Zone/GetZone";
+import DeleteZone from "@/api/lib/Shippment/Zone/DeleteZone";
+
+interface response {
+  message: string;
+  citylist: citylist[];
+}
+interface citylist {
+  cityID: string;
+  cityName: string;
+}
 
 export default function CityManagement() {
   const router = useRouter();
@@ -29,37 +26,31 @@ export default function CityManagement() {
   const [loading, setLoading] = useState(true);
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
-  const [countryID, setCountryID] = useState("");
-  const [RegionID, setRegionID] = useState("");
   const [isLoading, setisLoading] = useState(false);
 
-  const [Countries, setCountries] = useState<Countryget[]>([]);
-  const [RegionList, setRegionList] = useState<regionlist[]>([]);
-  const [CityList, setCityList] = useState<citylist[]>([]);
-  const [CityName, setCityName] = useState("");
+  const [ZoneName, setZoneName] = useState("");
   const [ID, setID] = useState("");
   const [isTrue, setIsTrue] = useState(false);
   const [responseBack, setResponseBack] = useState("");
+  const [zonelist, setZoneList] = useState<citylist[]>([]);
 
-  const addCity = async () => {
+  const addZone = async () => {
     try {
       setisLoading(true);
       const token = localStorage.getItem("token");
       const formData = {
-        regionID: RegionID,
-        cityName: CityName,
+        zoneName: ZoneName,
       };
-      const response = await AddCity(formData, String(token));
+      const response = await AddZone(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        getCity(RegionID);
+        getZone();
         setID("");
-        setCityName("");
+        setZoneName("");
         setIsTrue(true);
         setResponseBack(response.data.message);
       } else if (response.status === 200) {
         setIsTrue(true);
-        setResponseBack("Please Fill in Required Fields");
+        setResponseBack("PLease Fill in Required Fields");
       } else {
         setIsTrue(true);
         setResponseBack("Something Went Wrong. Please try again later.");
@@ -70,20 +61,61 @@ export default function CityManagement() {
       setisLoading(false);
     }
   };
-  const modifyRegion = async () => {
+  const modifyZone = async () => {
     try {
       setisLoading(true);
       const token = localStorage.getItem("token");
       const formData = {
-        regionID: RegionID,
-        cityID: ID,
-        cityName: CityName,
+        zoneID: ID,
+        zoneName: ZoneName,
       };
-      const response = await ModifyCity(formData, String(token));
+      const response = await ModifyZone(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        getCity(RegionID);
+        getZone();
+        setShowList(true);
         setID("");
-        setCityName("");
+        setZoneName("");
+        setUpdate(false);
+        setShowList(true);
+        setIsTrue(true);
+        setResponseBack(response.data[0].message);
+      } else if (response.status === 400) {
+        setIsTrue(true);
+        setResponseBack("Please fill in all Fields.");
+      } else {
+        setUpdate(true);
+        setShowList(false);
+        setIsTrue(true);
+        setResponseBack("Something Went Wrong. Please Try Again Later");
+      }
+    } catch (error) {
+      setisLoading(true);
+    } finally {
+      setisLoading(false);
+    }
+  };
+
+  const fetchData = (ID: string) => {
+    setUpdate(true);
+    setShowList(false);
+    const data = zonelist.find((item) => item.cityID === ID);
+    if (data) {
+      setID(data.cityID);
+      setZoneName(data.cityName);
+    }
+  };
+
+  const deleteZone = async (ID: string) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const formData = {
+        zoneID: ID,
+      };
+      const response = await DeleteZone(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        setZoneList(zonelist.filter((item) => item.cityID !== ID));
+        setID("");
         setUpdate(false);
         setShowList(true);
         setIsTrue(true);
@@ -95,90 +127,30 @@ export default function CityManagement() {
         setResponseBack(response.data[0].message);
       }
     } catch (error) {
-      setisLoading(true);
+      setLoading(true);
     } finally {
-      setisLoading(false);
+      setLoading(false);
     }
   };
-  const getCity = async (ID: string) => {
+
+  const getZone = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await GetCity(ID, String(token));
+      const response = await GetZone(String(token));
       if (response.status === 200 || response.status === 201) {
-        const data = response.data as responseCityList;
-        setCityList(data.citylist);
+        const data = response.data as response;
+        setZoneList(data.citylist);
       } else {
-        setCityList([]);
+        setZoneList([]);
       }
     } catch {
     } finally {
       setLoading(false);
     }
   };
-
-  const fetchData = (ID: string) => {
-    setUpdate(true);
-    setShowList(false);
-    const data = CityList.find((item) => item.cityID === ID);
-    if (data) {
-      setCountryID(data.countryID);
-      setID(data.cityID);
-      setRegionID(data.regionID);
-      setCityName(data.cityName);
-    }
-  };
-
-  const deleteCity = async (ID: string) => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const formData = {
-        cityID: ID,
-      };
-      const response = await DeleteCity(formData, String(token));
-      if (response.status === 200 || response.status === 201) {
-        setCityList(CityList.filter((item) => item.cityID !== ID));
-        setID("");
-        setIsTrue(true);
-        setResponseBack(response.data[0].message);
-      } else {
-        setIsTrue(false);
-        setResponseBack(response.data[0].message);
-      }
-    } catch (error) {
-      setLoading(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getRegion = async (ID: string) => {
-    const token = localStorage.getItem("token");
-    const response = await GetRegion(ID, String(token));
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as responseRegionList;
-      setRegionList(data.regionlist);
-      setRegionID(data.regionlist[0].regionID);
-      getCity(data.regionlist[0].regionID);
-    } else {
-      setRegionList([]);
-    }
-  };
-
-  const getCountry = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetCountry(String(token));
-    if (response.status === 201 || response.status === 200) {
-      const data = response.data as CountrygetApiResponse;
-      setCountries(data.countryList);
-      setCountryID(data.countryList[0].countryID);
-      getRegion(data.countryList[0].countryID);
-    } else if (response.status === 401) return router.push("/sellerogin");
-  };
-
   useEffect(() => {
-    getCountry();
+    getZone();
   }, []);
 
   useEffect(() => {
@@ -216,7 +188,7 @@ export default function CityManagement() {
               </button>
               <button
                 onClick={() => {
-                  deleteCity(ID);
+                  deleteZone(ID);
                   setIsOpen(false);
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
@@ -253,73 +225,15 @@ export default function CityManagement() {
         </div>
         {showList ? (
           <>
-            <div className="flex-1">
-              <label className="block text-gray-700 font-medium mb-2">
-                Country
-              </label>
-
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <select
-                  value={countryID}
-                  name="CategoryMain"
-                  className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => {
-                    getRegion(e.target.value);
-                    setCountryID(e.target.value);
-                  }}
-                >
-                  {Countries.length > 0 ? (
-                    <>
-                      {Countries.map((cat) => (
-                        <option key={cat.countryID} value={cat.countryID}>
-                          {cat.countryName}
-                        </option>
-                      ))}
-                    </>
-                  ) : (
-                    <option>No Record Found</option>
-                  )}
-                </select>
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-gray-700 font-medium mb-2">
-                Region
-              </label>
-
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <select
-                  value={RegionID}
-                  name="CategoryMain"
-                  className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => {
-                    setRegionID(e.target.value);
-                    getCity(e.target.value);
-                  }}
-                >
-                  {RegionList.length > 0 ? (
-                    <>
-                      {RegionList.map((cat) => (
-                        <option key={cat.regionID} value={cat.regionID}>
-                          {cat.regionName}
-                        </option>
-                      ))}
-                    </>
-                  ) : (
-                    <option>No Record Found</option>
-                  )}
-                </select>
-              </div>
-            </div>
             {loading ? (
               <div className="flex justify-center py-10">
                 <Spinner />
               </div>
             ) : (
               <>
-                {CityList.length > 0 ? (
+                {zonelist.length > 0 ? (
                   <>
-                    {CityList.map((item) => (
+                    {zonelist.map((item) => (
                       <div
                         className="p-4 border mt-2  border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
                         key={item.cityID}
@@ -361,64 +275,18 @@ export default function CityManagement() {
           </>
         ) : (
           <div className="space-y-5 mt-2">
-            <div className="flex-1">
-              <label className="block text-gray-700 font-medium mb-2">
-                Country
-              </label>
-
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <select
-                  value={countryID}
-                  name="CategoryMain"
-                  className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => {
-                    getRegion(e.target.value);
-                    setCountryID(e.target.value);
-                  }}
-                >
-                  {Countries.map((cat) => (
-                    <option key={cat.countryID} value={cat.countryID}>
-                      {cat.countryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-gray-700 font-medium mb-2">
-                Region
-              </label>
-
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <select
-                  value={RegionID}
-                  name="CategoryMain"
-                  className="w-full bg-transparent outline-none text-gray-900 p-1"
-                  onChange={(e) => {
-                    setRegionID(e.target.value);
-                    getCity(e.target.value);
-                  }}
-                >
-                  {RegionList.map((cat) => (
-                    <option key={cat.regionID} value={cat.regionID}>
-                      {cat.regionName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* === Column: Sub Category === */}
+
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 City Name <span className="text-red-500">*</span>
               </label>
               <input
-                value={CityName}
-                onChange={(e) => setCityName(e.target.value)}
+                value={ZoneName}
+                onChange={(e) => setZoneName(e.target.value)}
                 type="text"
-                name="Region Name"
-                placeholder="Enter Region Name"
+                name="Zone Name"
+                placeholder="Enter Zone Name"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
@@ -445,7 +313,7 @@ export default function CityManagement() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={modifyRegion}
+                  onClick={modifyZone}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   {isLoading ? "Updating...." : "Update"}
@@ -455,7 +323,7 @@ export default function CityManagement() {
               <div className="flex justify-end pt-3">
                 <button
                   type="button"
-                  onClick={addCity}
+                  onClick={addZone}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   {isLoading ? "Saving...." : "Save"}
