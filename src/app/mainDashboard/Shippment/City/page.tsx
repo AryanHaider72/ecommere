@@ -26,12 +26,12 @@ export default function CityManagement() {
   const [loading, setLoading] = useState(true);
   const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isTrue, setIsTrue] = useState(false);
+  const [responseBack, setResponseBack] = useState("");
   const [isLoading, setisLoading] = useState(false);
 
   const [ZoneName, setZoneName] = useState("");
   const [ID, setID] = useState("");
-  const [isTrue, setIsTrue] = useState(false);
-  const [responseBack, setResponseBack] = useState("");
   const [zonelist, setZoneList] = useState<citylist[]>([]);
 
   const addZone = async () => {

@@ -304,7 +304,9 @@ export default function MainHome() {
       const newItem: CartData = {
         productID: data.productID,
         productName: data.productName,
+        weight: data.weight,
         storeID: data.storeID,
+        storeName: data.storeName,
         description: data.description,
         quantity: 1,
         discount: data.discount,

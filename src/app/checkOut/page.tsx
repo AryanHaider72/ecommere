@@ -21,6 +21,14 @@ import {
   CountrygetApiResponse,
 } from "@/api/types/country/countryget";
 import axios from "axios";
+import GetRates from "@/api/lib/Shippment/ShippmentRate/GetShimentRates";
+import {
+  informationList,
+  requestAddStoreToGetRate,
+  shiipingInformation,
+  stores,
+} from "@/api/types/Shippment/Rates/rates";
+import AddOrder from "@/api/lib/Order/AddCustomerOrder";
 
 export default function CheckOut() {
   const [activePage, setActivePage] = useState("login");
@@ -43,7 +51,17 @@ export default function CheckOut() {
   const [customerID, setCustomerID] = useState("");
   const [countryID, setCountryID] = useState("");
   const [Countries, setCountries] = useState<Countryget[]>([]);
-  const [StoreList, setStoreList] = useState<string[]>([]);
+  const [storePayload, setStorePayload] =
+    useState<requestAddStoreToGetRate | null>(null);
+
+  const [isTrue, setIsTrue] = useState(false);
+  const [responseBack, setResponseBack] = useState("");
+  const [isLoading, setisLoading] = useState(false);
+
+  const [shippingListInformation, setShippingListInformation] = useState<
+    informationList[]
+  >([]);
+
   const [CityList, setCityList] = useState([]);
   const [cityName, setCityName] = useState("");
 
@@ -61,14 +79,13 @@ export default function CheckOut() {
       const parsedCart = JSON.parse(data);
       setCartList(parsedCart);
 
-      // Prepare payload as required by the API
-      const payload = {
+      const payload: requestAddStoreToGetRate = {
         storeList: parsedCart.map((item: { storeID: string }) => ({
           storeID: item.storeID,
         })),
       };
-      console.log(payload);
-      setStoreList(payload.storeList);
+
+      setStorePayload(payload);
     }
   }, []);
 
@@ -130,25 +147,117 @@ export default function CheckOut() {
   };
 
   const addOrder = async () => {
-    const formData = {
-      customerID: customerID,
-      customerName: fullName,
-      phoneNo: PhoneNo,
-      shippingAddress: Address,
-      email: Email,
-      city: City,
-      country: country,
-      postalCode: PostalCode,
-      orderDate: new Date().toISOString(),
-      paymentID: paymentID,
-      paymentStatus: "Unpaid",
-      delievryCharges: 0,
-    };
+    try {
+      setisLoading(true);
+
+      const formData = {
+        customerName: fullName,
+        phoneNo: PhoneNo,
+        shippingAddress: Address,
+        email: Email,
+        city: cityName,
+        country: countryID,
+        postalCode: PostalCode,
+
+        orderMainList: [
+          {
+            orderDate: new Date().toISOString(),
+            paymentID: paymentID,
+            paymentStatus: "Unpaid",
+            delievryCharges:
+              getTotalShipping(cartList, shippingListInformation) || 0.0,
+            shippingAddress: countryID + " " + cityName + " " + Address,
+            couponDiscount: 0,
+            totalBill:
+              getCartSubTotal(cartList) +
+              getTotalShipping(cartList, shippingListInformation),
+            couponNumber: "",
+
+            orderListSub: cartList.map((item) => ({
+              productID: item.productID,
+              qty: item.quantity,
+              orignalPrice: item.salePrice,
+              salePrice:
+                (item.salePrice - (item.salePrice * item.discount) / 100) *
+                item.quantity,
+              discount: item.discount, // lowercase 'discount' matches interface
+              shippingCharges:
+                getShippingPrice(item, shippingListInformation) || 0.0,
+            })),
+          },
+        ],
+      };
+      const response = await AddOrder(formData);
+      if (response.status === 200 || response.status === 201) {
+        setIsTrue(true);
+        setResponseBack(response.data.message);
+      } else if (response.status === 200) {
+        setIsTrue(true);
+        setResponseBack("PLease Fill in Required Fields");
+      } else {
+        setIsTrue(true);
+        setResponseBack("Something Went Wrong. Please try again later.");
+      }
+    } catch {
+      setisLoading(true);
+    } finally {
+      setisLoading(false);
+    }
   };
 
-  const fetch = (cityName: string) => {
-    console.log(cityName);
+  const fetch = async (cityName: string) => {
+    if (!storePayload) return; // 👈 guard
+
+    const response = await GetRates(cityName, storePayload);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as shiipingInformation;
+      console.log(response.data);
+      setShippingListInformation(data.informationList);
+    } else {
+      console.log(response.data);
+    }
   };
+
+  const getShippingPrice = (
+    cartItem: CartData,
+    shippingRates?: informationList[] | null
+  ): number => {
+    if (!shippingRates || shippingRates.length === 0) {
+      return 0;
+    }
+
+    const rate = shippingRates.find((r) => r.storeID === cartItem.storeID);
+
+    if (!rate) return 0;
+
+    const weight = cartItem.weight * cartItem.quantity;
+
+    if (weight <= 1) return rate.lessThen1KG;
+    if (weight <= 5) return rate.lessThen5KG;
+    return rate.greaterThen10KG;
+  };
+
+  const getTotalShipping = (
+    cartList: CartData[],
+    shippingRates?: informationList[] | null
+  ): number => {
+    if (!shippingRates || shippingRates.length === 0) return 0;
+
+    return cartList.reduce((total, item) => {
+      return total + getShippingPrice(item, shippingRates);
+    }, 0);
+  };
+  const getCartSubTotal = (cartList: CartData[]): number => {
+    return cartList.reduce((total, item) => {
+      const priceAfterDiscount =
+        Number(item.salePrice) - (Number(item.salePrice) * item.discount) / 100;
+
+      const itemTotal = priceAfterDiscount * Number(item.quantity);
+
+      return total + itemTotal;
+    }, 0);
+  };
+
   return (
     <>
       {/* <Navbar onPageChange={setActivePage} /> */}
@@ -420,28 +529,67 @@ export default function CheckOut() {
                     Advance Booking
                   </h2>
 
-                  <div className="space-y-3 text-sm text-gray-700">
+                  <div className="space-y-4 overflow-y-auto  ">
                     {cartList.map((item) => (
                       <div
                         key={item.productID}
-                        className="flex justify-between"
+                        className="p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition "
                       >
-                        <span>{item.productName}</span>
-                        <span>{item.salePrice}</span>
+                        <span className="text-sm text-gray-400">
+                          {item.storeName}
+                        </span>
+                        <hr className="text-gray-300 w-[75%] mb-2 " />
+                        <span className="text-md font-bold text-gray-800">
+                          {item.productName}
+                        </span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">Price</span>
+                          <span className="text-sm text-gray-600">
+                            {item.salePrice} -/
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            Quantity
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {item.quantity}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            Discount
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {item.discount} %
+                          </span>
+                        </div>
+                        <hr className="text-gray-300 w-full mb-2 mt-2  " />
+                        <div></div>{" "}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            Shipment
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600">
+                              {getShippingPrice(item, shippingListInformation)}{" "}
+                              -/
+                            </span>
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            SubTotal
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {Number(item.quantity) *
+                              (Number(item.salePrice) -
+                                (Number(item.salePrice) * item.discount) / 100)}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-2 flex flex-col space-x-2">
-                    <label className="text-gray-700 text-sm">
-                      Order Date/Time
-                    </label>
-                    <input
-                      type="datetime-local"
-                      placeholder="Enter promo code"
-                      className="mt-1 border border-gray-300 shadow-md rounded-md p-2 text-sm focus:ring-2 focus:ring-black/60 "
-                    />
-                  </div>
-
                   <div className="mt-5 border-t border-gray-200 pt-4">
                     <h3 className="text-md font-semibold mb-2">
                       Billing Summary
@@ -450,24 +598,39 @@ export default function CheckOut() {
                     <div className="text-sm mt-4 space-y-1">
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span>2561.50</span>
+                        <span>{getCartSubTotal(cartList).toFixed(2)} -/</span>
                       </div>
+
                       <div className="flex justify-between">
-                        <span>Shipping</span>
-                        <span>Free</span>
+                        <span>Total Shipping</span>
+                        <span>
+                          {getTotalShipping(cartList, shippingListInformation)}{" "}
+                          -/
+                        </span>
                       </div>
-                      <div className="flex justify-between  text-gray-900">
+
+                      <div className="flex justify-between text-gray-900">
                         <span>Date/Time</span>
                         <span>02-Nov-2025 (15-30-00)</span>
                       </div>
+
                       <div className="flex justify-between font-semibold text-gray-900">
                         <span>Total</span>
-                        <span>2561.50</span>
+                        <span>
+                          {(
+                            getCartSubTotal(cartList) +
+                            getTotalShipping(cartList, shippingListInformation)
+                          ).toFixed(2)}{" "}
+                          -/
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <button className="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition">
+                  <button
+                    onClick={() => addOrder()}
+                    className="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition"
+                  >
                     Place Order
                   </button>
                 </div>
@@ -476,47 +639,100 @@ export default function CheckOut() {
                   <h2 className="text-lg font-semibold mb-4 text-gray-800">
                     Summary Order
                   </h2>
-                  <div className="space-y-3 text-sm text-gray-700">
+                  <div className="space-y-4 overflow-y-auto  ">
                     {cartList.map((item) => (
                       <div
                         key={item.productID}
-                        className="flex justify-between"
+                        className="p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition "
                       >
-                        <span>{item.productName}</span>
-                        <span>{item.salePrice}</span>
+                        <span className="text-sm text-gray-400">
+                          {item.storeName}
+                        </span>
+                        <hr className="text-gray-300 w-[75%] mb-2 " />
+                        <span className="text-md font-bold text-gray-800">
+                          {item.productName}
+                        </span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">Price</span>
+                          <span className="text-sm text-gray-600">
+                            {item.salePrice} -/
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            Quantity
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {item.quantity}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            Discount
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {item.discount} %
+                          </span>
+                        </div>
+                        <hr className="text-gray-300 w-full mb-2 mt-2  " />
+                        <div></div>{" "}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            Shipment
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600">
+                              {getShippingPrice(item, shippingListInformation)}{" "}
+                              -/
+                            </span>
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-800">
+                            SubTotal
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {Number(item.quantity) *
+                              (Number(item.salePrice) -
+                                (Number(item.salePrice) * item.discount) / 100)}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
-
                   <div className="mt-5 border-t border-gray-200 pt-4">
                     <h3 className="text-md font-semibold mb-2">
                       Billing Summary
                     </h3>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={promoCode}
-                        onChange={(e) => setPromoCode(e.target.value)}
-                        placeholder="Enter promo code"
-                        className="flex-1 border border-gray-300 shadow-md rounded-md p-2 text-sm focus:ring-2 focus:ring-black/60 "
-                      />
-                      <button className="bg-gray-600 text-white px-3 py-2 rounded-md text-sm hover:bg-black transition">
-                        Apply
-                      </button>
-                    </div>
 
                     <div className="text-sm mt-4 space-y-1">
                       <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span>2561.50</span>
+                        <span>{getCartSubTotal(cartList).toFixed(2)} -/</span>
                       </div>
+
                       <div className="flex justify-between">
-                        <span>Shipping</span>
-                        <span>Free</span>
+                        <span>Total Shipping</span>
+                        <span>
+                          {getTotalShipping(cartList, shippingListInformation)}{" "}
+                          -/
+                        </span>
                       </div>
+
+                      <div className="flex justify-between text-gray-900">
+                        <span>Date/Time</span>
+                        <span>02-Nov-2025 (15-30-00)</span>
+                      </div>
+
                       <div className="flex justify-between font-semibold text-gray-900">
                         <span>Total</span>
-                        <span>2561.50</span>
+                        <span>
+                          {(
+                            getCartSubTotal(cartList) +
+                            getTotalShipping(cartList, shippingListInformation)
+                          ).toFixed(2)}{" "}
+                          -/
+                        </span>
                       </div>
                     </div>
                   </div>

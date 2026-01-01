@@ -21,6 +21,7 @@ export interface ProductVariant {
 
 export interface ProductHome {
   storeID: string;
+  storeName: string;
   productID: string;
   categoryID: string;
   subCategoryID: string;

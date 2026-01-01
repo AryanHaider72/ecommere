@@ -6,7 +6,7 @@ import GetRegion from "@/api/lib/Shippment/Region/GetRegion";
 import ModifyRegion from "@/api/lib/Shippment/Region/ModifyRegion";
 import AddShippingZoneRate from "@/api/lib/Shippment/ShippmentRate/AddShippment";
 import GetCombination from "@/api/lib/Shippment/ShippmentRate/GetCombination";
-type EditableField = "minWeight" | "maxWeight" | "price";
+type EditableField = "lessThen1KG" | "lessThen5KG" | "greaterThen10KG";
 
 import {
   Countryget,
@@ -62,11 +62,11 @@ export default function RateManagement() {
       const token = localStorage.getItem("token");
       const formData = {
         shippingDetail: CombinationList.map((item) => ({
-          minWeight: item.minWeight,
-          maxWeight: item.maxWeight,
+          lessThen1KG: item.lessThen1KG,
+          lessThen5KG: item.lessThen5KG,
+          greaterThen10KG: item.greaterThen10KG,
           StoreZoneID: item.storeZoneID,
           DestinationZoneID: item.destinationZoneID,
-          price: item.price,
         })),
       };
       const response = await AddShippingZoneRate(formData, String(token));
@@ -171,10 +171,24 @@ export default function RateManagement() {
                         <th className="px-4 py-3">#</th>
                         <th className="px-4 py-3">Location 1</th>
                         <th className="px-4 py-3">Location 2</th>
-                        <th className="px-4 py-3">Min Weight (kg)</th>
-                        <th className="px-4 py-3">Max Weight (kg)</th>
-                        <th className="px-4 py-3">Rate</th>
-                        <th className="px-4 py-3 text-center">Action</th>
+                        <th className="px-4 py-3">
+                          Rate{" "}
+                          <span className="text-sm text-gray-400 font-bold">
+                            {"<" + 1}
+                          </span>
+                        </th>
+                        <th className="px-4 py-3">
+                          Rate{" "}
+                          <span className="text-sm text-gray-400 font-bold">
+                            {"<" + 5}
+                          </span>
+                        </th>
+                        <th className="px-4 py-3">
+                          Rate{" "}
+                          <span className="text-sm text-gray-400 font-bold">
+                            {">" + 10}
+                          </span>
+                        </th>
                       </tr>
                     </thead>
 
@@ -196,9 +210,13 @@ export default function RateManagement() {
 
                           <td className="px-4 py-3">
                             <input
-                              value={item.minWeight ?? 0}
+                              value={item.lessThen1KG ?? 0}
                               onChange={(e) =>
-                                handleChange(index, "minWeight", e.target.value)
+                                handleChange(
+                                  index,
+                                  "lessThen1KG",
+                                  e.target.value
+                                )
                               }
                               type="number"
                               placeholder="Min"
@@ -208,9 +226,13 @@ export default function RateManagement() {
 
                           <td className="px-4 py-3">
                             <input
-                              value={item.maxWeight ?? 0}
+                              value={item.lessThen5KG ?? 0}
                               onChange={(e) =>
-                                handleChange(index, "maxWeight", e.target.value)
+                                handleChange(
+                                  index,
+                                  "lessThen5KG",
+                                  e.target.value
+                                )
                               }
                               type="number"
                               placeholder="Max"
@@ -220,9 +242,13 @@ export default function RateManagement() {
 
                           <td className="px-4 py-3">
                             <input
-                              value={item.price ?? 0}
+                              value={item.greaterThen10KG ?? 0}
                               onChange={(e) =>
-                                handleChange(index, "price", e.target.value)
+                                handleChange(
+                                  index,
+                                  "greaterThen10KG",
+                                  e.target.value
+                                )
                               }
                               type="number"
                               placeholder="Rate"
@@ -230,11 +256,11 @@ export default function RateManagement() {
                             />
                           </td>
 
-                          <td className="px-4 py-3 text-center">
+                          {/* <td className="px-4 py-3 text-center">
                             <button className="rounded-md bg-green-600 px-3 py-1.5 text-white text-xs hover:bg-green-700">
                               Save
                             </button>
-                          </td>
+                          </td> */}
                         </tr>
                       ))}
                     </tbody>
