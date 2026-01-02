@@ -21,11 +21,16 @@ import {
   storesListSeller,
 } from "@/api/types/order/GetStore";
 import Spinner from "@/component/spinner/page";
+import SellerOrderConfirmation from "@/api/lib/Order/SellerOrderConfirmation";
 
 export default function SellerOrders({ storeID }: { storeID: string }) {
   const [isLoading, setisLoading] = useState(false);
   const [productList, setProuctList] = useState<storesListSeller[]>([]);
   const [subProductList, setsubProductList] = useState<storesListSeller[]>([]);
+  const [bags, setBags] = useState(0);
+  const [qty, setQty] = useState(0);
+  const [ResponseBack, setResponseBack] = useState("");
+  const [isTrue, setIsTrue] = useState(false);
 
   const [orders, setOrders] = useState([
     {
@@ -90,10 +95,10 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
         return "bg-blue-100 text-blue-700 border-blue-200";
       case "pending":
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "Canceled":
+      case "Cancelled":
         return "bg-red-100 text-red-700 border-red-200";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-green-100 text-green-700 border-green-200";
     }
   };
 
@@ -114,6 +119,7 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
       const token = localStorage.getItem("token");
       const response = await SellerOrderGet(String(token), storeID);
       if (response.status === 200 || response.status === 201) {
+        console.log(response.data);
         const data = response.data as SellerStoreListResponse;
         setProuctList(data.storesList);
       } else {
@@ -133,6 +139,35 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
       setsubProductList(data);
     }
   };
+  const orderStatusChange = async (orderDetailID: string, status: string) => {
+    try {
+      setisLoading(true);
+      const token = localStorage.getItem("token");
+
+      const formData = {
+        bags: Number(bags),
+        qty: Number(qty),
+        status: status,
+      };
+      const response = await SellerOrderConfirmation(
+        String(token),
+        orderDetailID,
+        formData
+      );
+      if (response.status === 200 || response.status === 201) {
+        getOrders();
+        setSelectedOrder(false);
+        setResponseBack(response.data.message);
+        setIsTrue(true);
+      } else {
+        setResponseBack(response.data.message);
+        setIsTrue(true);
+      }
+    } finally {
+      setisLoading(false);
+    }
+  };
+
   useEffect(() => {
     getOrders();
   }, []);
@@ -196,7 +231,11 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative overflow-y-auto max-h-[90vh]">
             <button
-              onClick={() => setSelectedOrder(null)}
+              onClick={() => {
+                setSelectedOrder(null);
+                setQty(0);
+                setBags(0);
+              }}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
             >
               <X className="w-5 h-5" />
@@ -205,12 +244,12 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
             {/* === Header === */}
             {subProductList.map((item) => (
               <>
-                <div className="mb-6">
+                <div key={item.orderDetailID} className="mb-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-1">
                     Order Details
                   </h2>
                   <p className="text-sm text-gray-500">
-                    Order ID: {item.orderDetailID} • {item.orderDate}
+                    Order ID: {item.orderDetailID} • {item.orderDate.split("T")}
                   </p>
                 </div>
 
@@ -255,9 +294,24 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                           </p>
                         </div>
                       </div>
-                      <p className="font-semibold text-gray-900">
-                        Rs. {item.salePrice}
-                      </p>
+                      <div className="flex flex-col gap2">
+                        <p className="w-full flex justify-between gap-2">
+                          <span className="font-semibold text-gray-900">
+                            Item Price:{" "}
+                          </span>
+                          <span>
+                            {item.salePrice -
+                              (item.salePrice * item.discount) / 100}{" "}
+                            -/
+                          </span>
+                        </p>
+                        <p className="w-full flex justify-between gap-2">
+                          <span className="font-semibold text-gray-900">
+                            Shipping Charges.{" "}
+                          </span>
+                          <span>{item.shippingCharges} -/</span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -294,9 +348,7 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                       <h4 className="font-semibold text-gray-900">
                         Payment Method
                       </h4>
-                      <p className="text-gray-600 text-sm">
-                        {item.paymentName}
-                      </p>
+                      <p className="text-gray-600 text-sm">{item.bankName}</p>
                     </div>
                   </div>
 
@@ -316,20 +368,62 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                   <div className="flex justify-between">
                     <span>Total</span>
                     <span className="font-semibold text-gray-900 text-base">
-                      Rs. {item.totalAmount}
+                      Rs.{" "}
+                      {item.shippingCharges +
+                        (item.salePrice -
+                          (item.salePrice * item.discount) / 100)}
                     </span>
                   </div>
                 </div>
+                <hr className="mt-2" />
+                <div className="flex gap-2 mt-2">
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Bags
+                    </label>
+                    <input
+                      type="number"
+                      value={bags}
+                      onChange={(e) => setBags(Number(e.target.value))}
+                      placeholder="Enter Bags "
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Quantity
+                    </label>
+                    <input
+                      value={qty || item.qty}
+                      onChange={(e) => setQty(Number(e.target.value))}
+                      type="number"
+                      placeholder="Enter Quantity "
+                      className="w-full p-3 border border-gray-200 shadow-sm rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                {item.status === "pending" && (
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => {
+                        orderStatusChange(item.orderDetailID, "Cancelled");
+                      }}
+                      className="px-4 py-2 mt-2 mb-2 bg-red-500 hover:bg-red-600 rounded-md text-white"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() =>
+                        orderStatusChange(item.orderDetailID, "Approved")
+                      }
+                      className="px-4 py-2 mt-2 mb-2 bg-green-500 hover:bg-green-600 rounded-md text-white"
+                    >
+                      {isLoading ? "Working..." : "Aproved"}
+                    </button>
+                  </div>
+                )}
               </>
             ))}
-            <div className="flex justify-between items-center">
-              <button className="px-4 py-2 mt-2 mb-2 bg-red-500 hover:bg-red-600 rounded-md text-white">
-                Reject
-              </button>
-              <button className="px-4 py-2 mt-2 mb-2 bg-green-500 hover:bg-green-600 rounded-md text-white">
-                Approved
-              </button>
-            </div>
           </div>
         </div>
       )}

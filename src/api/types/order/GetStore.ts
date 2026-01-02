@@ -9,7 +9,7 @@ export interface storesListSeller {
   orderDate: string;
   orderDetailID: string;
   paymentID: string;
-  paymentName: string;
+  bankName: string;
   phoneNo: string;
   productID: string;
   productName: string;

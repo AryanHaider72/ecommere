@@ -34,13 +34,16 @@ export default function CustomerPanel() {
     { id: "settings", label: "Account Settings", icon: UserCog },
   ];
   const checkAuth = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token1");
     const response = await CheckAuth(token as string);
     console.log("Response from CheckAuth API:", response);
     if (response?.status === 200 || response?.status === 201) {
-      console.log("Welcome");
+      const data = response.data as any;
+      if (data.loggedBy !== "Customer") {
+        router.push("/");
+      }
     } else {
-      router.push("/");
+      return;
     }
   };
   useEffect(() => {
