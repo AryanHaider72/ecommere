@@ -19,6 +19,7 @@ import SellerOrderGet from "@/api/lib/Order/SellerOrdersGet";
 import {
   SellerStoreListResponse,
   storesListSeller,
+  storesSubList,
 } from "@/api/types/order/GetStore";
 import Spinner from "@/component/spinner/page";
 import SellerOrderConfirmation from "@/api/lib/Order/SellerOrderConfirmation";
@@ -26,64 +27,11 @@ import SellerOrderConfirmation from "@/api/lib/Order/SellerOrderConfirmation";
 export default function SellerOrders({ storeID }: { storeID: string }) {
   const [isLoading, setisLoading] = useState(false);
   const [productList, setProuctList] = useState<storesListSeller[]>([]);
-  const [subProductList, setsubProductList] = useState<storesListSeller[]>([]);
+  const [subProductList, setsubProductList] = useState<storesSubList[]>([]);
   const [bags, setBags] = useState(0);
   const [qty, setQty] = useState(0);
   const [ResponseBack, setResponseBack] = useState("");
   const [isTrue, setIsTrue] = useState(false);
-
-  const [orders, setOrders] = useState([
-    {
-      id: "#1001",
-      customer: "Ali Khan",
-      email: "ali.khan@example.com",
-      date: "Oct 28, 2025",
-      status: "Pending",
-      total: 4100,
-      details: {
-        items: [
-          {
-            name: "Beige Trouser",
-            image: "/collection1.jpg",
-            qty: 1,
-            price: 1500,
-          },
-          {
-            name: "White Shirt",
-            image: "/collection1.jpg",
-            qty: 2,
-            price: 2400,
-          },
-        ],
-        address: "House #45, DHA Phase 6, Karachi, Pakistan",
-        paymentMethod: "Cash on Delivery",
-        deliveryMethod: "Leopard Courier",
-        estimatedDelivery: "Oct 31, 2025",
-      },
-    },
-    {
-      id: "#1002",
-      customer: "Sara Ahmed",
-      email: "sara.ahmed@example.com",
-      date: "Oct 27, 2025",
-      status: "Shipped",
-      total: 2650,
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection2.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        estimatedDelivery: "Nov 2, 2025",
-      },
-    },
-  ]);
 
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
@@ -102,17 +50,6 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
     }
   };
 
-  const updateOrderStatus = (id: string, newStatus: string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === id ? { ...order, status: newStatus } : order
-      )
-    );
-    if (selectedOrder && selectedOrder.id === id) {
-      setSelectedOrder({ ...selectedOrder, status: newStatus });
-    }
-  };
-
   const getOrders = async () => {
     try {
       setisLoading(true);
@@ -121,7 +58,7 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
       if (response.status === 200 || response.status === 201) {
         console.log(response.data);
         const data = response.data as SellerStoreListResponse;
-        setProuctList(data.storesList);
+        setProuctList(data.storesMainList);
       } else {
         console.log(response.data);
       }
@@ -130,13 +67,12 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
       setisLoading(false);
     }
   };
-  const fetchData = (orderDetailID: string) => {
+  const fetchData = (orderID: string) => {
     setSelectedOrder(true);
-    const data = productList.filter(
-      (item) => item.orderDetailID === orderDetailID
-    );
+    const data = productList.find((item) => item.orderID === orderID);
     if (data) {
-      setsubProductList(data);
+      console.log(data.storesSubList);
+      setsubProductList(data.storesSubList);
     }
   };
   const orderStatusChange = async (orderDetailID: string, status: string) => {
@@ -183,7 +119,7 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
         <div className="space-y-5">
           {productList.map((order) => (
             <div
-              key={order.orderDetailID}
+              key={order.orderID}
               className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
             >
               {/* === LEFT: Customer Info === */}
@@ -205,17 +141,17 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                   {order.status}
                 </span>
                 <p className="text-sm text-gray-500">
-                  {order.orderDate.split("T")}
+                  {order.orderDate.split("T")[0]}
                 </p>
               </div>
 
               {/* === RIGHT: Controls === */}
               <div className="flex items-center gap-3 mt-3 md:mt-0 w-full md:w-1/3 justify-end">
                 <p className="text-lg font-semibold text-gray-900">
-                  Rs. {order.salePrice}
+                  Rs. {order.totalAmount}
                 </p>
                 <button
-                  onClick={() => fetchData(order.orderDetailID)}
+                  onClick={() => fetchData(order.orderID)}
                   className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
                 >
                   <Eye size={16} /> View
@@ -249,7 +185,7 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                     Order Details
                   </h2>
                   <p className="text-sm text-gray-500">
-                    Order ID: {item.orderDetailID} • {item.orderDate.split("T")}
+                    Order ID: {item.orderDetailID}
                   </p>
                 </div>
 
@@ -274,12 +210,8 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                       <div className="flex items-center gap-3">
                         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
                           <Image
-                            src={
-                              "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE="
-                            }
-                            alt={
-                              "https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE="
-                            }
+                            src={"/collection3.jpg"}
+                            alt={"/collection3.jpg"}
                             width={56}
                             height={56}
                             className="object-cover"

@@ -72,6 +72,8 @@ export default function CheckOut() {
 
   const onClear = async () => {};
 
+  const token = localStorage.getItem("token1");
+
   useEffect(() => {
     getCountry();
     getCustomer();
@@ -125,7 +127,7 @@ export default function CheckOut() {
     }
   };
   const getCountry = async () => {
-    const token = localStorage.getItem("token1");
+    const token = localStorage.getItem("token");
     const response = await GetCountry(String(token), {});
     if (response.status === 200 || response.status == 201) {
       const data = response.data as CountrygetApiResponse;
@@ -413,19 +415,34 @@ export default function CheckOut() {
                       className="w-full mt-1 p-2 text-sm  border border-gray-200  rounded-md focus:ring-2 focus:ring-black/60 outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm text-gray-600 font-medium">
-                      Email
-                    </label>
-                    <input
-                      value={Email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      readOnly
-                      type="email"
-                      placeholder="Your Email"
-                      className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
-                    />
-                  </div>
+                  {!token ? (
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">
+                        Email
+                      </label>
+                      <input
+                        value={Email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        type="email"
+                        placeholder="Your Email"
+                        className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">
+                        Email
+                      </label>
+                      <input
+                        value={Email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        readOnly
+                        type="email"
+                        placeholder="Your Email"
+                        className="w-full mt-1 p-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-black/60 outline-none"
+                      />
+                    </div>
+                  )}
                   <div className="md:col-span-2">
                     <label className="text-sm text-gray-600 font-medium">
                       Phone
