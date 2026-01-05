@@ -12,7 +12,7 @@ export default async function VerfiedCustomer(
   if (token) customHeader.Authorization = `Bearer ${token}`;
 
   const response = await postRequest(
-    `/api/Seller/EmailVerfication${email}`,
+    `/api/CustomerAuthentication/Customer/EmailVerfication/${email}`,
     data,
     customHeader
   );

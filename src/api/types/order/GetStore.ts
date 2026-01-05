@@ -5,6 +5,7 @@ export interface SellerStoreListResponse {
 export interface storesListSeller {
   orderID: string;
   productName: string;
+  bankName: string;
   status: string;
   customerName: string;
   email: string;
@@ -21,11 +22,7 @@ export interface storesSubList {
   productID: string;
   productName: string;
   qty: number;
-  bankName: string;
-  customerName: string;
-  email: string;
-  phoneNo: string;
-  shippingAddress: string;
+  bags: number;
   salePrice: number;
   discount: number;
   shippingCharges: number;

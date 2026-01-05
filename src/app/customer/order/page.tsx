@@ -24,7 +24,9 @@ export default function Order() {
   const [isLoading, setisLoading] = useState(false);
   const [productList, setProuctList] = useState<storesListSeller[]>([]);
   const [subProductList, setsubProductList] = useState<storesListSeller[]>([]);
-
+  const [selectedOrder, setSelectedOrder] = useState<storesListSeller | null>(
+    null
+  );
   const [orders] = useState([
     {
       id: "#4578",
@@ -235,8 +237,6 @@ export default function Order() {
     },
   ]);
 
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-
   const statusStyle = (status: string) => {
     if (status === "Delivered")
       return "bg-green-100 text-green-700 border-green-200";
@@ -244,7 +244,7 @@ export default function Order() {
       return "bg-green-100 text-green-700 border-green-200";
     if (status === "Shipped")
       return "bg-blue-100 text-blue-700 border-blue-200";
-    if (status === "Pending")
+    if (status === "pending")
       return "bg-yellow-100 text-yellow-700 border-yellow-200";
     if (status === "Cancelled") return "bg-red-100 text-red-700 border-red-200";
     return "bg-gray-100 text-gray-700 border-gray-200";
@@ -258,7 +258,7 @@ export default function Order() {
       if (response.status === 200 || response.status === 201) {
         console.log(response.data);
         const data = response.data as SellerStoreListResponse;
-        setProuctList(data.storesList);
+        setProuctList(data.storesMainList);
       } else {
         console.log(response.data);
       }
@@ -267,13 +267,10 @@ export default function Order() {
       setisLoading(false);
     }
   };
-  const fetchData = (orderDetailID: string) => {
-    setSelectedOrder(true);
-    const data = productList.filter(
-      (item) => item.orderDetailID === orderDetailID
-    );
+  const fetchData = (orderID: string) => {
+    const data = productList.find((item) => item.orderID === orderID);
     if (data) {
-      setsubProductList(data);
+      setSelectedOrder(data);
     }
   };
   useEffect(() => {
@@ -334,7 +331,7 @@ export default function Order() {
         <div className="space-y-5">
           {productList.map((order) => (
             <div
-              key={order.orderDetailID}
+              key={order.orderID}
               className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
             >
               {/* === LEFT === */}
@@ -366,10 +363,10 @@ export default function Order() {
               {/* === RIGHT === */}
               <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-1/3 justify-end">
                 <p className="text-lg font-semibold text-gray-900">
-                  {order.salePrice - (order.salePrice * order.discount) / 100}
+                  {order.totalAmount}
                 </p>
                 <button
-                  onClick={() => fetchData(order.orderDetailID)}
+                  onClick={() => fetchData(order.orderID)}
                   className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
                 >
                   <Eye size={16} /> View
@@ -390,35 +387,36 @@ export default function Order() {
             >
               <X className="w-5 h-5" />
             </button>
-            {subProductList.map((item) => (
-              <>
-                {/* === Header === */}
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">
-                    Order Details
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Order ID: {item.orderDetailID} •{" "}
-                    {item.orderDate.split("T")[0]}
-                  </p>
-                </div>
 
-                {/* === Status === */}
-                <div className="flex items-center gap-3 mb-6">
-                  <Package className="w-5 h-5 text-gray-700" />
-                  <span
-                    className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
-                      item.status
-                    )}`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
+            <>
+              {/* === Header === */}
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-1">
+                  Order Details
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Order ID: {selectedOrder.orderID} •{" "}
+                  {selectedOrder.orderDate.split("T")[0]}
+                </p>
+              </div>
 
-                {/* === Items === */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-3">Items</h3>
-                  <div className="space-y-3">
+              {/* === Status === */}
+              {/* <div className="flex items-center gap-3 mb-6">
+                <Package className="w-5 h-5 text-gray-700" />
+                <span
+                  className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                    selectedOrder.status
+                  )}`}
+                >
+                  {item.status}
+                </span>
+              </div> */}
+
+              {/* === Items === */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Items</h3>
+                <div className="space-y-3">
+                  {selectedOrder.storesSubList.map((item) => (
                     <div className="flex items-center justify-between border border-gray-100 rounded-xl p-3">
                       <div className="flex items-center gap-3">
                         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
@@ -437,6 +435,13 @@ export default function Order() {
                           <p className="text-sm text-gray-500">
                             Qty: {item.qty}
                           </p>
+                          <span
+                            className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                              item.status
+                            )}`}
+                          >
+                            {item.status}
+                          </span>
                         </div>
                       </div>
                       <p className="font-semibold text-gray-900">
@@ -448,81 +453,78 @@ export default function Order() {
                         Order Again
                       </button>
                     </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* === Shipping & Payment === */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-gray-700 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Shipping Address
+                    </h4>
+                    <p className="text-gray-600 text-sm">
+                      {selectedOrder.shippingAddress}
+                    </p>
                   </div>
                 </div>
 
-                {/* === Shipping & Payment === */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-700 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        Shipping Address
-                      </h4>
-                      <p className="text-gray-600 text-sm">
-                        {item.shippingAddress}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Truck className="w-5 h-5 text-gray-700 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        Delivery Method
-                      </h4>
-                      <p className="text-gray-600 text-sm">
-                        Currently UnAvaliable
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="w-5 h-5 text-gray-700 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        Payment Method
-                      </h4>
-                      <p className="text-gray-600 text-sm">{item.bankName}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Package className="w-5 h-5 text-gray-700 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        Estimated Delivery
-                      </h4>
-                      <p className="text-gray-600 text-sm">3-5 Days</p>
-                    </div>
+                <div className="flex items-start gap-3">
+                  <Truck className="w-5 h-5 text-gray-700 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Delivery Method
+                    </h4>
+                    <p className="text-gray-600 text-sm">
+                      Currently UnAvaliable
+                    </p>
                   </div>
                 </div>
 
-                {/* === Price Summary === */}
-                <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>
-                      Rs.{" "}
-                      {item.salePrice - (item.salePrice * item.discount) / 100}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Delivery Fee</span>
-                    <span>Rs. {item.shippingCharges}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-gray-900 text-base">
-                    <span>Total</span>
-                    <span>
-                      Rs.{" "}
-                      {item.shippingCharges +
-                        (item.salePrice -
-                          (item.salePrice * item.discount) / 100)}
-                    </span>
+                <div className="flex items-start gap-3">
+                  <CreditCard className="w-5 h-5 text-gray-700 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Payment Method
+                    </h4>
+                    <p className="text-gray-600 text-sm">
+                      {selectedOrder.bankName}
+                    </p>
                   </div>
                 </div>
-              </>
-            ))}
+
+                <div className="flex items-start gap-3">
+                  <Package className="w-5 h-5 text-gray-700 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Estimated Delivery
+                    </h4>
+                    <p className="text-gray-600 text-sm">3-5 Days</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* === Price Summary === */}
+              <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>Rs. {selectedOrder.totalAmount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Delivery Fee</span>
+                  <span>Rs. {selectedOrder.delievryCharges}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-gray-900 text-base">
+                  <span>Total</span>
+                  <span>
+                    Rs.{" "}
+                    {selectedOrder.delievryCharges + selectedOrder.totalAmount}
+                  </span>
+                </div>
+              </div>
+            </>
           </div>
         </div>
       )}

@@ -19,11 +19,16 @@ import Wishlist from "../wishlist/page";
 import Cart from "../cart/page";
 import CheckAuth from "@/api/authentication/checkAuth";
 import { useRouter } from "next/navigation";
+import { CustomerDetailResponse } from "@/api/types/HomePage/CustomerData/Customerdata";
+import GetCustomerLoginData from "@/api/lib/HomePage/CustomerData/CustomerGet";
+import CustoemrStats from "@/api/lib/CustomerAuthentication/CustomerStats.ts/CustomerStats";
 
 export default function CustomerPanel() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [response, setResponse] = useState("");
+  const [UserName, setUserName] = useState("");
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -33,17 +38,32 @@ export default function CustomerPanel() {
     { id: "cart", label: "My Cart", icon: ShoppingCart },
     { id: "settings", label: "Account Settings", icon: UserCog },
   ];
+
   const checkAuth = async () => {
     const token = localStorage.getItem("token1");
     const response = await CheckAuth(token as string);
     console.log("Response from CheckAuth API:", response);
     if (response?.status === 200 || response?.status === 201) {
       const data = response.data as any;
+      getCustomer();
       if (data.loggedBy !== "Customer") {
         router.push("/");
       }
     } else {
       return;
+    }
+  };
+
+  const getCustomer = async () => {
+    const token = localStorage.getItem("token1");
+    const response = await GetCustomerLoginData(String(token), {});
+    if (response.status === 200 || response.status == 201) {
+      const data = response.data as CustomerDetailResponse;
+      console.log(data);
+      setResponse(data.customerData[0].verificationStatus);
+      setUserName(data.customerData[0].customerName);
+    } else {
+      console.log();
     }
   };
   useEffect(() => {
@@ -100,11 +120,34 @@ export default function CustomerPanel() {
             </button>
           ))}
         </nav>
+        <div className="flex flex-col justify-between">
+          <div className="border-t border-gray-200 mt-10 pt-6">
+            <button className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-xl font-medium transition">
+              <LogOut className="w-5 h-5" /> Logout
+            </button>
+          </div>
+          <div className="mt-5 flex gap-2 items-center">
+            <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold">
+                {UserName?.charAt(0).toUpperCase()}
+              </span>
+            </div>
 
-        <div className="border-t border-gray-200 mt-10 pt-6">
-          <button className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-xl font-medium transition">
-            <LogOut className="w-5 h-5" /> Logout
-          </button>
+            <div className="flex flex-col">
+              <span className="font-semibold">{UserName}</span>
+              <div>
+                <span
+                  className={`px-2 py-1 rounded-md text-sm ${
+                    response === "Verified"
+                      ? "bg-green-300 text-green-700"
+                      : "bg-red-300 text-red-700"
+                  }`}
+                >
+                  {response}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </aside>
 

@@ -23,7 +23,6 @@ export default function VerifyOtpPageCustomer() {
   //     if (response.status === 200 || response.status === 201) {
   //     }
   //   };
-
   const handleVerifyOtp = async () => {
     const token = localStorage.getItem("token");
     const response = await VerfiedCustomer(
@@ -33,9 +32,8 @@ export default function VerifyOtpPageCustomer() {
     );
     console.log("Response from new API:", response);
     if (response.status === 200 || response.status === 201) {
+      router.push("/login/ChangePassword");
       setMessage("Email verified successfully!");
-      localStorage.removeItem("Email");
-      router.push("/");
     }
   };
 

@@ -3,41 +3,35 @@
 import { getRequest } from "@/api/authentication/main";
 
 export default async function OtpSendCustomer(email: string, token?: string) {
-  const customHeaders: Record<string, string> = {};
-  if (token) customHeaders.Authorization = `Bearer ${token}`;
-  const response = await getRequest(
-    `/api/Seller/OTPSendViaEmail/${email}`,
-    null,
-    customHeaders
-  );
-  if (response.success) {
+  try {
+    const customHeader: Record<string, string> = {};
+    if (token) customHeader.Authorization = `Bearer ${token}`;
+
+    const response = await getRequest(
+      `/api/CustomerAuthentication/Customer/OTPSendViaEmail/${email}`,
+      null,
+      customHeader
+    );
+
+    if (response.success) {
+      return {
+        data: response.data,
+        status: response.status,
+        message: response.message || "Login Successfull",
+      };
+    }
+
     return {
       data: response.data,
       status: response.status,
+      message: response.message || "An unexpected error occurred",
     };
-  }
-  const status = response.status;
-
-  if (status === 400 || status === 401) {
+  } catch (error: any) {
     return {
-      data: null,
-      message: "Could Not Send OTP",
-      status,
+      data: error.data,
+      status: 500,
+      message: error?.message || "Server error",
+      success: false,
     };
   }
-
-  if (status === 409) {
-    return {
-      data: null,
-      message: "Account already exists",
-      status,
-    };
-  }
-
-  return {
-    data: null,
-    message:
-      response.message || "Authentaction failed due to an unexpected error.",
-    status: response.status,
-  };
 }

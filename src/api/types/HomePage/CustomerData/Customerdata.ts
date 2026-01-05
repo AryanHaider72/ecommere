@@ -4,9 +4,10 @@ export interface CustomerDetailResponse {
 }
 
 export interface CustomerDetail {
-  customerID: string;
+  userID: string;
   customerName: string;
   email: string;
   phoneNo: string;
   isActive: boolean;
+  verificationStatus: string;
 }

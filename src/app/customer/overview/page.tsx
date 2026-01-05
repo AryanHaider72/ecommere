@@ -1,4 +1,5 @@
 "use client";
+import CustoemrStats from "@/api/lib/CustomerAuthentication/CustomerStats.ts/CustomerStats";
 import {
   ShoppingBag,
   Clock,
@@ -10,27 +11,39 @@ import {
   Calendar,
   ShoppingCart,
 } from "lucide-react";
-
+import { useEffect, useState } from "react";
+interface response {
+  totalOrders: number;
+  totalPendingOrders: number;
+  totalCompletedOrders: number;
+  totalCartItem: number;
+  totalWishList: number;
+}
 export default function Overview() {
+  const [totalOrder, setTotalOrder] = useState(0);
+  const [CompletedOrder, setCompletedOrder] = useState(0);
+  const [PendingOrder, setPendingOrder] = useState(0);
+  const [cartItem, setcartItem] = useState(0);
+  const [WishList, setWishList] = useState(0);
   const stats = [
     {
       id: 1,
       title: "Total Orders",
-      value: "42",
+      value: totalOrder,
       icon: ShoppingBag,
       color: "bg-blue-100 text-blue-600",
     },
     {
       id: 2,
       title: "Pending Orders",
-      value: "5",
+      value: PendingOrder,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
     },
     {
       id: 3,
       title: "Completed Orders",
-      value: "37",
+      value: CompletedOrder,
       icon: CheckCircle,
       color: "bg-green-100 text-green-600",
     },
@@ -45,19 +58,38 @@ export default function Overview() {
     {
       id: 6,
       title: "Wishlist Items",
-      value: "9",
+      value: WishList,
       icon: Heart,
       color: "bg-pink-100 text-pink-600",
     },
     {
       id: 7,
       title: "Cart Items",
-      value: "5",
+      value: cartItem,
       icon: ShoppingCart,
       color: "bg-pink-100 text-pink-600",
     },
   ];
 
+  const getStats = async () => {
+    const token = localStorage.getItem("token1");
+    const response = await CustoemrStats(String(token));
+    if (response.status === 200 || response.status == 201) {
+      const data = response.data as response;
+      console.log(data);
+      setTotalOrder(data.totalOrders);
+      setPendingOrder(data.totalPendingOrders);
+      setCompletedOrder(data.totalCompletedOrders);
+      setWishList(data.totalWishList);
+      setcartItem(data.totalCartItem);
+    } else {
+      console.log();
+    }
+  };
+
+  useEffect(() => {
+    getStats();
+  }, []);
   return (
     <div className="w-full">
       <h1 className="text-2xl font-bold text-gray-900 mb-8">

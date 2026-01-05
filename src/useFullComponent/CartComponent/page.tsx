@@ -145,7 +145,7 @@ export default function CartComponent({
           <div className="mt-5 h-[65vh] overflow-y-auto">
             {cartList.map((item, index) => (
               <>
-                <div className="flex gap-2 items-center">
+                <div key={index} className="flex gap-2 items-center">
                   <input
                     type="checkbox"
                     checked={!!selectedItems[item.productID]}

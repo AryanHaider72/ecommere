@@ -277,7 +277,7 @@ export default function MainHome() {
       if (data.loggedBy === "Customer") {
         setUplaoding(true);
         const data = productList.find((item) => item.productID === ID);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token1");
         if (data) {
           const formData = {
             productID: data.productID,

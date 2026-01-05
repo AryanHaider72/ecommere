@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ChevronRight, Eye, EyeOff, Mail } from "lucide-react";
+import { ChevronRight, Eye, EyeOff, Mail, X } from "lucide-react";
 import Image from "next/image";
 import CustomerSignUp from "@/api/lib/CustomerAuthentication/SignUp/signup";
 import { ResponseLoginDataCustomer } from "@/api/types/CustomerAuthentication/CustomerAuth";
@@ -23,6 +23,7 @@ export default function LoginPage() {
   const [PhoneNo, setPhoneNo] = useState("");
   const [Address, setAddress] = useState("");
   const [responseBack, setResponseBack] = useState("");
+  const [forgotPAssword, setForgotPassword] = useState(false);
 
   const signUp = async () => {
     try {
@@ -63,9 +64,24 @@ export default function LoginPage() {
     }
   };
   const verfiy = async (email: string) => {
-    const token = localStorage.getItem("token");
-    const response = await OtpSendCustomer(email, String(token));
-    console.log("Response from VerifySeller API:", response);
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await OtpSendCustomer(email, String(token));
+      if (response.status === 200) {
+        localStorage.setItem("Email", email);
+        router.push("/login/OtpVerifyPage");
+        setResponseBack(response.data.message);
+        setShowMessage(true);
+        setEmail("");
+      } else {
+        console.log(response);
+        setResponseBack(response.message);
+        setShowMessage(true);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
   const login = async () => {
     try {
@@ -110,6 +126,64 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col min-h-screen items-center bg-gray-100 p-4">
+      {forgotPAssword && (
+        <>
+          <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+            <div className="bg-white p-2 rounded-2xl shadow-xl w-full max-w-md p-6 relative overflow-y-auto max-h-[90vh]">
+              <button
+                onClick={() => {
+                  setForgotPassword(false);
+                }}
+                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h1 className="py-2 text-xl font-bold">Forgot Password</h1>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <input
+                    value={Email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                    placeholder="example@email.com"
+                    className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  />
+                  <Mail
+                    className="absolute left-3 top-2.5 text-gray-400"
+                    size={18}
+                  />
+                </div>
+              </div>
+              {ShowMessage && (
+                <>
+                  {responseBack && (
+                    <div
+                      className={`w-full text-center px-4 py-3 mb-2 rounded ${
+                        responseBack === "Record Added Successfully" ||
+                        responseBack === "Login Successfully" ||
+                        responseBack === "Request successful"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {responseBack}
+                    </div>
+                  )}
+                </>
+              )}
+              <button
+                onClick={() => verfiy(Email)}
+                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-md py-2 mt-2 transition-colors"
+              >
+                {loading ? "Sending OTP..." : "Send Otp"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       <h1 className="text-3xl font-bold mt-10 text-center">Login / SignUp</h1>
       <hr className="w-1/2 border-gray-300 mt-6 mb-10" />
 
@@ -232,6 +306,16 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
+              {isLogin && (
+                <div className="flex justify-end">
+                  <p
+                    onClick={() => setForgotPassword(true)}
+                    className="text-blue-500   cursor-pointer hover:underline"
+                  >
+                    Forgot Password
+                  </p>
+                </div>
+              )}
 
               {!isLogin && (
                 <div>

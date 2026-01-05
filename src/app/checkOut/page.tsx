@@ -98,7 +98,7 @@ export default function CheckOut() {
     const response = await GetPaymentCustomer();
     if (response.status === 200 || response.status == 201) {
       const data = response.data as paymentgetApiResponse;
-
+      setPaymentID(data.paymentMethod[0].paymentID);
       setPaymentList(data.paymentMethod);
     } else {
       console.log();
@@ -197,6 +197,7 @@ export default function CheckOut() {
         cartList.map((item) => {
           removeItemFromServerCart(item.productID);
         });
+        localStorage.removeItem("checkoutItems");
         setIsTrue(true);
         setResponseBack(response.data.message);
         setCartList([]);
@@ -208,11 +209,13 @@ export default function CheckOut() {
         setCityList([]);
         setPaymentID("");
         setConfirmationBox(true);
-      } else if (response.status === 200) {
+      } else if (response.status === 400) {
         setIsTrue(true);
+        setConfirmationBox(false);
         setResponseBack("PLease Fill in Required Fields");
       } else {
         setIsTrue(true);
+        setConfirmationBox(false);
         setResponseBack("Something Went Wrong. Please try again later.");
       }
     } catch {
@@ -576,7 +579,7 @@ export default function CheckOut() {
                 </div>
               </div>
               {/*EasyPaisa Detail*/}
-              {paymentID !== "42ff7114-37ef-4d2e-ab66-d2cdd539f5ec" &&
+              {paymentID !== "847fbc57-016e-45b6-b9e7-603451f67040" &&
                 isShow && (
                   <div className="bg-white shadow-sm rounded-xl p-6 border border-gray-100">
                     <h2 className="text-lg font-semibold mb-4 text-gray-800">
