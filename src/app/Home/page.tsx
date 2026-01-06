@@ -71,6 +71,7 @@ type urlTypes = {
 };
 
 export default function MainHome() {
+  const router = useRouter();
   const [uploading, setUplaoding] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -531,6 +532,9 @@ export default function MainHome() {
                         : filteredProducts.map((item) => (
                             <div
                               key={item.productID}
+                              onClick={() =>
+                                router.push(`/shop/${item.productID}`)
+                              }
                               className="bg-white border border-gray-200 rounded-lg shadow-sm
                                 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
                             >
@@ -581,26 +585,6 @@ export default function MainHome() {
                                 <p className="text-gray-500 text-sm line-clamp-2">
                                   {item.description}
                                 </p>
-                                {/* <p className="text-lg font-semibold mt-3 text-gray-900">
-                                  {item.variants[0].variantValues[0]
-                                    .salePrice === 0 ? (
-                                    <>
-                                      {
-                                        item.variants[0].variantValues[1]
-                                          .salePrice
-                                      }
-                                    </>
-                                  ) : (
-                                    <>
-                                      {
-                                        item.variants[0].variantValues[0]
-                                          .salePrice
-                                      }
-                                    </>
-                                  )}{" "}
-                                  -/
-                                  {}
-                                </p> */}
                                 <p className="text-lg font-semibold mt-3 text-gray-900">
                                   <span className="text-gray-900">
                                     Rs.{" "}
@@ -623,18 +607,6 @@ export default function MainHome() {
                                     </del>
                                   </span>
                                 </p>
-                              </div>
-                              <div className="w-full flex justify-end mb-1">
-                                <button
-                                  onClick={() => {
-                                    addToCart(item.productID);
-                                  }}
-                                  className="mx-2 mb-1 p-2 bg-black text-white rounded-full shadow-md
-                                            hover:bg-white hover:text-black border border-black
-                                            transition-all duration-300 flex items-center justify-center"
-                                >
-                                  <ShoppingCartIcon className="w-5 h-5" />
-                                </button>
                               </div>
                             </div>
                           ))}

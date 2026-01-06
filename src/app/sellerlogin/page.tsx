@@ -14,6 +14,7 @@ import OtpSend from "@/api/authentication/OtpSend";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import GetInitalStore from "@/api/authentication/StoreGet";
 import { useAsync } from "react-select/async";
+import { stat } from "fs";
 
 export default function Login() {
   const router = useRouter();
@@ -88,6 +89,7 @@ export default function Login() {
       email: EmailSeller,
       phoneNo: phoneNo,
       password: passwordSeller,
+      status: "Platform Owner",
     };
     const response = await SignUpApi(data);
     console.log("Response from SignUp API:", response);

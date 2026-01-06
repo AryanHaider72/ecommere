@@ -235,7 +235,7 @@ export default function Shop() {
   return (
     <>
       <>
-        <Navbar onPageChange={setActivePage} />
+        {/* <Navbar onPageChange={setActivePage} /> */}
 
         {/* MAIN CONTENT */}
         <div className="flex flex-col items-center w-full min-h-[calc(100vh-200px)] bg-gray-100 px-4 py-10">

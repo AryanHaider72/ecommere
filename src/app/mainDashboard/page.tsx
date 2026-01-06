@@ -29,6 +29,8 @@ import {
   Building,
   Map,
   Ship,
+  UserLock,
+  ShoppingBagIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SellerOverviewDashbaord from "./dashboard/page";
@@ -54,6 +56,7 @@ import ZoneManagement from "./Shippment/Zone2/page";
 import CityManagement from "./Shippment/City/page";
 import ShippingCityZoneManagemnet from "./Shippment/ShippingZone/page";
 import RateManagement from "./Shippment/ShippingRate/page";
+import CreateLogins from "./CreateLogin/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
@@ -69,7 +72,8 @@ export default function CustomerPanel() {
   const navItems = [
     // { id: "Code", label: "Code", icon: Plus },
     { id: "Shippment", label: "Shippment ", icon: Truck },
-    { id: "StoreSetting", label: "Store Setting", icon: Settings },
+    { id: "CreateLogin", label: "Create Login", icon: UserLock },
+    { id: "StoreSetting", label: "Store Setting", icon: ShoppingBagIcon },
     { id: "payment", label: "Payment", icon: Coins },
     { id: "password", label: "Change Password", icon: Key },
   ];
@@ -250,6 +254,7 @@ export default function CustomerPanel() {
         {activeTab === "zone" && <CityManagement />}
         {activeTab === "shippingZone" && <ShippingCityZoneManagemnet />}
         {activeTab === "shippingRate" && <RateManagement />}
+        {activeTab === "CreateLogin" && <CreateLogins />}
 
         {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}

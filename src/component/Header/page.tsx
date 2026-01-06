@@ -94,7 +94,7 @@ const AutoCarousel = () => {
           <div className="absolute inset-0 flex items-center mx-5">
             <div className="px-4 sm:px-10 md:px-16 max-w-xl text-white">
               <h1
-                className={`text-xl sm:text-3xl lg:text-4xl font-extrabold leading-tight ${
+                className={`text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight ${
                   animateText ? "animate-slide-in" : "opacity-0"
                 }`}
               >

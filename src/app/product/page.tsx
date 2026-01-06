@@ -165,10 +165,12 @@ export default function ProductPage() {
 
   return (
     <>
-      <Navbar onPageChange={handleNavClick} />
+      {/* <Navbar onPageChange={handleNavClick} /> */}
 
       <div className="flex flex-col items-center w-full min-h-[calc(100vh-200px)]  px-4 py-10">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">SHOP</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+          Product Information
+        </h1>
         <hr className="w-1/2 border-gray-300 mb-10" />
 
         {/* === PRODUCT SECTION === */}

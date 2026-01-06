@@ -22,7 +22,11 @@ import {
 
 export default function ExpenseForm() {
   const [showList, setShowList] = useState(true);
-
+  const [ExpenseName, setExpenseName] = useState("");
+  const [ExpenseDate, setExpenseDate] = useState("");
+  const [ExpenseType, setExpenseType] = useState("");
+  const [ExpenseAmount, setExpenseAmount] = useState("");
+  const [Description, setDescription] = useState("");
   return (
     <div className="w-full relative">
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
@@ -79,6 +83,8 @@ export default function ExpenseForm() {
                 <Calendar className="text-gray-400 mr-2" size={18} />
                 <input
                   type="date"
+                  value={ExpenseDate}
+                  onChange={(e) => setExpenseDate(e.target.value)}
                   name="address"
                   placeholder="Enter Expense Date"
                   className="w-full bg-transparent outline-none text-gray-900 resize-none"
@@ -92,6 +98,8 @@ export default function ExpenseForm() {
               <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                 <User className="text-gray-400 mr-2" size={18} />
                 <input
+                  value={ExpenseName}
+                  onChange={(e) => setExpenseName(e.target.value)}
                   type="text"
                   name="name"
                   placeholder="Enter Expense Name"

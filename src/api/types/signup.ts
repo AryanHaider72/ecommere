@@ -3,4 +3,5 @@ export interface SignUpData {
   email: string;
   phoneNo: string;
   password: string;
+  status: string;
 }

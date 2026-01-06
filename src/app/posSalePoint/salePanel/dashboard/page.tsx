@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LogOut,
   Menu,
@@ -24,8 +24,12 @@ import SaleReturnModule from "../saleReturn/page";
 
 import CustomerledgerForm from "../ledger/customerledger/page";
 import ExpenseForm from "../GeneralExpense/page";
+import CheckAuth from "@/api/authentication/checkAuth";
+import { useRouter } from "next/navigation";
+import LogoutApi from "@/api/authentication/logout";
 
 export default function CustomerPanel() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropDown, setDropDown] = useState(false);
@@ -39,6 +43,39 @@ export default function CustomerPanel() {
     { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },
   ];
 
+  const verfiy = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/posSalePoint/login");
+    }
+    const response = await CheckAuth(token as string);
+    if (response.status == 200 || response.status == 201) {
+      console.log(response);
+    } else {
+      router.push("/posSalePoint/login/");
+    }
+  };
+
+  const Logout = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/posSalePoint/login");
+    }
+
+    const response = await LogoutApi(token as string);
+    if (response.status == 200 || response.status == 201) {
+      console.log(response);
+      router.push("/posSalePoint/login");
+    }
+    if (response.status == 400 || response.status == 401) {
+    } else {
+      router.push("/posSalePoint/login/");
+    }
+  };
+
+  useEffect(() => {
+    verfiy();
+  }, []);
   return (
     <div className="flex flex-col lg:flex-row w-full min-h-screen bg-gray-50 relative">
       {/* === Mobile Header === */}
@@ -203,7 +240,10 @@ export default function CustomerPanel() {
         </nav>
 
         <div className="border-t border-gray-200 mt-10 pt-6">
-          <button className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-xl font-medium transition">
+          <button
+            onClick={Logout}
+            className="flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-xl font-medium transition"
+          >
             <LogOut className="w-5 h-5" /> Logout
           </button>
         </div>
