@@ -70,6 +70,7 @@ interface VarientAttribute {
   qty: number;
   costPrice: number;
   salePrice: number;
+  barCode: string;
 }
 
 interface CountryList {
@@ -198,6 +199,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     qty: 0,
     costPrice: 0,
     salePrice: 0,
+    barCode: "",
   });
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -244,7 +246,13 @@ export default function ProductControll({ storeID }: { storeID: string }) {
       return;
     }
     setCurrentAttributes([...currentAttributes, newAttribute]);
-    setNewAttribute({ varientValue: "", qty: 0, costPrice: 0, salePrice: 0 });
+    setNewAttribute({
+      varientValue: "",
+      qty: 0,
+      costPrice: 0,
+      salePrice: 0,
+      barCode: "",
+    });
   };
 
   // Update newAttribute inputs (for the input row)
@@ -1246,6 +1254,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                         <th className="px-4 py-2">Qty</th>
                         <th className="px-4 py-2">CP</th>
                         <th className="px-4 py-2">SP</th>
+                        <th className="px-4 py-2">Barcode</th>
                         <th className="px-4 py-2">Action</th>
                       </tr>
                     </thead>
@@ -1260,6 +1269,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                           <td className="px-4 py-2">{attr.qty}</td>
                           <td className="px-4 py-2">{attr.costPrice}</td>
                           <td className="px-4 py-2">{attr.salePrice}</td>
+                          <td className="px-4 py-2">{attr.barCode}</td>
                           <td className="px-4 py-2">
                             <button
                               className="px-2 py-1 bg-red-600 text-white rounded"
@@ -1316,6 +1326,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           />
                         </td>
+
                         <td className="px-4 py-2">
                           <input
                             type="number"
@@ -1326,6 +1337,20 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                               handleNewAttributeChange(
                                 "salePrice",
                                 parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            placeholder="Enter BarCode"
+                            value={newAttribute.barCode}
+                            onChange={(e) =>
+                              handleNewAttributeChange(
+                                "barCode",
+                                e.target.value
                               )
                             }
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"

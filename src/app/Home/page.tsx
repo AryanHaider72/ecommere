@@ -30,6 +30,7 @@ import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import {
   GetProductHomeApiResponse,
   ProductHome,
+  ProductHomePage,
 } from "@/api/types/HomePage/Product/product";
 import { Product } from "@/api/types/product/getProduct";
 
@@ -98,9 +99,10 @@ export default function MainHome() {
   const [description, setDescription] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [CartData, setCartData] = useState<CartData[]>([]);
+  const [pageIndex, setPageIndex] = useState(0);
 
   const [totalCount, setTotalCount] = useState(0);
-  const [productList, setProductList] = useState<ProductHome[]>([]);
+  const [productList, setProductList] = useState<ProductHomePage[]>([]);
   const [productListFeatured, setProductListFeatured] = useState<ProductHome[]>(
     []
   );
@@ -108,6 +110,7 @@ export default function MainHome() {
   const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
   const [imageUrl, setImageUrl] = useState("");
   const [cartList, setCartList] = useState<CartData[]>([]);
+  const [hasMore, setHasMore] = useState(true);
 
   const toggleAccordion = (index: number) => {
     setActiveIndex(activeIndex === index ? null : index);
@@ -121,24 +124,26 @@ export default function MainHome() {
     carouselRef.current?.scrollBy({ left: 300, behavior: "smooth" });
   };
 
-  const getProduct = async (page: number) => {
-    if (loading1) return;
+  const getProduct = async () => {
+    if (loading1 || !hasMore) return;
 
     try {
       setLoading1(true);
 
       const token = localStorage.getItem("token") ?? "";
-      const response = await GetProductHome(token, page);
+      const response = await GetProductHome(token);
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as GetProductHomeApiResponse;
-        console.log(data.productList);
-        setTotalCount(data.totalCount);
-        setLoading1(false);
 
-        if (data.productList && data.productList.length > 0) {
-          setProductList((prev) => [...prev, ...data.productList]);
+        if (pageIndex >= data.productList.length) {
+          setHasMore(false);
+          return;
         }
+        setTotalCount(data.totalCount);
+        const currentPage = data.productList[pageIndex];
+        setProductList((prev) => [...prev, ...currentPage.products]);
+        setPageIndex((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Failed to fetch products", error);
@@ -205,7 +210,7 @@ export default function MainHome() {
   };
 
   const fetchData2 = (productID: string) => {
-    const data = productListFeatured.find(
+    const data = productListFeatured[0].products.find(
       (item) => item.productID === productID
     );
     if (data) {
@@ -239,15 +244,9 @@ export default function MainHome() {
   useEffect(() => {
     handleShowCategories();
     getProductFeatured();
-    getProduct(1);
+    getProduct();
     serverCartData();
   }, []);
-
-  useEffect(() => {
-    if (currentPage > 1) {
-      getProduct(currentPage);
-    }
-  }, [currentPage]);
 
   const handleSubCategoryChange = (id: string) => {
     setSelectedSubCategories((prev) =>
@@ -257,13 +256,19 @@ export default function MainHome() {
 
   const filteredProducts = productList.filter((product) => {
     if (product.storeSale === "OfflineStore") return false;
-    if (product.subCategoryID !== selectedCategoryId) return false;
+    if (product.subCategoryID !== selectedCategoryId) {
+      return false;
+    }
     if (
       selectedSubCategories.length > 0 &&
       !selectedSubCategories.includes(product.subCategoryDetailID)
-    )
+    ) {
+      console.log(
+        "Filtered out by subCategoryDetailID",
+        product.subCategoryDetailID
+      );
       return false;
-
+    }
     return true;
   });
 
@@ -428,7 +433,7 @@ export default function MainHome() {
                                   <ProductSkeleton />
                                 </div>
                               ))
-                            : productListFeatured
+                            : productListFeatured[0].products
                                 .filter(
                                   (item) => item.storeSale !== "OfflineStore"
                                 )
@@ -519,7 +524,7 @@ export default function MainHome() {
                     <Filter className="w-5 h-5" />
                   </button>
                 </div>
-                {(loading1 || filteredProducts.length > 0) && (
+                {loading1 || filteredProducts.length > 0 ? (
                   <>
                     <hr className="w-full border-gray-400 mt-2 mb-6" />
 
@@ -619,7 +624,7 @@ export default function MainHome() {
                           <Spinner />
                         ) : (
                           <button
-                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                            onClick={() => getProduct()}
                             className="px-6 py-3 bg-black text-white rounded-md shadow-md hover:bg-gray-900 text-lg"
                           >
                             Load More
@@ -628,6 +633,8 @@ export default function MainHome() {
                       </div>
                     )}
                   </>
+                ) : (
+                  <p>No products found for selected filters.</p>
                 )}
               </div>
             </div>

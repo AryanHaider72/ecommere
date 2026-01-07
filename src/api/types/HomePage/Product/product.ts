@@ -19,7 +19,7 @@ export interface ProductVariant {
   variantValues: VariantValue[];
 }
 
-export interface ProductHome {
+export interface ProductHomePage {
   storeID: string;
   storeName: string;
   productID: string;
@@ -50,4 +50,9 @@ export interface GetProductHomeApiResponse {
   message: string;
   totalCount: number;
   productList: ProductHome[];
+}
+
+export interface ProductHome {
+  range: string;
+  products: ProductHomePage[];
 }

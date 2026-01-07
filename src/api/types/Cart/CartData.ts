@@ -5,6 +5,7 @@ export interface CartData {
   storeID: string;
   productID: string;
   weight: number;
+
   storeName: string;
   productName: string;
   description: string;

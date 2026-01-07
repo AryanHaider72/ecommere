@@ -6,6 +6,10 @@ export interface RequestCustomerAddData {
   openingBalance: number;
   address: string;
 }
+export interface ResponseCustomerAddData {
+  status: string;
+  message?: string;
+}
 export interface RequestCustomerModifyData {
   customerID: string;
   customerName: string;
@@ -14,11 +18,6 @@ export interface RequestCustomerModifyData {
   description: string;
   openingBalance: number;
   address: string;
-}
-
-export interface ResponseCustomerAddData {
-  status: string;
-  message?: string;
 }
 
 export interface ResponseCustomerGetData {

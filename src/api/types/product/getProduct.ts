@@ -6,6 +6,8 @@ export interface ProductApiResponse {
 
 // A single product record
 export type Product = {
+  storeID: string;
+  storeName: string;
   productID: string;
   storeSale: string;
   categoryID: string;
