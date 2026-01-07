@@ -5,7 +5,7 @@ export interface ProductApiResponse {
 }
 
 // A single product record
-export type Product = {
+export interface Product {
   storeID: string;
   storeName: string;
   productID: string;
@@ -30,7 +30,7 @@ export type Product = {
   countryList: countryList[];
   images: Image[];
   variants: Variant[];
-};
+}
 
 // Image sub-type
 export type Image = {
@@ -52,6 +52,7 @@ export type VariantValue = {
   costPrice: number;
   salePrice: number;
   qty: number;
+  barcode: string;
 };
 export type countryList = {
   countryID: string;

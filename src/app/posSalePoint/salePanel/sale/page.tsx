@@ -36,15 +36,19 @@ import {
 } from "@/api/types/HomePage/Product/product";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import GetInitalStoreSalesMan from "@/api/lib/store/GetStoreSalesMan/GetStoreSalesMan";
+import AddSale from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
+import { ListItem } from "@/api/types/PosIntegration/Sale/Sale";
+import AddSalePos from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
 interface Item {
-  name: string;
+  attributeID: string;
+  productName: string;
   qty: number;
   price: number;
 }
 export default function SaleForm() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
-  const [ShowMessage, setShowMessage] = useState(true);
+  const [ShowMessage, setShowMessage] = useState(false);
   const [showModel, setShowModel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [AddCustomerForm, setAddCustomerForm] = useState(false);
@@ -57,14 +61,20 @@ export default function SaleForm() {
   const [ResponseBack, setResponseBack] = useState("");
   const [selectedOption2, setSelectedOption2] = useState("");
   const [storeList, setStoreList] = useState<storeInital[]>([]);
+  const [RescponseBack, setRersponseBack] = useState("");
 
   const [items, setItems] = useState<Item[]>([]);
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
-  const [productList, setProductList] = useState<ProductHome[]>([]);
+  const [productList, setProductList] = useState<Product[]>([]);
   const [storeID, setStoreID] = useState("");
+  const [AmountPaid, setAmountPaid] = useState(0);
+  const [Discount, setDiscount] = useState(0);
+  const [SaleDate, setSaleDate] = useState("");
+  const [Description, setDescription] = useState("");
 
   const [newItem, setNewItem] = useState({
-    name: "",
+    attributeID: "",
+    productName: "",
     qty: 0,
     price: 0,
   });
@@ -119,15 +129,21 @@ export default function SaleForm() {
       setLoading(false);
     }
   };
+
   const getProduct = async (ID: string) => {
-    const token = localStorage.getItem("token") ?? "";
-    const response = await GetProduct(String(token), ID);
+    const token = localStorage.getItem("token");
+
+    if (!token) return;
+
+    const response = await GetProduct(token, ID);
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponse;
-      console.log(data);
+      console.log(data.list);
+      setProductList(data.list || []);
     }
   };
+
   const storesget = async () => {
     const token = localStorage.getItem("token");
     const response = await GetInitalStoreSalesMan(String(token));
@@ -139,6 +155,85 @@ export default function SaleForm() {
     }
   };
 
+  const fetchData = (attributeID: string) => {
+    for (const product of productList) {
+      for (const variant of product.variants) {
+        const attribute = variant.variantValues.find(
+          (v) => v.attributeID === attributeID
+        );
+
+        if (attribute) {
+          setItems((prev) => [
+            ...prev,
+            {
+              attributeID: attributeID,
+              productName: product.productName,
+              qty: attribute.qty,
+              price: attribute.salePrice,
+            },
+          ]);
+          return;
+        }
+      }
+    }
+  };
+
+  const SaleAdd = async () => {
+    try {
+      setLoading(true);
+      const listForRequest: ListItem[] = items.map((item) => ({
+        attributeID: item.attributeID,
+        qty: item.qty,
+        amount: item.price,
+        remakrs: "",
+      }));
+      const formData = {
+        postingDate: SaleDate,
+        customerID: Customer,
+        amountPaid: AmountPaid,
+        adjustment: Discount,
+        totalBill: totalSum,
+        remarks: Description,
+        list: listForRequest,
+      };
+      const token = localStorage.getItem("token");
+      console.log(formData);
+      const response = await AddSalePos(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        console.log(response.data);
+        setRersponseBack(
+          response.data.message || "Customer Added Successfully"
+        );
+        setShowMessage(true);
+      } else if (response.status === 400) {
+        setRersponseBack(
+          response.data.message || "PLease Fill in All Required Fields"
+        );
+        setShowMessage(false);
+      } else {
+        setRersponseBack(
+          response.data.message ||
+            "Something Went Wrong. Please Try Again later."
+        );
+        setShowMessage(false);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalSum = items.reduce((total, variant) => {
+    return total + variant.qty * variant.price;
+  }, 0);
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (ShowMessage) {
+        setRersponseBack("");
+        setShowMessage(false);
+      }
+    }, 2000);
+  }, [ShowMessage, RescponseBack]);
   useEffect(() => {
     CustomerGet();
     storesget();
@@ -327,6 +422,8 @@ export default function SaleForm() {
                   <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                     <Calendar className="text-gray-400 mr-2" size={18} />
                     <input
+                      value={SaleDate}
+                      onChange={(e) => setSaleDate(e.target.value)}
                       type="date"
                       name="productName"
                       placeholder="Enter PurchaseDate"
@@ -344,8 +441,10 @@ export default function SaleForm() {
                     <div className=" w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                       <User className="text-gray-400 mr-2" size={18} />
                       <input
+                        value={Customer}
                         type="text"
                         name="CustomerName"
+                        onChange={(e) => setCustomer(e.target.value)}
                         placeholder="Enter Customer name"
                         className="w-full bg-transparent outline-none text-gray-900"
                       />
@@ -414,7 +513,7 @@ export default function SaleForm() {
                     value={storeID}
                     onChange={(e) => {
                       setStoreID(e.target.value);
-                      GetProduct(e.target.value);
+                      getProduct(e.target.value);
                     }}
                     className="flex-1 bg-transparent outline-none text-gray-900 p-1"
                   >
@@ -423,34 +522,61 @@ export default function SaleForm() {
                     ) : (
                       <>
                         {storeList.map((item) => (
-                          <option value={item.storeID}>{item.storeName}</option>
+                          <option key={item.storeID} value={item.storeID}>
+                            {item.storeName}
+                          </option>
                         ))}
                       </>
                     )}
                   </select>
                 </div>
               </div>
-              <div className="w-full ">
+              <div className="w-full">
                 <label className="block text-gray-700 font-medium mb-2">
                   Product Name
                 </label>
-                <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                  <select
-                    value={selectedOption2}
-                    onChange={(e) => setSelectedOption2(e.target.value)}
-                    className="flex-1 bg-transparent outline-none text-gray-900 p-1"
-                  >
-                    <option value="">Select Product</option>
-                    {productList.map((item) => (
-                      <>
-                        {item.products.map((item) => (
-                          <option key={item.productID} value={item.productID}>
-                            {item.productName}
-                          </option>
-                        ))}
-                      </>
-                    ))}
-                  </select>
+
+                <div className="flex items-center gap-2 w-full">
+                  {/* Select wrapper (input look) */}
+                  <div className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                    <select
+                      value={selectedOption2}
+                      onChange={(e) => {
+                        setSelectedOption2(e.target.value);
+                        fetchData(e.target.value);
+                      }}
+                      className="w-full bg-transparent outline-none text-gray-900 p-1"
+                    >
+                      <option value="">Select Product</option>
+                      {productList.length === 0 ? (
+                        <option value="">No Record Found</option>
+                      ) : (
+                        <>
+                          {productList.map((item) => (
+                            <>
+                              {item.variants.map((item2) => (
+                                <>
+                                  {item2.variantValues.map((item3) => (
+                                    <option
+                                      key={item3.attributeID}
+                                      value={item3.attributeID}
+                                    >
+                                      {item3.barcode}
+                                    </option>
+                                  ))}
+                                </>
+                              ))}
+                            </>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Button OUTSIDE input */}
+                  <button className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center justify-center">
+                    <Plus />
+                  </button>
                 </div>
               </div>
             </div>
@@ -487,7 +613,7 @@ export default function SaleForm() {
                       key={index}
                       className="border-t hover:bg-gray-50 transition"
                     >
-                      <td className="px-4 py-2">New Pants</td>
+                      <td className="px-4 py-2">{item.productName}</td>
                       <td className="px-4 py-2 text-center">
                         <input
                           type="number"
@@ -538,9 +664,12 @@ export default function SaleForm() {
                     <td className="px-4 py-2">
                       <input
                         type="text"
-                        value={newItem.name || ""}
+                        value={newItem.productName || ""}
                         onChange={(e) =>
-                          setNewItem({ ...newItem, name: e.target.value })
+                          setNewItem({
+                            ...newItem,
+                            productName: e.target.value,
+                          })
                         }
                         className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
                         placeholder="New Product Name"
@@ -582,9 +711,19 @@ export default function SaleForm() {
                     <td className="px-4 py-2 text-center">
                       <button
                         onClick={() => {
-                          if (newItem.name && newItem.qty && newItem.price) {
+                          if (
+                            newItem.attributeID &&
+                            newItem.productName &&
+                            newItem.qty &&
+                            newItem.price
+                          ) {
                             setItems([...items, newItem]);
-                            setNewItem({ name: "", qty: 0, price: 0 });
+                            setNewItem({
+                              attributeID: "",
+                              productName: "",
+                              qty: 0,
+                              price: 0,
+                            });
                           }
                         }}
                         className="text-green-600 hover:text-green-800 font-medium"
@@ -609,6 +748,8 @@ export default function SaleForm() {
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
                       type="number"
+                      value={AmountPaid || 0}
+                      onChange={(e) => setAmountPaid(Number(e.target.value))}
                       name="totalBill"
                       placeholder="Enter Amount Paid"
                       className="w-full bg-transparent outline-none text-gray-900"
@@ -624,6 +765,8 @@ export default function SaleForm() {
                   <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
+                      value={Discount || 0}
+                      onChange={(e) => setDiscount(Number(e.target.value))}
                       type="number"
                       name="Discount"
                       placeholder="Enter Discount"
@@ -642,8 +785,9 @@ export default function SaleForm() {
                     <input
                       type="number"
                       name="amountPaid"
-                      placeholder="Enter Total Bill"
-                      className="w-full bg-transparent outline-none text-gray-900"
+                      value={totalSum || 0}
+                      readOnly
+                      className="w-full text-center bg-transparent outline-none text-gray-900"
                     />
                   </div>
                 </div>
@@ -656,6 +800,7 @@ export default function SaleForm() {
                   <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
+                      value={totalSum - AmountPaid - Discount || 0}
                       type="number"
                       name="remainingBalance"
                       placeholder="Auto Calculated"
@@ -675,6 +820,8 @@ export default function SaleForm() {
               <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                 <Notebook className="text-gray-400 mr-2 mt-1" size={18} />
                 <textarea
+                  value={Description}
+                  onChange={(e) => setDescription(e.target.value)}
                   name="description"
                   placeholder="Enter Description"
                   className="w-full bg-transparent outline-none text-gray-900 resize-none"
@@ -682,14 +829,25 @@ export default function SaleForm() {
                 />
               </div>
             </div>
-
+            {ResponseBack && (
+              <div
+                className={`w-full text-center px-4 py-3 mb-2 rounded ${
+                  ShowMessage
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {ResponseBack}
+              </div>
+            )}
             {/* Save Button */}
             <div className="w-full flex justify-end mt-4">
               <button
+                onClick={SaleAdd}
                 type="button"
                 className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
               >
-                Save
+                {loading ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
@@ -739,7 +897,7 @@ export default function SaleForm() {
                         key={index}
                         className="border-t hover:bg-gray-50 transition"
                       >
-                        <td className="px-4 py-2">New Pants</td>
+                        <td className="px-4 py-2">{item.productName}</td>
                         <td className="px-4 py-2 text-center">
                           <input
                             type="number"
@@ -790,9 +948,12 @@ export default function SaleForm() {
                       <td className="px-4 py-2">
                         <input
                           type="text"
-                          value={newItem.name || ""}
+                          value={newItem.productName || ""}
                           onChange={(e) =>
-                            setNewItem({ ...newItem, name: e.target.value })
+                            setNewItem({
+                              ...newItem,
+                              productName: e.target.value,
+                            })
                           }
                           className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
                           placeholder="New Product Name"
@@ -834,9 +995,18 @@ export default function SaleForm() {
                       <td className="px-4 py-2 text-center">
                         <button
                           onClick={() => {
-                            if (newItem.name && newItem.qty && newItem.price) {
+                            if (
+                              newItem.productName &&
+                              newItem.qty &&
+                              newItem.price
+                            ) {
                               setItems([...items, newItem]);
-                              setNewItem({ name: "", qty: 0, price: 0 });
+                              setNewItem({
+                                attributeID: "",
+                                productName: "",
+                                qty: 0,
+                                price: 0,
+                              });
                             }
                           }}
                           className="text-green-600 hover:text-green-800 font-medium"
