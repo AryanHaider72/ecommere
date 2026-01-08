@@ -1,6 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Info, Trash2, Plus, ChevronRight, ChevronLeft, X } from "lucide-react";
+import {
+  Info,
+  Trash2,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  Coins,
+  User,
+  Mail,
+  MapPin,
+  Phone,
+  Tag,
+} from "lucide-react";
 import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
 import { responseGetSale, Sale } from "@/api/types/PosIntegration/Sale/Sale";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
@@ -9,15 +22,29 @@ import GetInitalStoreSalesMan from "@/api/lib/store/GetStoreSalesMan/GetStoreSal
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import SearchByInvoice from "@/api/lib/PosIntegration/Return/SearchHistory/SearchByInvoice/SearchByInvoice";
 import SearchByProduct from "@/api/lib/PosIntegration/Return/SearchHistory/SearchByProduct/SearchByProduct";
+import {
+  CustomerData,
+  ResponseCustomerGetData,
+} from "@/api/types/PosIntegration/Customer/CustomerType";
+import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
+import { useRouter } from "next/navigation";
+import AddCustomer from "@/api/lib/PosIntegration/Customer/AddCustomer";
 
 interface SaleItem {
-  id: number;
-  name: string;
+  barcode: string;
+  attributeID: string;
+  productName: string;
+  qty: number;
+  rate: number;
+}
+interface Item {
+  barcode: string;
+  attributeID: string;
+  productName: string;
   qty: number;
   price: number;
-  total: number;
+  varinet: string;
 }
-
 interface responseList {
   message: string;
   showHistory: historyData[];
@@ -32,93 +59,198 @@ interface historyData {
   qty: number;
   rate: number;
 }
+interface VarientsList {
+  varientID: string;
+  variantName: string;
+  variantValues: variantValues[];
+}
+interface variantValues {
+  attributeID: string;
+  varientValue: string;
+  costPrice: number;
+  salePrice: number;
+  qty: number;
+  barcode: string;
+}
 export default function SaleReturnModule() {
+  const router = useRouter();
+  const [AmountPaid, setAmountPaid] = useState(0);
+  const [Discount, setDiscount] = useState(0);
   const [invoiceNo, setInvoiceNo] = useState("");
   const [ProductID, setProductID] = useState("");
   const [ProductName, setProductName] = useState("");
   const [SaleID, setSaleID] = useState("");
   const [returnType, setReturnType] = useState("refund");
+  const [ReturnDate, setReturnDate] = useState("");
   const [selectedOption, setSelectedOption] = useState("product");
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [AddCustomerForm, setAddCustomerForm] = useState(false);
+  const [Customer, setCustomer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+  const [phoneNo, setPhoneNo] = useState("");
+  const [address, setAddress] = useState("");
+  const [Email, setEmail] = useState("");
+  const [searchByProduct, setSearchByProduct] = useState("");
+  const [SubVarinetName, setSubVarinetName] = useState("");
+  const [storeID, setStoreID] = useState("");
+  const [VarinetID, setVarinetID] = useState("");
 
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [returnItems, setReturnItems] = useState<SaleItem[]>([]);
   const [exchangeItems, setExchangeItems] = useState<SaleItem[]>([]);
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const [productList, setProductList] = useState<Product[]>([]);
+  const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
+  const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
+  const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
 
   const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
   const [SaleList, setSaleList] = useState<Sale[]>([]);
-  const [newExchange, setNewExchange] = useState({
-    name: "",
+  const [items, setItems] = useState<Item[]>([]);
+  const [newItem, setNewItem] = useState({
+    attributeID: "",
+    productName: "",
     qty: 0,
     price: 0,
+    barcode: "",
+    varinet: "",
+  });
+  const [newExchange, setNewExchange] = useState({
+    barcode: "",
+    attributeID: "",
+    productName: "",
+    qty: 0,
+    rate: 0,
   });
   const [showList, setShowList] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
 
-  // Dummy Data
-  const dummySales: Record<string, SaleItem[]> = {
-    INV001: [
-      { id: 1, name: "Blue Jeans", qty: 2, price: 120, total: 240 },
-      { id: 2, name: "Powder Blue Shirt", qty: 1, price: 450, total: 450 },
-      { id: 3, name: "Women Fashion", qty: 1, price: 200, total: 200 },
-    ],
-    INV002: [
-      { id: 4, name: "Toys", qty: 1, price: 1200, total: 1200 },
-      { id: 5, name: "Women Jeans", qty: 2, price: 180, total: 360 },
-    ],
-  };
-
   const handleAddReturn = (item: SaleItem) => {
-    if (!returnItems.find((i) => i.id === item.id)) {
+    if (!returnItems.find((i) => i.attributeID === item.attributeID)) {
       setReturnItems((prev) => [...prev, item]);
     }
   };
 
-  const handleRemoveReturn = (id: number) => {
-    setReturnItems((prev) => prev.filter((i) => i.id !== id));
+  const handleRemoveReturn = (id: string) => {
+    setReturnItems((prev) => prev.filter((i) => i.attributeID !== id));
   };
 
-  const handleAddExchange = () => {
-    if (newExchange.name && newExchange.qty > 0 && newExchange.price > 0) {
-      const total = newExchange.qty * newExchange.price;
-      setExchangeItems((prev) => [
-        ...prev,
-        { id: Date.now(), ...newExchange, total },
-      ]);
-      setNewExchange({ name: "", qty: 0, price: 0 });
-    }
-  };
-
-  const handleRemoveExchange = (id: number) => {
-    setExchangeItems((prev) => prev.filter((i) => i.id !== id));
-  };
-  function handleQtyChange(id: number, value: string) {
+  function handleQtyChange(id: string, value: string) {
     const qty = parseInt(value);
     if (!isNaN(qty) && qty >= 0) {
       setReturnItems((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, qty, total: qty * item.price } : item
+          item.attributeID === id
+            ? { ...item, qty, total: qty * item.rate }
+            : item
         )
       );
     }
   }
-
-  const totalReturn = returnItems.reduce((sum, i) => sum + i.total, 0);
-  const totalExchange = exchangeItems.reduce((sum, i) => sum + i.total, 0);
-
-  const handleSave = () => {
-    console.log({
-      invoiceNo,
-      returnType,
-      returnItems,
-      exchangeItems,
-      totalReturn,
-      totalExchange,
-    });
-    alert("Return saved successfully!");
+  const CustomerGet = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetCustomer(String(token));
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as ResponseCustomerGetData;
+      setCustomerList(data.customerList || []);
+    } else if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
   };
+  const handleSave = () => {
+    // console.log({
+    //   invoiceNo,
+    //   returnType,
+    //   returnItems,
+    //   exchangeItems,
+    // });
+    // alert("Return saved successfully!");
+  };
+  const fetchData = (attributeID: string) => {
+    if (!attributeID) {
+      alert("attributeID not found");
+    }
+    let found = false;
 
+    for (const product of productList) {
+      for (const variant of product.variants) {
+        const attribute = variant.variantValues.find(
+          (v) => v.attributeID === attributeID
+        );
+
+        if (attribute) {
+          setItems((prev) => {
+            const existingIndex = prev.findIndex(
+              (item) => item.attributeID === attribute.attributeID
+            );
+
+            // 🔁 If already exists → increase qty
+            if (existingIndex !== -1) {
+              const updated = [...prev];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                qty: Number(updated[existingIndex].qty) + 1,
+              };
+              return updated;
+            }
+
+            // ➕ Else add new row
+            return [
+              ...prev,
+              {
+                barcode: attribute.barcode,
+                attributeID: attribute.attributeID,
+                productName: product.productName,
+                qty: attribute.qty, // start with 1
+                price: attribute.salePrice,
+                varinet: attribute.varientValue,
+              },
+            ];
+          });
+
+          found = true;
+          break;
+        }
+      }
+
+      if (found) break;
+    }
+
+    if (!found) {
+      alert("Barcode not found");
+    }
+    setBarcodeInput("");
+  };
+  const addCustoemr = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return router.push("/posSalePoint/login");
+    try {
+      setLoading(true);
+      const formData = {
+        customerName: customerName,
+        phoneNo: phoneNo,
+        email: Email,
+        description: "",
+        openingBalance: 0,
+        address: address,
+      };
+      const response = await AddCustomer(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        CustomerGet();
+        setEmail("");
+        setAddress("");
+        setCustomerName("");
+        setPhoneNo("");
+        setAddCustomerForm(false);
+      } else if (response.status === 400) {
+      } else {
+      }
+    } catch (error) {
+    } finally {
+      setLoading(false);
+    }
+  };
   const storesget = async () => {
     const token = localStorage.getItem("token");
     const response = await GetInitalStoreSalesMan(String(token));
@@ -166,6 +298,28 @@ export default function SaleReturnModule() {
       setInvocieHistory(data.showHistory || []);
     }
   };
+  const fetchDataVarientList = (productID: string) => {
+    for (var products of productList) {
+      if (products) {
+        const data = productList.find((p) => p.productID === productID);
+        if (data) {
+          setVarientsList(data.variants);
+        }
+      }
+    }
+  };
+
+  const fetchDataAttributeList = (varientID: string) => {
+    for (var atribute of VarientsList) {
+      if (atribute) {
+        const data = VarientsList.find((p) => p.varientID === varientID);
+        if (data) {
+          setAttributeList(data.variantValues);
+        }
+        setAttributeList(atribute.variantValues);
+      }
+    }
+  };
 
   const saleGet = async () => {
     const token = localStorage.getItem("token");
@@ -180,8 +334,12 @@ export default function SaleReturnModule() {
   useEffect(() => {
     saleGet();
     storesget();
+    CustomerGet();
   }, []);
 
+  const totalReturn = returnItems.reduce((total, variant) => {
+    return total + variant.qty * variant.rate;
+  }, 0);
   return (
     <div className="min-h-screen  p-8 mt-8">
       <h2 className="text-2xl font-semibold text-gray-800">
@@ -245,7 +403,49 @@ export default function SaleReturnModule() {
               </div>
             </div>
             {/* Invoice & Return Type */}
-            <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Customer Name
+                </label>
+
+                <div className="flex gap-2">
+                  <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <User className="text-gray-400 mr-2" size={18} />
+
+                    <select
+                      value={Customer}
+                      onChange={(e) => setCustomer(e.target.value)}
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    >
+                      {CustomerList.length !== 0 ? (
+                        <>
+                          <option value="">Select Customer</option>
+
+                          {CustomerList.map((customer) => (
+                            <option
+                              key={customer.customerID}
+                              value={customer.customerID}
+                            >
+                              {customer.customerName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option value="">No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => setAddCustomerForm(true)}
+                    className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                  >
+                    <Plus />
+                  </button>
+                </div>
+              </div>
+
               {selectedOption === "product" ? (
                 <div>
                   <label className="text-gray-600 font-medium mb-2 block">
@@ -333,14 +533,16 @@ export default function SaleReturnModule() {
                   </div>
                 </div>
               )}
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="text-gray-600 font-medium mb-2 block">
                   Return Date
                 </label>
                 <input
                   type="date"
-                  value={returnType}
-                  onChange={(e) => setReturnType(e.target.value)}
+                  value={ReturnDate}
+                  onChange={(e) => setReturnDate(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
@@ -369,6 +571,7 @@ export default function SaleReturnModule() {
                 <table className="w-full text-sm">
                   <thead className="text-gray-600 border-b">
                     <tr>
+                      <th className="py-2 text-left">Barcode</th>
                       <th className="py-2 text-left">Item</th>
                       <th className="text-center">Qty</th>
                       <th className="text-center">Price</th>
@@ -379,30 +582,31 @@ export default function SaleReturnModule() {
                   <tbody>
                     {returnItems.map((item) => (
                       <tr
-                        key={item.id}
+                        key={item.attributeID}
                         className="border-b hover:bg-gray-100 transition"
                       >
-                        <td className="py-2">{item.name}</td>
+                        <td className="py-2">{item.barcode}</td>
+                        <td className="py-2">{item.productName}</td>
                         <td className=" py-2  text-center w-[1/2]">
                           <input
                             type="number"
                             min={0}
                             value={item.qty}
                             onChange={(e) =>
-                              handleQtyChange(item.id, e.target.value)
+                              handleQtyChange(item.attributeID, e.target.value)
                             }
                             className="focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
                             placeholder="Qty"
                             required
                           />
                         </td>
-                        <td className="text-center">{item.price}</td>
-                        <td className="text-center">{item.total}</td>
+                        <td className="text-center">{item.rate}</td>
+                        <td className="text-center">{item.qty * item.rate}</td>
                         <td className="text-center">
                           <button
-                            onClick={() => handleRemoveReturn(item.id)}
+                            onClick={() => handleRemoveReturn(item.attributeID)}
                             className="text-red-600 hover:text-red-800"
-                            aria-label={`Remove ${item.name}`}
+                            aria-label={`Remove ${item.productName}`}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -416,90 +620,382 @@ export default function SaleReturnModule() {
 
             {/* Exchange Section */}
             {returnType === "exchange" && returnItems.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4 shadow-sm mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-700">
-                  Exchange New Products
-                </h3>
-                <div className="flex flex-wrap gap-3 mb-3">
-                  <input
-                    type="text"
-                    placeholder="Product Name"
-                    value={newExchange.name}
-                    onChange={(e) =>
-                      setNewExchange({ ...newExchange, name: e.target.value })
-                    }
-                    className="flex-1 rounded-lg border border-gray-300 p-2.5"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    value={newExchange.qty}
-                    onChange={(e) =>
-                      setNewExchange({
-                        ...newExchange,
-                        qty: Number(e.target.value),
-                      })
-                    }
-                    className="w-24 rounded-lg border border-gray-300 p-2.5 text-center"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={newExchange.price}
-                    onChange={(e) =>
-                      setNewExchange({
-                        ...newExchange,
-                        price: Number(e.target.value),
-                      })
-                    }
-                    className="w-32 rounded-lg border border-gray-300 p-2.5 text-center"
-                  />
-                  <button
-                    onClick={handleAddExchange}
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    Add
-                  </button>
+              <>
+                <div className="w-full mt-2 flex-col gap-2 md:flex-row flex">
+                  {/* Customer Name */}
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Stores
+                    </label>
+                    <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                      <Tag className="text-gray-400 mr-2" size={18} />
+                      <select
+                        value={storeID}
+                        onChange={(e) => {
+                          setStoreID(e.target.value);
+                          getProduct(e.target.value);
+                        }}
+                        className="flex-1 bg-transparent outline-none text-gray-900 p-1"
+                      >
+                        {storeList.length === 0 ? (
+                          <option value="">No Record Found</option>
+                        ) : (
+                          <>
+                            {storeList.map((item) => (
+                              <option key={item.storeID} value={item.storeID}>
+                                {item.storeName}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Product Name
+                    </label>
+                    <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                      <Tag className="text-gray-400 mr-2" size={18} />
+                      <select
+                        value={ProductID}
+                        onChange={(e) => {
+                          setProductID(e.target.value);
+                          fetchDataVarientList(e.target.value);
+                        }}
+                        className="flex-1 bg-transparent outline-none text-gray-900 p-1"
+                      >
+                        {productList.length === 0 ? (
+                          <option value="">No Record Found</option>
+                        ) : (
+                          <>
+                            {productList.map((item) => (
+                              <>
+                                <option
+                                  key={item.productID}
+                                  value={item.productID}
+                                >
+                                  {item.productName}
+                                </option>
+                              </>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                {exchangeItems.length > 0 && (
-                  <table className="w-full text-sm">
-                    <thead className="text-gray-600 border-b">
+
+                <div className="w-full mt-2 mb-2 flex-col gap-2 md:flex-row flex">
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Variant
+                    </label>
+
+                    <div className="flex items-center gap-2 w-full">
+                      {/* Select wrapper (input look) */}
+                      <div className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                        <select
+                          value={VarinetID}
+                          onChange={(e) => {
+                            setVarinetID(e.target.value);
+                            fetchDataAttributeList(e.target.value);
+                            // fetchData(e.target.value);
+                          }}
+                          className="w-full bg-transparent outline-none text-gray-900 p-1"
+                        >
+                          <option value="">Select Product</option>
+                          {VarientsList.length === 0 ? (
+                            <option value="">No Record Found</option>
+                          ) : (
+                            <>
+                              {VarientsList.map((item) => (
+                                <>
+                                  <option
+                                    key={item.varientID}
+                                    value={item.varientID}
+                                  >
+                                    {item.variantName}
+                                  </option>
+                                </>
+                              ))}
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Barcode
+                    </label>
+
+                    <div className="flex items-center gap-2 w-full">
+                      {/* Select wrapper (input look) */}
+                      <div className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                        <input
+                          list="productVariants"
+                          value={SubVarinetName}
+                          onChange={(e: any) => {
+                            const value = e.target.value;
+                            const data = AttributeList.find(
+                              (item) => item.varientValue === value
+                            );
+                            if (data) {
+                              setSearchByProduct(data.attributeID);
+                              setSubVarinetName(data.varientValue);
+                            }
+                          }}
+                          placeholder="Select Barcode"
+                          className="w-full bg-transparent outline-none text-gray-900 "
+                        />
+
+                        <datalist id="productVariants">
+                          {AttributeList.length === 0 ? (
+                            <option value="No Record Found" />
+                          ) : (
+                            AttributeList.map((item) => (
+                              <option value={item.varientValue}>
+                                {item.varientValue}
+                              </option>
+                            ))
+                          )}
+                        </datalist>
+                      </div>
+                      <button
+                        onClick={() => {
+                          fetchData(searchByProduct);
+                          setSearchByProduct("");
+                          setSubVarinetName("");
+                        }}
+                        className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                      >
+                        <Plus />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full border border-gray-200 rounded-lg overflow-hidden ">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <th className="py-2 text-left">Product</th>
-                        <th className="text-center">Qty</th>
-                        <th className="text-center">Price</th>
-                        <th className="text-center">Total</th>
-                        <th className="text-center">Remove</th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Barcode
+                        </th>
+                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                          Product Name
+                        </th>
+                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                          Variant
+                        </th>
+                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                          Quantity
+                        </th>
+                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                          Price / Unit
+                        </th>
+                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                          Total
+                        </th>
+                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {exchangeItems.map((item) => (
+                      {items.map((item, index) => (
                         <tr
-                          key={item.id}
-                          className="border-b hover:bg-gray-100 transition"
+                          key={item.attributeID}
+                          className="border-t hover:bg-gray-50 transition"
                         >
-                          <td className="py-2">{item.name}</td>
-                          <td className="text-center">{item.qty}</td>
-                          <td className="text-center">{item.price}</td>
-                          <td className="text-center">{item.total}</td>
-                          <td className="text-center">
+                          <td className="px-4 py-2">{item.barcode}</td>
+                          <td className="px-4 py-2">{item.productName}</td>
+                          <td className="px-4 py-2">{item.varinet}</td>
+                          <td className="px-4 py-2 text-center">
+                            <input
+                              type="number"
+                              value={item.qty}
+                              onChange={(e) => {
+                                const newItems = [...items];
+                                newItems[index].qty = Number(e.target.value);
+                                setItems(newItems);
+                              }}
+                              className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <input
+                              type="number"
+                              value={item.price}
+                              onChange={(e) => {
+                                const newItems = [...items];
+                                newItems[index].price = Number(e.target.value);
+                                setItems(newItems);
+                              }}
+                              className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center text-gray-800 font-medium">
+                            {(
+                              Number(item.qty || 0) * Number(item.price || 0)
+                            ).toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2 text-center">
                             <button
-                              onClick={() => handleRemoveExchange(item.id)}
-                              className="text-red-600 hover:text-red-800"
+                              onClick={() =>
+                                setItems(items.filter((_, i) => i !== index))
+                              }
+                              className="text-red-500 hover:text-red-700"
+                              title="Delete Item"
                             >
-                              <Trash2 size={16} />
+                              🗑️
                             </button>
                           </td>
                         </tr>
                       ))}
+
+                      {/* Row to Add New Item */}
+                      <tr className="border-t bg-gray-50">
+                        <td className="px-4 py-2 text-center">
+                          <input
+                            type="number"
+                            value={barcodeInput}
+                            onChange={(e) => {
+                              setBarcodeInput(e.target.value); // allow typing
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter") return;
+
+                              const value = barcodeInput;
+
+                              let foundAttributeID = null;
+                              let foundVariantValue = null;
+
+                              for (const product of productList) {
+                                for (const variant of product.variants) {
+                                  const match = variant.variantValues.find(
+                                    (vv) => vv.barcode === value
+                                  );
+
+                                  if (match) {
+                                    foundAttributeID = match.attributeID;
+                                    foundVariantValue = match.varientValue;
+                                    break;
+                                  }
+                                }
+                                if (foundAttributeID) break;
+                              }
+
+                              if (foundAttributeID) {
+                                fetchData(foundAttributeID);
+                                setBarcodeInput("");
+                              }
+                            }}
+                            className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                            placeholder="Scan barcode"
+                          />
+                        </td>
+
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            value={newItem.productName || ""}
+                            onChange={(e) =>
+                              setNewItem({
+                                ...newItem,
+                                productName: e.target.value,
+                              })
+                            }
+                            className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                            placeholder="New Product Name"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <input
+                            type="number"
+                            value={newItem.varinet || ""}
+                            onChange={(e) =>
+                              setNewItem({
+                                ...newItem,
+                                varinet: String(e.target.value),
+                              })
+                            }
+                            className="w-20 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                            placeholder="eg:- MD"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <input
+                            type="number"
+                            value={newItem.qty || ""}
+                            onChange={(e) =>
+                              setNewItem({
+                                ...newItem,
+                                qty: Number(e.target.value),
+                              })
+                            }
+                            className="w-20 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <input
+                            type="number"
+                            value={newItem.price || ""}
+                            onChange={(e) =>
+                              setNewItem({
+                                ...newItem,
+                                price: Number(e.target.value),
+                              })
+                            }
+                            className="w-24 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center font-medium text-gray-800">
+                          {(
+                            Number(newItem.qty || 0) *
+                            Number(newItem.price || 0)
+                          ).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() => {
+                              if (
+                                newItem.barcode &&
+                                newItem.attributeID &&
+                                newItem.productName &&
+                                newItem.qty &&
+                                newItem.price &&
+                                newItem.varinet
+                              ) {
+                                setItems([...items, newItem]);
+                                setNewItem({
+                                  attributeID: "",
+                                  productName: "",
+                                  qty: 0,
+                                  price: 0,
+                                  barcode: "",
+                                  varinet: "",
+                                });
+                              }
+                            }}
+                            className="text-green-600 hover:text-green-800 font-medium"
+                          >
+                            ➕
+                          </button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
-                )}
-              </div>
+                </div>
+              </>
             )}
 
             {/* Summary */}
-            {returnItems.length > 0 && (
+            {/* {returnItems.length > 0 && (
               <div className="flex justify-between items-center bg-blue-50 rounded-xl p-4 mt-4 shadow-sm">
                 <h3 className="text-gray-700 font-semibold">
                   Total Return:{" "}
@@ -526,8 +1022,81 @@ export default function SaleReturnModule() {
                   </span>
                 </h3>
               </div>
-            )}
+            )} */}
+            <div className="w-full md:w-full">
+              <div className="flex flex-wrap md:flex-nowrap gap-4 mt-3">
+                {/* Amount Paid */}
+                <div className="w-full md:w-1/3">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Amount Paid
+                  </label>
+                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <Coins className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="number"
+                      value={AmountPaid || 0}
+                      onChange={(e) => setAmountPaid(Number(e.target.value))}
+                      name="totalBill"
+                      placeholder="Enter Amount Paid"
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
 
+                {/* Discount */}
+                <div className="w-full md:w-1/3">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Discount
+                  </label>
+                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <Coins className="text-gray-400 mr-2" size={18} />
+                    <input
+                      value={Discount || 0}
+                      onChange={(e) => setDiscount(Number(e.target.value))}
+                      type="number"
+                      name="Discount"
+                      placeholder="Enter Discount"
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Total Bill */}
+                <div className="w-full md:w-1/3">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Total Bill
+                  </label>
+                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <Coins className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="number"
+                      name="amountPaid"
+                      value={totalReturn || 0}
+                      readOnly
+                      className="w-full text-center bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Remaining Balance */}
+                <div className="w-full md:w-1/3">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Remaining Balance
+                  </label>
+                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <Coins className="text-gray-400 mr-2" size={18} />
+                    <input
+                      value={totalReturn - AmountPaid - Discount || 0}
+                      type="number"
+                      name="remainingBalance"
+                      placeholder="Auto Calculated"
+                      readOnly
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
             {returnItems.length > 0 && (
               <div className="flex justify-end mt-6">
                 <button
@@ -580,7 +1149,7 @@ export default function SaleReturnModule() {
                     <td className="text-center">{item.qty * item.rate}</td>
                     <td className="text-center">
                       <button
-                        // onClick={() => handleAddReturn(item)}
+                        onClick={() => handleAddReturn(item)}
                         className="text-blue-600 hover:text-blue-800 "
                       >
                         <Plus size={14} />
@@ -597,6 +1166,101 @@ export default function SaleReturnModule() {
                 className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {AddCustomerForm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md ">
+            {/* Header */}
+            <h2 className="text-xl font-semibold text-gray-800">
+              Customer Add
+            </h2>
+            <div className="mt-2 ">
+              <label className="block text-gray-700 font-medium mb-2">
+                Customer Name <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <User className="text-gray-400 mr-2" size={18} />
+                <input
+                  type="text"
+                  name="name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Enter Customer Name"
+                  className="w-full bg-transparent outline-none text-gray-900"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+
+            {/* Phone */}
+            <div className="mt-2 ">
+              <label className="block text-gray-700 font-medium mb-2">
+                Phone <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <Phone className="text-gray-400 mr-2" size={18} />
+                <input
+                  type="text"
+                  name="phone"
+                  value={phoneNo}
+                  onChange={(e) => setPhoneNo(e.target.value)}
+                  placeholder="+92 300 1234567"
+                  className="w-full bg-transparent outline-none text-gray-900"
+                />
+              </div>
+            </div>
+            <div className="mt-2 ">
+              <label className="block text-gray-700 font-medium mb-2">
+                Email
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <Mail className="text-gray-400 mr-2" size={18} />
+                <input
+                  type="text"
+                  name="phone"
+                  value={Email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="example@email.com"
+                  className="w-full bg-transparent outline-none text-gray-900"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                Address
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <MapPin className="text-gray-400 mr-2" size={18} />
+                <input
+                  type="text"
+                  name="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Enter full address"
+                  className="w-full bg-transparent outline-none text-gray-900 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-between gap-4">
+              <button
+                onClick={() => setAddCustomerForm(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  addCustoemr();
+                }}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+              >
+                {loading ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

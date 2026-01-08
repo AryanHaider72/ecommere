@@ -73,33 +73,32 @@ export default function SaleForm() {
   const [ShowMessage, setShowMessage] = useState(false);
   const [showModel, setShowModel] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [AddCustomerForm, setAddCustomerForm] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
   const [address, setAddress] = useState("");
   const [Email, setEmail] = useState("");
+  const [AddCustomerForm, setAddCustomerForm] = useState(false);
   const [Customer, setCustomer] = useState("");
   const [CustomerType, setCustomerType] = useState("WalkingCustomer");
   const [ResponseBack, setResponseBack] = useState("");
-  const [SearchByProduct, setSearchByProduct] = useState("");
   const [SearchByBarcode, setSearchByBarcode] = useState("");
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const [RescponseBack, setRersponseBack] = useState("");
-  const [SubVarinetName, setSubVarinetName] = useState("");
   const [SubVarinetName2, setSubVarinetName2] = useState("");
 
+  const [SearchByProduct, setSearchByProduct] = useState("");
+  const [SubVarinetName, setSubVarinetName] = useState("");
+  const [storeID, setStoreID] = useState("");
   const [VarinetID, setVarinetID] = useState("");
   const [ProductID, setProductID] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
 
-  const [items, setItems] = useState<Item[]>([]);
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
   const [productList, setProductList] = useState<Product[]>([]);
 
   const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
   const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
   const [SaleList, setSaleList] = useState<Sale[]>([]);
-  const [storeID, setStoreID] = useState("");
   const [AmountPaid, setAmountPaid] = useState(0);
   const [Discount, setDiscount] = useState(0);
   const [SaleDate, setSaleDate] = useState("");
@@ -107,6 +106,7 @@ export default function SaleForm() {
   const [SearchBy, setSearchBy] = useState("SearchByBarcode");
   const [isLoading, setIsLoading] = useState(false);
 
+  const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
     attributeID: "",
     productName: "",
