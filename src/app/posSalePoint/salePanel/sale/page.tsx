@@ -37,14 +37,36 @@ import {
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import GetInitalStoreSalesMan from "@/api/lib/store/GetStoreSalesMan/GetStoreSalesMan";
 import AddSale from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
-import { ListItem } from "@/api/types/PosIntegration/Sale/Sale";
+import {
+  ListItem,
+  responseGetSale,
+  Sale,
+} from "@/api/types/PosIntegration/Sale/Sale";
 import AddSalePos from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
+import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
+import Spinner from "@/component/spinner/page";
 interface Item {
+  barcode: string;
   attributeID: string;
   productName: string;
   qty: number;
   price: number;
+  varinet: string;
 }
+interface VarientsList {
+  varientID: string;
+  variantName: string;
+  variantValues: variantValues[];
+}
+interface variantValues {
+  attributeID: string;
+  varientValue: string;
+  costPrice: number;
+  salePrice: number;
+  qty: number;
+  barcode: string;
+}
+
 export default function SaleForm() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
@@ -59,24 +81,39 @@ export default function SaleForm() {
   const [Customer, setCustomer] = useState("");
   const [CustomerType, setCustomerType] = useState("WalkingCustomer");
   const [ResponseBack, setResponseBack] = useState("");
-  const [selectedOption2, setSelectedOption2] = useState("");
+  const [SearchByProduct, setSearchByProduct] = useState("");
+  const [SearchByBarcode, setSearchByBarcode] = useState("");
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const [RescponseBack, setRersponseBack] = useState("");
+  const [SubVarinetName, setSubVarinetName] = useState("");
+  const [SubVarinetName2, setSubVarinetName2] = useState("");
+
+  const [VarinetID, setVarinetID] = useState("");
+  const [ProductID, setProductID] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
 
   const [items, setItems] = useState<Item[]>([]);
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
   const [productList, setProductList] = useState<Product[]>([]);
+
+  const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
+  const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
+  const [SaleList, setSaleList] = useState<Sale[]>([]);
   const [storeID, setStoreID] = useState("");
   const [AmountPaid, setAmountPaid] = useState(0);
   const [Discount, setDiscount] = useState(0);
   const [SaleDate, setSaleDate] = useState("");
   const [Description, setDescription] = useState("");
+  const [SearchBy, setSearchBy] = useState("SearchByBarcode");
+  const [isLoading, setIsLoading] = useState(false);
 
   const [newItem, setNewItem] = useState({
     attributeID: "",
     productName: "",
     qty: 0,
     price: 0,
+    barcode: "",
+    varinet: "",
   });
 
   const CustomerGet = async () => {
@@ -139,7 +176,6 @@ export default function SaleForm() {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponse;
-      console.log(data.list);
       setProductList(data.list || []);
     }
   };
@@ -149,13 +185,17 @@ export default function SaleForm() {
     const response = await GetInitalStoreSalesMan(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
-      console.log(data);
       setStoreList(data.storeList);
       getProduct(data.storeList[0].storeID);
     }
   };
 
   const fetchData = (attributeID: string) => {
+    if (!attributeID) {
+      alert("attributeID not found");
+    }
+    let found = false;
+
     for (const product of productList) {
       for (const variant of product.variants) {
         const attribute = variant.variantValues.find(
@@ -163,17 +203,72 @@ export default function SaleForm() {
         );
 
         if (attribute) {
-          setItems((prev) => [
-            ...prev,
-            {
-              attributeID: attributeID,
-              productName: product.productName,
-              qty: attribute.qty,
-              price: attribute.salePrice,
-            },
-          ]);
-          return;
+          setItems((prev) => {
+            const existingIndex = prev.findIndex(
+              (item) => item.attributeID === attribute.attributeID
+            );
+
+            // 🔁 If already exists → increase qty
+            if (existingIndex !== -1) {
+              const updated = [...prev];
+              updated[existingIndex] = {
+                ...updated[existingIndex],
+                qty: Number(updated[existingIndex].qty) + 1,
+              };
+              return updated;
+            }
+
+            // ➕ Else add new row
+            return [
+              ...prev,
+              {
+                barcode: attribute.barcode,
+                attributeID: attribute.attributeID,
+                productName: product.productName,
+                qty: attribute.qty, // start with 1
+                price: attribute.salePrice,
+                varinet: attribute.varientValue,
+              },
+            ];
+          });
+
+          found = true;
+          break;
         }
+      }
+
+      if (found) break;
+    }
+
+    if (!found) {
+      alert("Barcode not found");
+    }
+
+    setSubVarinetName2("");
+    setSubVarinetName("");
+    setSearchByProduct("");
+    setBarcodeInput("");
+  };
+
+  const fetchDataVarientList = (productID: string) => {
+    for (var products of productList) {
+      if (products) {
+        const data = productList.find((p) => p.productID === productID);
+        if (data) {
+          setVarientsList(data.variants);
+        }
+      }
+    }
+  };
+
+  const fetchDataAttributeList = (varientID: string) => {
+    for (var atribute of VarientsList) {
+      if (atribute) {
+        const data = VarientsList.find((p) => p.varientID === varientID);
+        if (data) {
+          setAttributeList(data.variantValues);
+        }
+        setAttributeList(atribute.variantValues);
       }
     }
   };
@@ -200,10 +295,13 @@ export default function SaleForm() {
       console.log(formData);
       const response = await AddSalePos(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        console.log(response.data);
-        setRersponseBack(
-          response.data.message || "Customer Added Successfully"
-        );
+        setCustomerName("");
+        setSaleDate("");
+        setItems([]);
+        setAmountPaid(0);
+        setDiscount(0);
+        setDescription("");
+        setRersponseBack(response.data.message || "Sale Added Successfully");
         setShowMessage(true);
       } else if (response.status === 400) {
         setRersponseBack(
@@ -221,6 +319,29 @@ export default function SaleForm() {
       setLoading(false);
     }
   };
+  const saleGet = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await GetSalePos(String(token));
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as responseGetSale;
+        console.log(data);
+        setSaleList(data.saleList);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchDataForModify = (saleID: string) => {
+    const data = SaleList.find((item) => item.saleID === saleID);
+    if (data) {
+      setCustomerName(data.customer);
+      setSaleDate(data.saleDate);
+      setItems(data.itemList);
+    }
+  };
 
   const totalSum = items.reduce((total, variant) => {
     return total + variant.qty * variant.price;
@@ -235,6 +356,7 @@ export default function SaleForm() {
     }, 2000);
   }, [ShowMessage, RescponseBack]);
   useEffect(() => {
+    saleGet();
     CustomerGet();
     storesget();
   }, []);
@@ -354,28 +476,67 @@ export default function SaleForm() {
           </button>
         </div>
         {showList ? (
-          <div className="p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">ABC_XYZ</h3>
-              <p className="text-gray-600">Email: abc@email.com</p>
-              <p className="text-gray-600">Remaining Balance: 20,100</p>
-            </div>
-            <div className="flex gap-4">
-              <button
-                //   onClick={() => FetchData(company.Id)}
-                className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
-                title="Edit"
-              >
-                <Pencil className="w-5 h-5" />
-              </button>
-              <button
-                className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
-                title="Delete"
-              >
-                <Trash className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <>
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <Spinner />
+              </div>
+            ) : (
+              <>
+                {SaleList.length !== 0 ? (
+                  <>
+                    {SaleList.map((item) => (
+                      <div
+                        key={item.saleID}
+                        className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+                      >
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {item.customer}
+                          </h3>
+                          <p className="text-gray-600">
+                            Sale Date: {item.saleDate}
+                          </p>
+                          <p className="text-gray-600">
+                            Total Bill: {item.totalBill}
+                          </p>
+                          <p className="text-gray-600">
+                            Adjustment: {item.adjustment}
+                          </p>
+                          <p className="text-gray-600">
+                            Amount Paid: {item.amountPaid}
+                          </p>
+                        </div>
+                        <div className="flex gap-4">
+                          <button
+                            onClick={() => fetchDataForModify(item.saleID)}
+                            className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
+                            title="Edit"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            // onClick={() => {
+                            //   setID(item.customerID);
+                            //   setIsOpen(true);
+                            // }}
+                            className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
+                            title="Delete"
+                          >
+                            <Trash className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    No Record Found
+                  </div>
+                )}
+              </>
+            )}
+          </>
         ) : (
           <div className="flex flex-col flex-wrap md:flex-row gap-5 mt-2">
             <div className="p-3 rounded-xl max-w-md">
@@ -501,6 +662,7 @@ export default function SaleForm() {
                 </div>
               )}
             </div>
+
             <div className="w-full flex-col gap-2 md:flex-row flex">
               {/* Customer Name */}
               <div className="w-full">
@@ -535,51 +697,124 @@ export default function SaleForm() {
                 <label className="block text-gray-700 font-medium mb-2">
                   Product Name
                 </label>
-
-                <div className="flex items-center gap-2 w-full">
-                  {/* Select wrapper (input look) */}
-                  <div className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                    <select
-                      value={selectedOption2}
-                      onChange={(e) => {
-                        setSelectedOption2(e.target.value);
-                        fetchData(e.target.value);
-                      }}
-                      className="w-full bg-transparent outline-none text-gray-900 p-1"
-                    >
-                      <option value="">Select Product</option>
-                      {productList.length === 0 ? (
-                        <option value="">No Record Found</option>
-                      ) : (
-                        <>
-                          {productList.map((item) => (
-                            <>
-                              {item.variants.map((item2) => (
-                                <>
-                                  {item2.variantValues.map((item3) => (
-                                    <option
-                                      key={item3.attributeID}
-                                      value={item3.attributeID}
-                                    >
-                                      {item3.barcode}
-                                    </option>
-                                  ))}
-                                </>
-                              ))}
-                            </>
-                          ))}
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* Button OUTSIDE input */}
-                  <button className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md flex items-center justify-center">
-                    <Plus />
-                  </button>
+                <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                  <Tag className="text-gray-400 mr-2" size={18} />
+                  <select
+                    value={ProductID}
+                    onChange={(e) => {
+                      setProductID(e.target.value);
+                      fetchDataVarientList(e.target.value);
+                    }}
+                    className="flex-1 bg-transparent outline-none text-gray-900 p-1"
+                  >
+                    {productList.length === 0 ? (
+                      <option value="">No Record Found</option>
+                    ) : (
+                      <>
+                        {productList.map((item) => (
+                          <>
+                            <option key={item.productID} value={item.productID}>
+                              {item.productName}
+                            </option>
+                          </>
+                        ))}
+                      </>
+                    )}
+                  </select>
                 </div>
               </div>
             </div>
+            <>
+              <div className="w-full flex-col gap-2 md:flex-row flex">
+                <div className="w-full">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Variant
+                  </label>
+
+                  <div className="flex items-center gap-2 w-full">
+                    {/* Select wrapper (input look) */}
+                    <div className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                      <select
+                        value={VarinetID}
+                        onChange={(e) => {
+                          setVarinetID(e.target.value);
+                          fetchDataAttributeList(e.target.value);
+                          // fetchData(e.target.value);
+                        }}
+                        className="w-full bg-transparent outline-none text-gray-900 p-1"
+                      >
+                        <option value="">Select Product</option>
+                        {VarientsList.length === 0 ? (
+                          <option value="">No Record Found</option>
+                        ) : (
+                          <>
+                            {VarientsList.map((item) => (
+                              <>
+                                <option
+                                  key={item.varientID}
+                                  value={item.varientID}
+                                >
+                                  {item.variantName}
+                                </option>
+                              </>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Barcode
+                  </label>
+
+                  <div className="flex items-center gap-2 w-full">
+                    {/* Select wrapper (input look) */}
+                    <div className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                      <input
+                        list="productVariants"
+                        value={SubVarinetName}
+                        onChange={(e: any) => {
+                          const value = e.target.value;
+                          const data = AttributeList.find(
+                            (item) => item.varientValue === value
+                          );
+                          if (data) {
+                            setSearchByProduct(data.attributeID);
+                            setSubVarinetName(data.varientValue);
+                          }
+                        }}
+                        placeholder="Select Barcode"
+                        className="w-full bg-transparent outline-none text-gray-900 "
+                      />
+
+                      <datalist id="productVariants">
+                        {AttributeList.length === 0 ? (
+                          <option value="No Record Found" />
+                        ) : (
+                          AttributeList.map((item) => (
+                            <option value={item.varientValue}>
+                              {item.varientValue}
+                            </option>
+                          ))
+                        )}
+                      </datalist>
+                    </div>
+                    <button
+                      onClick={() => {
+                        fetchData(SearchByProduct);
+                        setSearchByProduct("");
+                        setSubVarinetName("");
+                      }}
+                      className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                    >
+                      <Plus />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
 
             {/* Product Name */}
 
@@ -591,7 +826,13 @@ export default function SaleForm() {
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                      Barcode
+                    </th>
+                    <th className="px-4 py-2 text-left text-gray-700 font-medium">
                       Product Name
+                    </th>
+                    <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                      Variant
                     </th>
                     <th className="px-4 py-2 text-center text-gray-700 font-medium">
                       Quantity
@@ -610,10 +851,12 @@ export default function SaleForm() {
                 <tbody>
                   {items.map((item, index) => (
                     <tr
-                      key={index}
+                      key={item.attributeID}
                       className="border-t hover:bg-gray-50 transition"
                     >
+                      <td className="px-4 py-2">{item.barcode}</td>
                       <td className="px-4 py-2">{item.productName}</td>
+                      <td className="px-4 py-2">{item.varinet}</td>
                       <td className="px-4 py-2 text-center">
                         <input
                           type="number"
@@ -661,6 +904,48 @@ export default function SaleForm() {
 
                   {/* Row to Add New Item */}
                   <tr className="border-t bg-gray-50">
+                    <td className="px-4 py-2 text-center">
+                      <input
+                        type="number"
+                        value={barcodeInput}
+                        onChange={(e) => {
+                          setBarcodeInput(e.target.value); // allow typing
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+
+                          const value = barcodeInput;
+
+                          let foundAttributeID = null;
+                          let foundVariantValue = null;
+
+                          for (const product of productList) {
+                            for (const variant of product.variants) {
+                              const match = variant.variantValues.find(
+                                (vv) => vv.barcode === value
+                              );
+
+                              if (match) {
+                                foundAttributeID = match.attributeID;
+                                foundVariantValue = match.varientValue;
+                                break;
+                              }
+                            }
+                            if (foundAttributeID) break;
+                          }
+
+                          if (foundAttributeID) {
+                            setSubVarinetName2(foundVariantValue ?? "");
+                            setSearchByBarcode(foundAttributeID);
+                            fetchData(foundAttributeID);
+                            setBarcodeInput("");
+                          }
+                        }}
+                        className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                        placeholder="Scan barcode"
+                      />
+                    </td>
+
                     <td className="px-4 py-2">
                       <input
                         type="text"
@@ -673,6 +958,20 @@ export default function SaleForm() {
                         }
                         className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
                         placeholder="New Product Name"
+                      />
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <input
+                        type="number"
+                        value={newItem.varinet || ""}
+                        onChange={(e) =>
+                          setNewItem({
+                            ...newItem,
+                            varinet: String(e.target.value),
+                          })
+                        }
+                        className="w-20 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
+                        placeholder="eg:- MD"
                       />
                     </td>
                     <td className="px-4 py-2 text-center">
@@ -712,10 +1011,12 @@ export default function SaleForm() {
                       <button
                         onClick={() => {
                           if (
+                            newItem.barcode &&
                             newItem.attributeID &&
                             newItem.productName &&
                             newItem.qty &&
-                            newItem.price
+                            newItem.price &&
+                            newItem.varinet
                           ) {
                             setItems([...items, newItem]);
                             setNewItem({
@@ -723,6 +1024,8 @@ export default function SaleForm() {
                               productName: "",
                               qty: 0,
                               price: 0,
+                              barcode: "",
+                              varinet: "",
                             });
                           }
                         }}
@@ -849,189 +1152,6 @@ export default function SaleForm() {
               >
                 {loading ? "Saving..." : "Save"}
               </button>
-            </div>
-          </div>
-        )}
-        {showModel && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black/60 via-black/40 to-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] shadow-lg overflow-hidden">
-              {/* Close Button */}
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setShowModel(false)}
-                  className="text-gray-500 hover:text-red-600 font-bold text-xl"
-                >
-                  X
-                </button>
-              </div>
-
-              {/* Table Section */}
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Sold Items
-              </h2>
-
-              <div className="overflow-x-auto">
-                <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                        Product Name
-                      </th>
-                      <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                        Quantity
-                      </th>
-                      <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                        Price / Unit
-                      </th>
-                      <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                        Total
-                      </th>
-                      <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, index) => (
-                      <tr
-                        key={index}
-                        className="border-t hover:bg-gray-50 transition"
-                      >
-                        <td className="px-4 py-2">{item.productName}</td>
-                        <td className="px-4 py-2 text-center">
-                          <input
-                            type="number"
-                            value={item.qty}
-                            onChange={(e) => {
-                              const newItems = [...items];
-                              newItems[index].qty = Number(e.target.value);
-                              setItems(newItems);
-                            }}
-                            className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <input
-                            type="number"
-                            value={item.price}
-                            onChange={(e) => {
-                              const newItems = [...items];
-                              newItems[index].price = Number(e.target.value);
-                              setItems(newItems);
-                            }}
-                            className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-center text-gray-800 font-medium">
-                          {(
-                            Number(item.qty || 0) * Number(item.price || 0)
-                          ).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <button
-                            onClick={() =>
-                              setItems(items.filter((_, i) => i !== index))
-                            }
-                            className="text-red-500 hover:text-red-700"
-                            title="Delete Item"
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-
-                    {/* Row to Add New Item */}
-                    <tr className="border-t bg-gray-50">
-                      <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={newItem.productName || ""}
-                          onChange={(e) =>
-                            setNewItem({
-                              ...newItem,
-                              productName: e.target.value,
-                            })
-                          }
-                          className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
-                          placeholder="New Product Name"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <input
-                          type="number"
-                          value={newItem.qty || ""}
-                          onChange={(e) =>
-                            setNewItem({
-                              ...newItem,
-                              qty: Number(e.target.value),
-                            })
-                          }
-                          className="w-20 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <input
-                          type="number"
-                          value={newItem.price || ""}
-                          onChange={(e) =>
-                            setNewItem({
-                              ...newItem,
-                              price: Number(e.target.value),
-                            })
-                          }
-                          className="w-24 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center font-medium text-gray-800">
-                        {(
-                          Number(newItem.qty || 0) * Number(newItem.price || 0)
-                        ).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() => {
-                            if (
-                              newItem.productName &&
-                              newItem.qty &&
-                              newItem.price
-                            ) {
-                              setItems([...items, newItem]);
-                              setNewItem({
-                                attributeID: "",
-                                productName: "",
-                                qty: 0,
-                                price: 0,
-                              });
-                            }
-                          }}
-                          className="text-green-600 hover:text-green-800 font-medium"
-                        >
-                          ➕
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Total Summary */}
-              <div className="flex justify-end mt-4">
-                <p className="text-lg font-semibold text-gray-800">
-                  Total:{" "}
-                  {items
-                    .reduce(
-                      (sum, i) =>
-                        sum + Number(i.qty || 0) * Number(i.price || 0),
-                      0
-                    )
-                    .toFixed(2)}
-                </p>
-              </div>
             </div>
           </div>
         )}

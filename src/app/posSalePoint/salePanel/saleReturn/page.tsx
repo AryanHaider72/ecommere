@@ -1,6 +1,14 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Info, Trash2, Plus, ChevronRight, ChevronLeft, X } from "lucide-react";
+import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
+import { responseGetSale, Sale } from "@/api/types/PosIntegration/Sale/Sale";
+import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
+import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
+import GetInitalStoreSalesMan from "@/api/lib/store/GetStoreSalesMan/GetStoreSalesMan";
+import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
+import SearchByInvoice from "@/api/lib/PosIntegration/Return/SearchHistory/SearchByInvoice/SearchByInvoice";
+import SearchByProduct from "@/api/lib/PosIntegration/Return/SearchHistory/SearchByProduct/SearchByProduct";
 
 interface SaleItem {
   id: number;
@@ -10,14 +18,36 @@ interface SaleItem {
   total: number;
 }
 
+interface responseList {
+  message: string;
+  showHistory: historyData[];
+}
+
+interface historyData {
+  productName: string;
+  attributeID: string;
+  saleDate: Date;
+  varientValue: string;
+  barcode: string;
+  qty: number;
+  rate: number;
+}
 export default function SaleReturnModule() {
   const [invoiceNo, setInvoiceNo] = useState("");
+  const [ProductID, setProductID] = useState("");
+  const [ProductName, setProductName] = useState("");
+  const [SaleID, setSaleID] = useState("");
   const [returnType, setReturnType] = useState("refund");
   const [selectedOption, setSelectedOption] = useState("product");
 
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [returnItems, setReturnItems] = useState<SaleItem[]>([]);
   const [exchangeItems, setExchangeItems] = useState<SaleItem[]>([]);
+  const [storeList, setStoreList] = useState<storeInital[]>([]);
+  const [productList, setProductList] = useState<Product[]>([]);
+
+  const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
+  const [SaleList, setSaleList] = useState<Sale[]>([]);
   const [newExchange, setNewExchange] = useState({
     name: "",
     qty: 0,
@@ -37,15 +67,6 @@ export default function SaleReturnModule() {
       { id: 4, name: "Toys", qty: 1, price: 1200, total: 1200 },
       { id: 5, name: "Women Jeans", qty: 2, price: 180, total: 360 },
     ],
-  };
-
-  const handleFetchInvoice = () => {
-    if (dummySales[invoiceNo]) {
-      setSaleItems(dummySales[invoiceNo]);
-      setShowPopup(true);
-    } else {
-      alert("Please select a valid invoice.");
-    }
   };
 
   const handleAddReturn = (item: SaleItem) => {
@@ -98,13 +119,76 @@ export default function SaleReturnModule() {
     alert("Return saved successfully!");
   };
 
+  const storesget = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetInitalStoreSalesMan(String(token));
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as StoreApiResponse;
+      setStoreList(data.storeList);
+      getProduct(data.storeList[0].storeID);
+    }
+  };
+  const getProduct = async (ID: string) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) return;
+
+    const response = await GetProduct(token, ID);
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as ProductApiResponse;
+      setProductList(data.list || []);
+    }
+  };
+  const getInvoiceHistory = async (ID: string) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) return;
+
+    const response = await SearchByInvoice(token, ID);
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as responseList;
+      console.log(data);
+      setInvocieHistory(data.showHistory || []);
+    }
+  };
+  const getProductHistory = async (ID: string) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) return;
+
+    const response = await SearchByProduct(token, ID);
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as responseList;
+      console.log(data);
+      setInvocieHistory(data.showHistory || []);
+    }
+  };
+
+  const saleGet = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetSalePos(String(token));
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as responseGetSale;
+      console.log(data);
+      setSaleList(data.saleList);
+    }
+  };
+
+  useEffect(() => {
+    saleGet();
+    storesget();
+  }, []);
+
   return (
-    <div className="min-h-screen  p-8">
-      <div className="max-w-5xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition">
+    <div className="min-h-screen  p-8 mt-8">
+      <h2 className="text-2xl font-semibold text-gray-800">
+        Sale Return Management
+      </h2>
+      <div className=" mt-5 max-w-5xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Sale Return Management
-          </h2>
           <button
             onClick={() => setShowList(!showList)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
@@ -168,18 +252,37 @@ export default function SaleReturnModule() {
                     Product Name
                   </label>
                   <div className="flex gap-2">
-                    <select
-                      value={invoiceNo}
-                      onChange={(e) => setInvoiceNo(e.target.value)}
+                    <input
+                      list="productOptions"
+                      value={ProductID}
+                      onChange={(e) => {
+                        setProductID(e.target.value);
+                        const value = e.target.value;
+                        const data = productList.find(
+                          (item) => item.productName === value
+                        );
+                        if (data) {
+                          getProductHistory(data.productID);
+                        }
+                      }}
+                      placeholder="Select or type product"
                       className="w-full rounded-lg border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="">-- Select Product --</option>
-                      {Object.keys(dummySales).map((inv) => (
-                        <option key={inv}>{inv}</option>
-                      ))}
-                    </select>
+                    />
+                    <datalist id="productOptions">
+                      {productList.length === 0 ? (
+                        <option value="" disabled>
+                          No products found
+                        </option>
+                      ) : (
+                        productList.map((item) => (
+                          <option key={item.productID} value={item.productName}>
+                            {item.productName}
+                          </option>
+                        ))
+                      )}
+                    </datalist>
                     <button
-                      onClick={handleFetchInvoice}
+                      onClick={() => setShowPopup(true)}
                       className="bg-blue-600 p-2.5 rounded-lg text-white hover:bg-blue-700"
                     >
                       <Info size={18} />
@@ -192,18 +295,37 @@ export default function SaleReturnModule() {
                     Select Invoice
                   </label>
                   <div className="flex gap-2">
-                    <select
+                    <input
+                      list="productOptions"
                       value={invoiceNo}
-                      onChange={(e) => setInvoiceNo(e.target.value)}
+                      onChange={(e) => {
+                        setInvoiceNo(e.target.value);
+                        const value = e.target.value;
+                        const data = SaleList.find(
+                          (item) => item.invoiceNo === Number(value)
+                        );
+                        if (data) {
+                          getInvoiceHistory(data.saleID);
+                        }
+                      }}
+                      placeholder="Select or type product"
                       className="w-full rounded-lg border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value="">-- Select Invoice --</option>
-                      {Object.keys(dummySales).map((inv) => (
-                        <option key={inv}>{inv}</option>
-                      ))}
-                    </select>
+                    />
+                    <datalist id="productOptions">
+                      {productList.length === 0 ? (
+                        <option value="" disabled>
+                          No Invoice found
+                        </option>
+                      ) : (
+                        SaleList.map((item) => (
+                          <option key={item.saleID} value={item.invoiceNo}>
+                            {item.invoiceNo}
+                          </option>
+                        ))
+                      )}
+                    </datalist>
                     <button
-                      onClick={handleFetchInvoice}
+                      onClick={() => setShowPopup(true)}
                       className="bg-blue-600 p-2.5 rounded-lg text-white hover:bg-blue-700"
                     >
                       <Info size={18} />
@@ -437,6 +559,7 @@ export default function SaleReturnModule() {
             <table className="w-full text-sm">
               <thead className="text-gray-600 border-b">
                 <tr>
+                  <th className="py-2 text-left">Barcode</th>
                   <th className="py-2 text-left">Name</th>
                   <th className="text-center">Qty</th>
                   <th className="text-center">Price</th>
@@ -445,18 +568,19 @@ export default function SaleReturnModule() {
                 </tr>
               </thead>
               <tbody>
-                {saleItems.map((item) => (
+                {InvocieHistory.map((item) => (
                   <tr
-                    key={item.id}
+                    key={item.attributeID}
                     className="border-b hover:bg-gray-100 transition"
                   >
-                    <td className="py-2">{item.name}</td>
+                    <td className="py-2">{item.barcode}</td>
+                    <td className="py-2">{item.productName}</td>
                     <td className="text-center">{item.qty}</td>
-                    <td className="text-center">{item.price}</td>
-                    <td className="text-center">{item.total}</td>
+                    <td className="text-center">{item.rate}</td>
+                    <td className="text-center">{item.qty * item.rate}</td>
                     <td className="text-center">
                       <button
-                        onClick={() => handleAddReturn(item)}
+                        // onClick={() => handleAddReturn(item)}
                         className="text-blue-600 hover:text-blue-800 "
                       >
                         <Plus size={14} />
