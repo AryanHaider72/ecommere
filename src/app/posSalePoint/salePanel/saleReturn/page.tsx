@@ -363,7 +363,12 @@ export default function SaleReturnModule() {
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseGetSale;
       console.log(data);
-      setSaleList(data.saleList);
+      const filterData = data.saleList.filter(
+        (item) => item.itemList.length > 0
+      );
+      if (filterData) {
+        setSaleList(filterData);
+      }
     }
   };
 
