@@ -29,6 +29,7 @@ import {
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
 import { useRouter } from "next/navigation";
 import AddCustomer from "@/api/lib/PosIntegration/Customer/AddCustomer";
+import AddSalePosReturn from "@/api/lib/PosIntegration/SaleReturn/AddSaleReturn/page";
 
 interface SaleItem {
   barcode: string;
@@ -42,7 +43,7 @@ interface Item {
   attributeID: string;
   productName: string;
   qty: number;
-  price: number;
+  rate: number;
   varinet: string;
 }
 interface responseList {
@@ -51,9 +52,10 @@ interface responseList {
 }
 
 interface historyData {
+  saleID: string;
   productName: string;
   attributeID: string;
-  saleDate: Date;
+  saleDate: string;
   varientValue: string;
   barcode: string;
   qty: number;
@@ -112,7 +114,7 @@ export default function SaleReturnModule() {
     attributeID: "",
     productName: "",
     qty: 0,
-    price: 0,
+    rate: 0,
     barcode: "",
     varinet: "",
   });
@@ -158,14 +160,48 @@ export default function SaleReturnModule() {
       router.push("/sellerlogin");
     }
   };
-  const handleSave = () => {
-    // console.log({
-    //   invoiceNo,
-    //   returnType,
-    //   returnItems,
-    //   exchangeItems,
-    // });
-    // alert("Return saved successfully!");
+  const handleSave = async () => {
+    let totalBill = 0;
+    let amountPaid = 0;
+    if (returnType === "refund") {
+      totalBill = -totalReturn;
+      amountPaid = AmountPaid;
+    }
+    if (returnType === "credit") {
+      totalBill = -totalReturn;
+      amountPaid = 0;
+    }
+    if (returnType === "exchange") {
+      totalBill =
+        totalExchange - totalReturn > 0
+          ? totalExchange - totalReturn - Discount
+          : -Math.abs(totalExchange - totalReturn - Discount);
+      amountPaid =
+        totalExchange - totalReturn > 0 ? AmountPaid : -Math.abs(AmountPaid);
+    }
+    const formData = {
+      saleID: SaleID,
+      customerID: Customer,
+      postingDate: ReturnDate,
+      totalBill: totalBill,
+      amountPaid: amountPaid,
+      adjustment: Discount,
+      RetunrType: returnType,
+      remarks: "",
+      listReturn: returnItems,
+      listExcahnge: items,
+    };
+    const token = localStorage.getItem("token");
+    try {
+      setLoading(true);
+      console.log(formData);
+      const response = await AddSalePosReturn(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        console.log(response.data);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
   const fetchData = (attributeID: string) => {
     if (!attributeID) {
@@ -203,7 +239,7 @@ export default function SaleReturnModule() {
                 attributeID: attribute.attributeID,
                 productName: product.productName,
                 qty: attribute.qty, // start with 1
-                price: attribute.salePrice,
+                rate: attribute.salePrice,
                 varinet: attribute.varientValue,
               },
             ];
@@ -278,8 +314,8 @@ export default function SaleReturnModule() {
     if (!token) return;
 
     const response = await SearchByInvoice(token, ID);
-
     if (response.status === 200 || response.status === 201) {
+      setSaleID(ID);
       const data = response.data as responseList;
       console.log(data);
       setInvocieHistory(data.showHistory || []);
@@ -340,8 +376,32 @@ export default function SaleReturnModule() {
   const totalReturn = returnItems.reduce((total, variant) => {
     return total + variant.qty * variant.rate;
   }, 0);
+  const totalExchange = items.reduce((total, variant) => {
+    return total + variant.qty * variant.rate;
+  }, 0);
+
+  const getRemainingBalance = () => {
+    const returnedTotal = totalReturn;
+    const newTotal = totalExchange;
+
+    if (returnType === "refund") {
+      return -Math.abs(returnedTotal - AmountPaid);
+    }
+
+    if (returnType === "credit") {
+      return returnedTotal;
+    }
+
+    if (returnType === "exchange") {
+      return newTotal - returnedTotal < 0
+        ? newTotal - returnedTotal + AmountPaid
+        : newTotal - returnedTotal - AmountPaid;
+    }
+
+    return 0;
+  };
   return (
-    <div className="min-h-screen  p-8 mt-8">
+    <div className="min-h-screen  p-3 mt-2">
       <h2 className="text-2xl font-semibold text-gray-800">
         Sale Return Management
       </h2>
@@ -827,10 +887,10 @@ export default function SaleReturnModule() {
                           <td className="px-4 py-2 text-center">
                             <input
                               type="number"
-                              value={item.price}
+                              value={item.rate}
                               onChange={(e) => {
                                 const newItems = [...items];
-                                newItems[index].price = Number(e.target.value);
+                                newItems[index].rate = Number(e.target.value);
                                 setItems(newItems);
                               }}
                               className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
@@ -839,7 +899,7 @@ export default function SaleReturnModule() {
                           </td>
                           <td className="px-4 py-2 text-center text-gray-800 font-medium">
                             {(
-                              Number(item.qty || 0) * Number(item.price || 0)
+                              Number(item.qty || 0) * Number(item.rate || 0)
                             ).toFixed(2)}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -943,11 +1003,11 @@ export default function SaleReturnModule() {
                         <td className="px-4 py-2 text-center">
                           <input
                             type="number"
-                            value={newItem.price || ""}
+                            value={newItem.rate || ""}
                             onChange={(e) =>
                               setNewItem({
                                 ...newItem,
-                                price: Number(e.target.value),
+                                rate: Number(e.target.value),
                               })
                             }
                             className="w-24 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
@@ -956,8 +1016,7 @@ export default function SaleReturnModule() {
                         </td>
                         <td className="px-4 py-2 text-center font-medium text-gray-800">
                           {(
-                            Number(newItem.qty || 0) *
-                            Number(newItem.price || 0)
+                            Number(newItem.qty || 0) * Number(newItem.rate || 0)
                           ).toFixed(2)}
                         </td>
                         <td className="px-4 py-2 text-center">
@@ -968,7 +1027,7 @@ export default function SaleReturnModule() {
                                 newItem.attributeID &&
                                 newItem.productName &&
                                 newItem.qty &&
-                                newItem.price &&
+                                newItem.rate &&
                                 newItem.varinet
                               ) {
                                 setItems([...items, newItem]);
@@ -976,7 +1035,7 @@ export default function SaleReturnModule() {
                                   attributeID: "",
                                   productName: "",
                                   qty: 0,
-                                  price: 0,
+                                  rate: 0,
                                   barcode: "",
                                   varinet: "",
                                 });
@@ -993,117 +1052,116 @@ export default function SaleReturnModule() {
                 </div>
               </>
             )}
-
-            {/* Summary */}
-            {/* {returnItems.length > 0 && (
-              <div className="flex justify-between items-center bg-blue-50 rounded-xl p-4 mt-4 shadow-sm">
-                <h3 className="text-gray-700 font-semibold">
-                  Total Return:{" "}
-                  <span className="text-blue-700 font-bold">
-                    Rs {totalReturn}
-                  </span>
-                </h3>
-                {returnType === "exchange" ? (
-                  <h3 className="text-gray-700 font-semibold">
-                    Total Exchange:{" "}
-                    <span className="text-blue-700 font-bold">
-                      Rs {totalExchange}
-                    </span>
-                  </h3>
-                ) : (
-                  <h3 className="text-green-700 font-semibold">
-                    Refund Rs {totalReturn}
-                  </h3>
-                )}
-                <h3 className="text-gray-700 font-semibold">
-                  Total Amount:{" "}
-                  <span className="text-blue-700 font-bold">
-                    Rs {totalReturn - totalExchange}
-                  </span>
-                </h3>
-              </div>
-            )} */}
+            {/* Billing Deatils*/}
             <div className="w-full md:w-full">
               <div className="flex flex-wrap md:flex-nowrap gap-4 mt-3">
                 {/* Amount Paid */}
-                <div className="w-full md:w-1/3">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Amount Paid
-                  </label>
-                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                    <Coins className="text-gray-400 mr-2" size={18} />
-                    <input
-                      type="number"
-                      value={AmountPaid || 0}
-                      onChange={(e) => setAmountPaid(Number(e.target.value))}
-                      name="totalBill"
-                      placeholder="Enter Amount Paid"
-                      className="w-full bg-transparent outline-none text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                {/* Discount */}
-                <div className="w-full md:w-1/3">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Discount
-                  </label>
-                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                    <Coins className="text-gray-400 mr-2" size={18} />
-                    <input
-                      value={Discount || 0}
-                      onChange={(e) => setDiscount(Number(e.target.value))}
-                      type="number"
-                      name="Discount"
-                      placeholder="Enter Discount"
-                      className="w-full bg-transparent outline-none text-gray-900"
-                    />
-                  </div>
-                </div>
+                {returnType !== "credit" && (
+                  <>
+                    <div className="w-full md:w-1/3">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Amount Paid
+                      </label>
+                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                        <Coins className="text-gray-400 mr-2" size={18} />
+                        <input
+                          type="number"
+                          value={AmountPaid || 0}
+                          onChange={(e) =>
+                            setAmountPaid(Number(e.target.value))
+                          }
+                          name="totalBill"
+                          placeholder="Enter Amount Paid"
+                          className="w-full bg-transparent outline-none text-gray-900"
+                        />
+                      </div>
+                    </div>
+                    {returnType === "exchange" && (
+                      <div className="w-full md:w-1/3">
+                        <label className="block text-gray-700 font-medium mb-2">
+                          Discount
+                        </label>
+                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          <Coins className="text-gray-400 mr-2" size={18} />
+                          <input
+                            value={Discount || 0}
+                            onChange={(e) =>
+                              setDiscount(Number(e.target.value))
+                            }
+                            type="number"
+                            name="Discount"
+                            placeholder="Enter Discount"
+                            className="w-full bg-transparent outline-none text-gray-900"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 {/* Total Bill */}
-                <div className="w-full md:w-1/3">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Total Bill
-                  </label>
-                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                    <Coins className="text-gray-400 mr-2" size={18} />
-                    <input
-                      type="number"
-                      name="amountPaid"
-                      value={totalReturn || 0}
-                      readOnly
-                      className="w-full text-center bg-transparent outline-none text-gray-900"
-                    />
+                {returnType === "exchange" && (
+                  <div className="w-full md:w-1/3">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Total Exchange
+                    </label>
+                    <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                      <Coins className="text-gray-400 mr-2" size={18} />
+                      <input
+                        type="number"
+                        name="amountPaid"
+                        value={totalExchange || 0}
+                        readOnly
+                        className="w-full text-center bg-transparent outline-none text-gray-900"
+                      />
+                    </div>
                   </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap md:flex-nowrap gap-4 mt-3">
+              <div className="w-full md:w-1/2">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Total Return
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <Coins className="text-gray-400 mr-2" size={18} />
+                  <input
+                    type="number"
+                    name="amountPaid"
+                    value={totalReturn || 0}
+                    readOnly
+                    className="w-full text-center bg-transparent outline-none text-gray-900"
+                  />
                 </div>
+              </div>
 
-                {/* Remaining Balance */}
-                <div className="w-full md:w-1/3">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Remaining Balance
-                  </label>
-                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                    <Coins className="text-gray-400 mr-2" size={18} />
-                    <input
-                      value={totalReturn - AmountPaid - Discount || 0}
-                      type="number"
-                      name="remainingBalance"
-                      placeholder="Auto Calculated"
-                      readOnly
-                      className="w-full bg-transparent outline-none text-gray-900"
-                    />
-                  </div>
+              {/* Remaining Balance */}
+              <div className="w-full md:w-1/2">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Remaining Balance
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <Coins className="text-gray-400 mr-2" size={18} />
+                  <input
+                    value={getRemainingBalance()}
+                    type="number"
+                    name="remainingBalance"
+                    placeholder="Auto Calculated"
+                    readOnly
+                    className="w-full text-center bg-transparent outline-none text-gray-900"
+                  />
                 </div>
               </div>
             </div>
+            {/*Save Button*/}
             {returnItems.length > 0 && (
               <div className="flex justify-end mt-6">
                 <button
                   onClick={handleSave}
                   className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700"
                 >
-                  Save Return
+                  {!loading ? "Save Return" : "Saving..."}
                 </button>
               </div>
             )}
@@ -1132,6 +1190,7 @@ export default function SaleReturnModule() {
                   <th className="py-2 text-left">Name</th>
                   <th className="text-center">Qty</th>
                   <th className="text-center">Price</th>
+                  <th className="text-center">Sale Date</th>
                   <th className="text-center">Total</th>
                   <th className="text-center">Action</th>
                 </tr>
@@ -1146,6 +1205,9 @@ export default function SaleReturnModule() {
                     <td className="py-2">{item.productName}</td>
                     <td className="text-center">{item.qty}</td>
                     <td className="text-center">{item.rate}</td>
+                    <td className="text-center">
+                      {item.saleDate.split("T")[0]}
+                    </td>
                     <td className="text-center">{item.qty * item.rate}</td>
                     <td className="text-center">
                       <button
