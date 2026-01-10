@@ -51,9 +51,9 @@ export default function ExpenseForm() {
   const [ID, setID] = useState("");
   const [loading, setLoading] = useState(false);
   const [isloading, setIsLoading] = useState(false);
+  const [ShowMessage, setShowMessage] = useState(false);
 
   const [update, setUpdate] = useState(false);
-  const [ShowMessage, setShowMessage] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isDelete, setIsDelete] = useState(false);
 

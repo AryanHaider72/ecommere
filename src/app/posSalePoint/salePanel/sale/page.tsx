@@ -18,6 +18,8 @@ import {
   Notebook,
   Calendar,
   NotepadText,
+  List,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
@@ -41,6 +43,7 @@ import {
   ListItem,
   responseGetSale,
   Sale,
+  SaleItem,
 } from "@/api/types/PosIntegration/Sale/Sale";
 import AddSalePos from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
 import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
@@ -98,7 +101,10 @@ export default function SaleForm() {
 
   const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
   const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
+
+  const [showInvoioceItem, setShowInvoiceItem] = useState(false);
   const [SaleList, setSaleList] = useState<Sale[]>([]);
+  const [SaleListItem, setSaleListItem] = useState<SaleItem[]>([]);
   const [AmountPaid, setAmountPaid] = useState(0);
   const [Discount, setDiscount] = useState(0);
   const [SaleDate, setSaleDate] = useState("");
@@ -334,6 +340,13 @@ export default function SaleForm() {
     }
   };
 
+  const fetchDataItem = (ID: string) => {
+    setShowInvoiceItem(true);
+    const data = SaleList.find((item) => item.saleID === ID);
+    if (data) {
+      setSaleListItem(data.itemList);
+    }
+  };
   const fetchDataForModify = (saleID: string) => {
     const data = SaleList.find((item) => item.saleID === saleID);
     if (data) {
@@ -363,6 +376,92 @@ export default function SaleForm() {
   return (
     <div className="w-full relative">
       <h2 className="text-2xl font-semibold text-gray-800">Sale Management</h2>
+      {showInvoioceItem && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-2xl ">
+            <div className="flex w-full justify-end">
+              <button onClick={() => setShowInvoiceItem(false)}>
+                <X className="text-gray-500 hover:text-red-500" />
+              </button>
+            </div>
+            {/* Header */}
+            <h2 className="text-xl font-semibold text-gray-800">
+              Invoice Items
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full border-collapse bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Barcode
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Product Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Variant
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Unit Price
+                    </th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-200">
+                  {SaleListItem.length > 0 ? (
+                    SaleListItem.map((item, index) => (
+                      <tr
+                        key={item.attributeID}
+                        className="hover:bg-gray-50 transition"
+                      >
+                        <td className="px-4 py-3 text-sm text-gray-800">
+                          {index + 1}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-800">
+                          {item.barcode}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-800">
+                          {item.productName}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                          {item.varinet}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {item.qty}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                          {item.price}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                          {item.qty * item.price}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-sm text-gray-500"
+                      >
+                        No records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
       {AddCustomerForm && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md ">
@@ -492,8 +591,11 @@ export default function SaleForm() {
                       >
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
-                            {item.customer}
+                            {CustomerList.find(
+                              (item2) => item2.customerID === item.customer
+                            )?.customerName || item.customer}
                           </h3>
+
                           <p className="text-gray-600">
                             Sale Date: {item.saleDate}
                           </p>
@@ -508,17 +610,26 @@ export default function SaleForm() {
                           </p>
                         </div>
                         <div className="flex gap-4">
-                          <button
-                            onClick={() => fetchDataForModify(item.saleID)}
-                            className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
-                            title="Edit"
-                          >
-                            <Pencil className="w-5 h-5" />
-                          </button>
+                          {item.itemList.length > 0 ? (
+                            <button
+                              onClick={() => fetchDataItem(item.saleID)}
+                              className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
+                              title="Edit"
+                            >
+                              <List className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              // onClick={() => fetchDataItem(item.saleID)}
+                              className="bg-gray-300 text-white px-3 py-2 rounded-md "
+                              title="Edit"
+                              disabled
+                            >
+                              <List className="w-5 h-5" />
+                            </button>
+                          )}
                           <button
                             // onClick={() => {
-                            //   setID(item.customerID);
-                            //   setIsOpen(true);
                             // }}
                             className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
                             title="Delete"

@@ -183,21 +183,34 @@ export default function SaleReturnModule() {
       saleID: SaleID,
       customerID: Customer,
       postingDate: ReturnDate,
-      totalBill: totalBill,
-      amountPaid: amountPaid,
+      totalBill,
+      amountPaid,
       adjustment: Discount,
       RetunrType: returnType,
       remarks: "",
-      listReturn: returnItems,
-      listExcahnge: items,
+
+      ...(returnType === "exchange"
+        ? {
+            listReturn: returnItems,
+            listExcahnge: items,
+          }
+        : {
+            listReturn: returnItems,
+            listExcahnge: [],
+          }),
     };
     const token = localStorage.getItem("token");
+    console.log(formData);
     try {
       setLoading(true);
-      console.log(formData);
       const response = await AddSalePosReturn(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        console.log(response.data);
+        setAmountPaid(0);
+        setDiscount(0);
+        setItems([]);
+        setReturnItems([]);
+        setInvoiceNo("");
+        setReturnType("refund");
       }
     } finally {
       setLoading(false);
