@@ -17,3 +17,34 @@ export interface listReturn {
   qty: number;
   rate: number;
 }
+
+export interface ReturnSaleItem {
+  detailID: string;
+  attributeID: string;
+  varinet: string;
+  productName: string;
+  qty: number;
+  barcode: string;
+  price: number;
+  staus: string;
+}
+
+// Main sale return record
+export interface ReturnSale {
+  saleID: string;
+  invoiceNo: number;
+  customer: string;
+  saleDate: string;
+  totalBill: number;
+  amountPaid: number;
+  adjustments: number;
+  returnType: string;
+  remarks: string;
+  subList: ReturnSaleItem[];
+}
+
+// API response
+export interface GetReturnResponse {
+  message: string;
+  mainList: ReturnSale[];
+}

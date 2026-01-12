@@ -8,6 +8,7 @@ import Image from "next/image";
 import Footer from "@/component/Footer/page";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDownIcon,
   ArrowRight,
   ChevronDown,
   ChevronLeft,
@@ -15,13 +16,18 @@ import {
   CreditCard,
   Ellipsis,
   Filter,
+  Headphones,
   Heart,
   Info,
+  MessageCircle,
   Minus,
   Plus,
   Search,
+  ShieldCheck,
   ShoppingCart,
   ShoppingCartIcon,
+  Star,
+  Truck,
   X,
 } from "lucide-react";
 import ProductInfoPage from "@/useFullComponent/productInfo/page";
@@ -112,6 +118,25 @@ export default function MainHome() {
   const [cartList, setCartList] = useState<CartData[]>([]);
   const [hasMore, setHasMore] = useState(true);
 
+  const features = [
+    {
+      icon: <Headphones size={32} className="text-primary" />,
+      title: "24/7 Customer Support",
+      description:
+        "Our dedicated support team is available around the clock to assist you whenever you need help.",
+    },
+    {
+      icon: <Truck size={32} className="text-primary" />,
+      title: "Free Shipping",
+      description:
+        "Enjoy free and fast shipping on all orders with no hidden charges.",
+    },
+    {
+      icon: <Star size={32} className="text-primary" />,
+      title: "Premium Quality",
+      description: "We provide top-quality products and highest standards.",
+    },
+  ];
   const toggleAccordion = (index: number) => {
     setActiveIndex(activeIndex === index ? null : index);
   };
@@ -340,6 +365,7 @@ export default function MainHome() {
     const data = response.data as NavbarApiResponse;
     if (response.status === 200 || response.status === 201) {
       setCategories(data?.categoryList ?? []);
+      console.log(data.categoryList);
       setSelectedCategoryId(data.categoryList[0].subCategoryID);
     } else {
       setCategories([]);
@@ -361,7 +387,7 @@ export default function MainHome() {
     setCartList(freshCart);
   };
   return (
-    <div className="w-full min-h-screen bg-gray-100">
+    <div className="w-full min-h-screen bg-white">
       <Navbar
         onPageChange={(page) => console.log("Navigate to:", page)}
         SubCategoryID={(page) => console.log("Navigate to:", page)}
@@ -375,9 +401,33 @@ export default function MainHome() {
         {activePage === "home" && (
           <>
             <HomeCom />
-
+            <div className="w-full py-5 bg-gray-100 border border-gray-200 shadow-md flex justify-center items-center">
+              <div className="w-full max-w-4xl px-6  text-center">
+                <h2 className="text-3xl font-bold">Shop Your Style</h2>
+                <p className=" mb-4">
+                  Find the perfect look for every occasion
+                </p>
+                <div className="flex w-full justify-center gap-10">
+                  {categories.map((item) => (
+                    <div
+                      className="flex flex-col hover:underline transition-transform  cursor-pointer"
+                      onClick={() => setSelectedCategoryId(item.subCategoryID)}
+                      key={item.subCategoryID}
+                    >
+                      <img
+                        src={item?.imageList[0]?.url || "/collection1.jpg"}
+                        className={`w-20 h-20 bg-black rounded-full hover:scale-[1.05] transition-transform`}
+                      />
+                      <p className="mt-2 text-md font-bold ">
+                        {item.subCategoryName}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
             {/* Top Collection Section */}
-            <div className="w-full bg-gray-100 mt-2 mb-2">
+            <div className="w-full  mt-2 mb-2">
               <div className="mx-auto max-w-7xl px-4 ">
                 {/* CATEGORY + FILTER */}
 
@@ -638,7 +688,33 @@ export default function MainHome() {
                 )}
               </div>
             </div>
-            <div className="w-full py-16 my-5 bg-gray-100 border border-gray-200 shadow-md flex justify-center items-center">
+            <section className="py-16 ">
+              <div className="max-w-7xl mx-auto px-4">
+                <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+                  Why Choose Us
+                </h2>
+
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {features.map((feature, index) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition"
+                    >
+                      <div className="flex justify-center mb-4">
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        {feature.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+            <div className="w-full py-16 my-5   flex justify-center items-center">
               <div className="w-full max-w-4xl px-6 text-center">
                 <h2 className="text-3xl font-bold mb-4">BE THE FIRST</h2>
                 <p className="text-gray-700 mb-8">
@@ -1012,6 +1088,20 @@ export default function MainHome() {
           </>
         )}
       </main>
+      <a
+        href="https://wa.me/+923709143934"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 
+                 w-14 h-14 rounded-full 
+                 bg-green-500 text-white 
+                 flex items-center justify-center
+                 shadow-lg hover:bg-green-600 
+                 hover:scale-110 transition-all duration-300"
+        aria-label="Chat on WhatsApp"
+      >
+        <MessageCircle size={28} />
+      </a>
     </div>
   );
 }

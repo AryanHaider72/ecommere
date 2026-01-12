@@ -14,6 +14,7 @@ import {
   Trash,
   Pencil,
   Coins,
+  Calendar,
 } from "lucide-react";
 import LedgerGetArrear from "@/api/lib/PosIntegration/Ledger/LedgerGetArrear/ledgerGetArrear";
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
@@ -24,13 +25,21 @@ import {
 import { useRouter } from "next/navigation";
 import AddLedgerCustomer from "@/api/lib/PosIntegration/Ledger/AddLedger/AddLedger";
 import GetArrear from "@/api/lib/PosIntegration/SupplierLedegr/SupplierArrear";
+import GetledgerCustomer from "@/api/lib/PosIntegration/Ledger/GetCustomerLedger/CustomerLedgerGet";
+import {
+  CustomerLedgerGet,
+  ResponseCustomerLedgerGet,
+} from "@/api/types/PosIntegration/ledger/ledger";
+import Spinner from "@/component/spinner/page";
 
 export default function CustomerledgerForm() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [ledgerloading, setledgerLoading] = useState(false);
   const [customerID, setCustomerID] = useState("");
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
+  const [LedgerList, setLedgerList] = useState<CustomerLedgerGet[]>([]);
   const [arrear, setArrear] = useState(0);
   const [amount, setAmount] = useState(0);
   const [remarks, setremarks] = useState("");
@@ -38,6 +47,8 @@ export default function CustomerledgerForm() {
   const [isloading, setIsLoading] = useState(false);
   const [ResponseBack, setResponseBack] = useState("");
   const [ShowMessage, setShowMessage] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const FetchArrear = async (ID: string) => {
     const token = localStorage.getItem("token");
@@ -97,6 +108,33 @@ export default function CustomerledgerForm() {
     }
   };
 
+  const getLedger = async () => {
+    try {
+      setledgerLoading(true);
+      const token = localStorage.getItem("token");
+      const formData = {
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      };
+      const response = await GetledgerCustomer(
+        formData,
+        String(token),
+        customerID
+      );
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as ResponseCustomerLedgerGet;
+        console.log(data);
+        setLedgerList(data.ledgerList || []);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setledgerLoading(false);
+    }
+  };
+
   useEffect(() => {
     CustomerGet();
   }, []);
@@ -111,11 +149,9 @@ export default function CustomerledgerForm() {
   }, [ShowMessage, ResponseBack]);
   return (
     <div className="w-full relative">
+      <h2 className="text-2xl font-semibold text-gray-800">Customer Ledger</h2>
       <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Customer Ledger
-          </h2>
           <button
             onClick={() => setShowList(!showList)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
@@ -159,28 +195,124 @@ export default function CustomerledgerForm() {
           </div>
         </div>
         {showList ? (
-          <div className="p-4 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">ABC_XYZ</h3>
-              <p className="text-gray-600">Email: abc@email.com</p>
-              <p className="text-gray-600">Remaining Balance: 20,100</p>
+          <>
+            <div className="flex gap-2 w-full">
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mt-1">
+                  Date From
+                </label>
+                <div className="flex items-center  rounded-lg">
+                  <input
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    type="date"
+                    className="text-black w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mt-1">
+                  Date To
+                </label>
+                <div className="flex items-center  rounded-lg ">
+                  <input
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    type="date"
+                    className="text-black w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="flex gap-4">
+            <div className="w-full flex justify-end">
               <button
-                //   onClick={() => FetchData(company.Id)}
-                className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
-                title="Edit"
+                onClick={() => getLedger()}
+                className="flex items-center mt-2 mb-2 gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
               >
-                <Pencil className="w-5 h-5" />
-              </button>
-              <button
-                className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
-                title="Delete"
-              >
-                <Trash className="w-5 h-5" />
+                Search
               </button>
             </div>
-          </div>
+            <>
+              {ledgerloading ? (
+                <div className="flex justify-center py-10">
+                  <Spinner />
+                </div>
+              ) : (
+                <>
+                  {LedgerList.length !== 0 ? (
+                    <>
+                      {LedgerList.map((item) => (
+                        <div
+                          key={item.ledgerID}
+                          className="mt-2 mb-2 p-4 border border-gray-200 rounded-md shadow-sm hover: transition flex justify-between items-center"
+                        >
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {item.postingDate === "" ? (
+                                <></>
+                              ) : (
+                                <>
+                                  {new Date(
+                                    item.postingDate
+                                  ).toLocaleDateString("en-US", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </>
+                              )}
+                            </h3>
+
+                            <p className="text-gray-600 mt-2">
+                              <span className="font-bold">
+                                Running Balance:{" "}
+                              </span>
+                              {item.creditAmount}
+                            </p>
+                            <p className="text-gray-600 mt-2">
+                              <span className="font-bold">Debit Amount: </span>
+                              {item.debitAmount}
+                            </p>
+                            <p className="text-gray-600 mt-2"></p>
+                            <p className="text-gray-600 mt-2">
+                              <span className="font-bold">Description:</span>{" "}
+                              {item.remarks}
+                            </p>
+                          </div>
+                          <div className="flex gap-4">
+                            <button
+                              // onClick={() => {
+                              //   fetchData(item.ledgerID);
+                              //   setID(item.ledgerID);
+                              // }}
+                              className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
+                              title="Edit"
+                            >
+                              <Pencil className="w-5 h-5" />
+                            </button>
+                            <button
+                              // onClick={() => {
+                              //   setIsOpen(true);
+                              //   setID(item.ledgerID);
+                              // }}
+                              className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
+                              title="Delete"
+                            >
+                              <Trash className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                      No Record Found
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          </>
         ) : (
           <div className="space-y-5 mt-2">
             {/* === Row: Customer Name + Arrear === */}

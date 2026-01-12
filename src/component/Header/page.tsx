@@ -59,77 +59,81 @@ const AutoCarousel = () => {
   }, []);
   const onClear = () => {};
   return (
-    <div
-      className="relative w-full overflow-hidden bg-gray-200"
-      onMouseEnter={() => setIsAutoPlaying(false)}
-      onMouseLeave={() => setIsAutoPlaying(true)}
-      role="region"
-      aria-label="Image Carousel"
-    >
-      {categories.map((item) => (
-        <div key={item.userID}>
-          <div className="relative w-full aspect-[16/9] sm:aspect-[25/9]">
-            {item.listImg.map((slide, index) => (
-              <div
-                key={slide.imageID}
-                className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                  index === currentIndex
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-105"
-                }`}
-              >
-                <img
-                  src={slide.url}
-                  alt={"Carousel image ${index + 1}"}
-                  className="w-full h-full object-cover"
-                />
+    <>
+      {" "}
+      <div
+        className="relative w-full overflow-hidden bg-gray-200"
+        onMouseEnter={() => setIsAutoPlaying(false)}
+        onMouseLeave={() => setIsAutoPlaying(true)}
+        role="region"
+        aria-label="Image Carousel"
+      >
+        {categories.map((item) => (
+          <div key={item.userID}>
+            <div className="relative w-full h-[90vh]">
+              {item.listImg.map((slide, index) => (
+                <div
+                  key={slide.imageID}
+                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                    index === currentIndex
+                      ? "opacity-100 scale-100"
+                      : "opacity-0 scale-105"
+                  }`}
+                >
+                  <img
+                    // src={slide.url}
+                    src="/new1.webp"
+                    alt={"Carousel image ${index + 1}"}
+                    className="w-full h-full object-cover"
+                  />
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-black/40" />
+                  {/* Overlay */}
+                  <div className="absolute inset-0 " />
+                </div>
+              ))}
+            </div>
+
+            {/* TEXT CONTENT */}
+            <div className="absolute inset-0 flex items-center mx-5">
+              <div className="px-4 sm:px-10 md:px-16 max-w-xl text-white">
+                {/* <h1
+                  className={`text-lg sm:text-2xl lg:text-4xl font-extrabold leading-tight ${
+                    animateText ? "animate-slide-in" : "opacity-0"
+                  }`}
+                >
+                  {item.headerText}
+                </h1>
+
+                <p
+                  className={`mt-3 text-sm sm:text-base lg:text-lg ${
+                    animateText ? "animate-slide-in" : "opacity-0"
+                  }`}
+                  style={{ animationDelay: "0.15s" }}
+                >
+                  {item.subHeadingText}
+                </p> */}
               </div>
-            ))}
-          </div>
-
-          {/* TEXT CONTENT */}
-          <div className="absolute inset-0 flex items-center mx-5">
-            <div className="px-4 sm:px-10 md:px-16 max-w-xl text-white">
-              <h1
-                className={`text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight ${
-                  animateText ? "animate-slide-in" : "opacity-0"
-                }`}
-              >
-                {item.headerText}
-              </h1>
-
-              <p
-                className={`mt-3 text-sm sm:text-base lg:text-lg ${
-                  animateText ? "animate-slide-in" : "opacity-0"
-                }`}
-                style={{ animationDelay: "0.15s" }}
-              >
-                {item.subHeadingText}
-              </p>
             </div>
           </div>
-        </div>
-      ))}
-      {/* SLIDES */}
+        ))}
+        {/* SLIDES */}
 
-      {/* CONTROLS */}
-      <button
-        onClick={goToPrev}
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 p-3 rounded-full"
-      >
-        ❮
-      </button>
+        {/* CONTROLS */}
+        <button
+          onClick={goToPrev}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 p-3 rounded-full"
+        >
+          ❮
+        </button>
 
-      <button
-        onClick={goToNext}
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 p-3 rounded-full"
-      >
-        ❯
-      </button>
-    </div>
+        <button
+          onClick={goToNext}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 p-3 rounded-full"
+        >
+          ❯
+        </button>
+      </div>
+    </>
   );
 };
 

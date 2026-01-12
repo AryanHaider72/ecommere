@@ -1,14 +1,19 @@
 "use client";
 import {
   ChevronDown,
+  Facebook,
   Heart,
+  Instagram,
   LayoutDashboard,
+  Linkedin,
   Menu,
   Phone,
   Search,
   ShoppingCart,
+  Twitter,
   User,
   X,
+  Youtube,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import SearchCom from "@/useFullComponent/SearchComponent/page";
@@ -141,98 +146,147 @@ export default function Navbar({
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-white p-4 flex justify-around items-center px-6 relative shadow">
-        <a href="/" className="flex items-center">
+      <div className="w-full  flex justify-between text-sm p-2">
+        <div className="flex items-center gap-3 mx-3">
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
+               hover:bg-blue-600 hover:text-white transition-colors duration-300"
+          >
+            <Facebook size={10} />
+          </a>
+
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
+               hover:bg-pink-500 hover:text-white transition-colors duration-300"
+          >
+            <Instagram size={10} />
+          </a>
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold 
+               hover:bg-sky-500 hover:text-white transition-colors duration-300"
+          >
+            <Twitter size={10} />
+          </a>
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
+               hover:bg-blue-700 hover:text-white transition-colors duration-300"
+          >
+            <Linkedin size={10} />
+          </a>
+        </div>
+        <div>
+          <p className="absolute left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
+            Free Shipping on All Orders Above 2000-/ 🚚
+          </p>
+        </div>
+      </div>
+      <nav className="w-full sticky top-0 z-50 bg-white p-4 flex justify-between items-center px-6 relative shadow">
+        <a href="/" className="mx-10 flex items-center">
           {image && (
-            <img src={image} alt="Logo" className="h-8 w-auto object-contain" />
+            <img
+              src={image}
+              alt="Logo"
+              className="h-12 w-auto object-contain"
+            />
           )}
         </a>
 
         {/* --- Main Navbar Links (Desktop) --- */}
-        <div className="hidden md:flex items-center gap-6 relative">
-          <ul className="flex gap-6">
-            {categories.map((category) => (
-              <li key={category.subCategoryID} className="relative group">
-                {/* Category Name */}
-                <button className="text-gray-800 font-bold hover:text-blue-500 transition capitalize">
-                  {category.subCategoryName.toUpperCase()}
-                </button>
 
-                {/* Dropdown */}
-                {category.subCategory?.length > 0 ? (
-                  <div
-                    className="absolute left-0 top-full mt-2 w-64 bg-white shadow-lg rounded-md p-4 
+        <div className=" mx-10 hidden md:flex items-center gap-20 relative">
+          <div className="">
+            <ul className="flex gap-6">
+              {categories.map((category) => (
+                <li key={category.subCategoryID} className="relative group">
+                  {/* Category Name */}
+                  <button className="text-gray-800 font-bold hover:text-blue-500 transition capitalize">
+                    {category.subCategoryName.toUpperCase()}
+                  </button>
+
+                  {/* Dropdown */}
+                  {category.subCategory?.length > 0 ? (
+                    <div
+                      className="absolute left-0 top-full mt-2 w-64 bg-white shadow-lg rounded-md p-4 
                     opacity-0 invisible group-hover:opacity-100 group-hover:visible
                     transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50"
-                  >
-                    <ul className="space-y-2">
-                      {category.subCategory.map((item: any) => (
-                        <li key={item.subCategoryDetailID}>
-                          <a
-                            // href={`/shop?category=${item.subCategoryDetailID}`}
-                            className="flex flex-col gap-2 hover:scale-105 transition-transform duration-300 cursor-pointer"
-                          >
-                            {item.name.toUpperCase()}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <ul className="space-y-2"></ul>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
+                    >
+                      <ul className="space-y-2">
+                        {category.subCategory.map((item: any) => (
+                          <li key={item.subCategoryDetailID}>
+                            <a
+                              // href={`/shop?category=${item.subCategoryDetailID}`}
+                              className="flex flex-col gap-2 hover:scale-105 transition-transform duration-300 cursor-pointer"
+                            >
+                              {item.name.toUpperCase()}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <ul className="space-y-2"></ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        <div className="hidden md:flex items-center gap-6">
-          <div className="flex gap-3">
-            <button className="group" title="Search" onClick={openSearch}>
-              <Search className="w-5 h-5 group-hover:text-blue-500 transition" />
-            </button>
-
-            {isCustomer ? (
-              <button
-                className="group"
-                title="Dashboard"
-                onClick={() => {
-                  onPageChange("login");
-                  router.push("/customer/dashboard");
-                }}
-              >
-                <LayoutDashboard className="w-5 h-5 group-hover:text-blue-500 transition" />
+          <div className="">
+            <div className="flex gap-3">
+              <button className="group" title="Search" onClick={openSearch}>
+                <Search className="w-5 h-5 group-hover:text-blue-500 transition" />
               </button>
-            ) : (
+
+              {isCustomer ? (
+                <button
+                  className="group"
+                  title="Dashboard"
+                  onClick={() => {
+                    onPageChange("login");
+                    router.push("/customer/dashboard");
+                  }}
+                >
+                  <LayoutDashboard className="w-5 h-5 group-hover:text-blue-500 transition" />
+                </button>
+              ) : (
+                <button
+                  className="group"
+                  title="User"
+                  onClick={() => {
+                    onPageChange("login");
+                    router.push("/login");
+                  }}
+                >
+                  <User className="w-5 h-5 group-hover:text-blue-500 transition" />
+                </button>
+              )}
+
               <button
-                className="group"
-                title="User"
-                onClick={() => {
-                  onPageChange("login");
-                  router.push("/login");
-                }}
+                className="relative group"
+                title="Wishlist"
+                onClick={wishlist}
               >
-                <User className="w-5 h-5 group-hover:text-blue-500 transition" />
+                <Heart className="w-5 h-5 group-hover:text-blue-500 transition" />
+                <span className="absolute -top-2 -right-1 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
+                  0
+                </span>
               </button>
-            )}
 
-            <button
-              className="relative group"
-              title="Wishlist"
-              onClick={wishlist}
-            >
-              <Heart className="w-5 h-5 group-hover:text-blue-500 transition" />
-              <span className="absolute -top-2 -right-1 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
-                0
-              </span>
-            </button>
-
-            <button className="relative group" title="Cart" onClick={openCart}>
-              <ShoppingCart className="w-5 h-5 group-hover:text-blue-500 transition" />
-              <span className="absolute -top-2 -right-2 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
-                {cartList.length}
-              </span>
-            </button>
+              <button
+                className="relative group"
+                title="Cart"
+                onClick={openCart}
+              >
+                <ShoppingCart className="w-5 h-5 group-hover:text-blue-500 transition" />
+                <span className="absolute -top-2 -right-2 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">
+                  {cartList.length}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 

@@ -13,6 +13,8 @@ import {
   MapPin,
   Phone,
   Tag,
+  List,
+  Trash,
 } from "lucide-react";
 import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
 import { responseGetSale, Sale } from "@/api/types/PosIntegration/Sale/Sale";
@@ -30,6 +32,13 @@ import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
 import { useRouter } from "next/navigation";
 import AddCustomer from "@/api/lib/PosIntegration/Customer/AddCustomer";
 import AddSalePosReturn from "@/api/lib/PosIntegration/SaleReturn/AddSaleReturn/page";
+import GetSalePosReturn from "@/api/lib/PosIntegration/SaleReturn/GetSaleReturn/SaleReturn";
+import {
+  GetReturnResponse,
+  ReturnSale,
+  ReturnSaleItem,
+} from "@/api/types/PosIntegration/SaleReturn/Return";
+import Spinner from "@/component/spinner/page";
 
 interface SaleItem {
   barcode: string;
@@ -89,6 +98,7 @@ export default function SaleReturnModule() {
   const [AddCustomerForm, setAddCustomerForm] = useState(false);
   const [Customer, setCustomer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isGetData, setIsGetData] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
   const [address, setAddress] = useState("");
@@ -106,7 +116,11 @@ export default function SaleReturnModule() {
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
   const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
   const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
-
+  const [GetDataReturn, setGetDataReturn] = useState<ReturnSale[]>([]);
+  const [GetDataReturnList, setGetDataReturnList] = useState<ReturnSaleItem[]>(
+    []
+  );
+  const [ShowInvoiceItem, setShowInvoiceItem] = useState(false);
   const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
   const [SaleList, setSaleList] = useState<Sale[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -370,6 +384,24 @@ export default function SaleReturnModule() {
     }
   };
 
+  const getSaleReturn = async () => {
+    try {
+      setIsGetData(true);
+      const token = localStorage.getItem("token");
+      const response = await GetSalePosReturn(String(token));
+      const data = response.data as GetReturnResponse;
+      setGetDataReturn(data.mainList);
+    } finally {
+      setIsGetData(false);
+    }
+  };
+  const fetchDataItem = (ID: string) => {
+    setShowInvoiceItem(true);
+    const data = GetDataReturn.find((item) => item.saleID === ID);
+    if (data) {
+      setGetDataReturnList(data.subList);
+    }
+  };
   const saleGet = async () => {
     const token = localStorage.getItem("token");
     const response = await GetSalePos(String(token));
@@ -386,6 +418,7 @@ export default function SaleReturnModule() {
   };
 
   useEffect(() => {
+    getSaleReturn();
     saleGet();
     storesget();
     CustomerGet();
@@ -440,8 +473,93 @@ export default function SaleReturnModule() {
             )}
           </button>
         </div>
+        {ShowInvoiceItem && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+            <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-2xl ">
+              <div className="flex w-full justify-end">
+                <button onClick={() => setShowInvoiceItem(false)}>
+                  <X className="text-gray-500 hover:text-red-500" />
+                </button>
+              </div>
+              {/* Header */}
+              <h2 className="text-xl font-semibold text-gray-800">
+                Invoice Items
+              </h2>
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-full border-collapse bg-white">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        #
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        Barcode
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        Product Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        Variant
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        Quantity
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                        Unit Price
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
 
-        {!showList && (
+                  <tbody className="divide-y divide-gray-200">
+                    {GetDataReturnList.length > 0 ? (
+                      GetDataReturnList.map((item, index) => (
+                        <tr
+                          key={item.attributeID}
+                          className="hover:bg-gray-50 transition"
+                        >
+                          <td className="px-4 py-3 text-sm text-gray-800">
+                            {index + 1}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-800">
+                            {item.barcode}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-800">
+                            {item.productName}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                            {item.varinet}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {item.qty}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                            {item.price}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                            {item.qty * item.price}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-sm text-gray-500"
+                        >
+                          No records found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+        {!showList ? (
           <>
             <div className="p-6  rounded-xl max-w-md">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -1182,6 +1300,82 @@ export default function SaleReturnModule() {
                   {!loading ? "Save Return" : "Saving..."}
                 </button>
               </div>
+            )}
+          </>
+        ) : (
+          <>
+            {isGetData ? (
+              <div className="flex justify-center py-10">
+                <Spinner />
+              </div>
+            ) : (
+              <>
+                {GetDataReturn.length !== 0 ? (
+                  <>
+                    {GetDataReturn.map((item) => (
+                      <div
+                        key={item.saleID}
+                        className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+                      >
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {CustomerList.find(
+                              (item2) => item2.customerID === item.customer
+                            )?.customerName || item.customer}
+                          </h3>
+                          <p className="text-gray-600">
+                            Return Type: {item.returnType}
+                          </p>
+                          <p className="text-gray-600">
+                            Sale Date: {item.saleDate}
+                          </p>
+                          <p className="text-gray-600">
+                            Total Bill: {item.totalBill}
+                          </p>
+                          <p className="text-gray-600">
+                            Adjustment: {item.adjustments}
+                          </p>
+                          <p className="text-gray-600">
+                            Amount Paid: {item.amountPaid}
+                          </p>
+                        </div>
+                        <div className="flex gap-4">
+                          {item.subList.length > 0 ? (
+                            <button
+                              onClick={() => fetchDataItem(item.saleID)}
+                              className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
+                              title="Edit"
+                            >
+                              <List className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              // onClick={() => fetchDataItem(item.saleID)}
+                              className="bg-gray-300 text-white px-3 py-2 rounded-md "
+                              title="Edit"
+                              disabled
+                            >
+                              <List className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button
+                            // onClick={() => {
+                            // }}
+                            className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
+                            title="Delete"
+                          >
+                            <Trash className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+                    No Record Found
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
