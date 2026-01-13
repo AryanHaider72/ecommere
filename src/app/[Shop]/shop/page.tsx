@@ -39,7 +39,6 @@ import {
   getServerCart,
 } from "@/api/lib/Cart/AddCart";
 import CheckAuth from "@/api/authentication/checkAuth";
-import { useRouter } from "next/router";
 import { useParams } from "next/navigation";
 const images = ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"];
 
@@ -50,9 +49,10 @@ type urlTypes = {
   urlID?: string;
   url: string;
 };
+import { useRouter, useSearchParams } from "next/navigation";
 export default function Shop() {
   const params = useParams();
-  const id = params.Shop;
+  const searchParams = useSearchParams();
   const [productID, setProductID] = useState("");
   const [attributeID, setAttributeID] = useState("");
   const [sortType, setSortType] = useState<string | null>(null);
@@ -113,13 +113,21 @@ export default function Shop() {
   }, []);
 
   useEffect(() => {
-    console.log("Params received:", params);
+    const qid = searchParams.get("qID");
+    if (qid) {
+      setSelectedSubCategories((prev) => {
+        if (!prev.includes(qid)) {
+          return [...prev, qid];
+        }
+        return prev;
+      });
+    }
     if (params && !Array.isArray(params.Shop)) {
       setSelectedCategoryId(params.Shop || null);
     } else {
       setSelectedCategoryId(null);
     }
-  }, [params]);
+  }, [params, searchParams]);
 
   const filteredProducts = useMemo(() => {
     if (!selectedCategoryId) return [];
@@ -706,7 +714,7 @@ export default function Shop() {
             className={`
                         fixed top-0 left-0 z-50 h-full 
                         bg-white shadow-xl transform transition-transform duration-500 ease-in-out
-                        w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[30vw] xl:w-[20vw]
+                        w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[35vw] xl:w-[25vw]
                         flex flex-col
                       `}
           >

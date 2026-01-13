@@ -25,6 +25,7 @@ export interface ProductHomePage {
   productID: string;
   categoryID: string;
   subCategoryID: string;
+  subCategoryName: string;
   subCategoryDetailID: string;
   storeSale: string;
   unitID: string;

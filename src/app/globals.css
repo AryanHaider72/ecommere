@@ -4,6 +4,7 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+/* Webkit browsers (Chrome, Safari) */
 
 @theme inline {
   --color-background: var(--background);
@@ -76,4 +77,16 @@ body {
 
 .animate-slide-in {
   animation: slideInLeft 0.8s ease-out forwards;
+}
+div::-webkit-scrollbar {
+  height: 6px; /* height for horizontal scrollbar */
+}
+
+div::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 3px;
+}
+
+div::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }

@@ -6,7 +6,7 @@ import HomeCom from "@/component/Header/page";
 import Link from "next/link";
 import Image from "next/image";
 import Footer from "@/component/Footer/page";
-import { useRouter } from "next/navigation";
+
 import {
   ArrowDownIcon,
   ArrowRight,
@@ -61,6 +61,7 @@ import {
 import GetNavbar from "@/api/lib/HomePage/Navbar/Navbar";
 import CartComponent from "@/useFullComponent/CartComponent/page";
 import CheckAuth from "@/api/authentication/checkAuth";
+import { useRouter } from "next/navigation";
 
 interface Varient {
   varientName: string;
@@ -383,6 +384,7 @@ export default function MainHome() {
     const freshCart = await getServerCart();
     setCartList(freshCart);
   };
+
   return (
     <div className="w-full min-h-screen bg-white">
       <div className="w-full  flex justify-between text-sm p-2">
@@ -418,8 +420,16 @@ export default function MainHome() {
           </a>
         </div>
         <div>
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
+          <h1 className="text-center whitespace-nowrap">
             Free Shipping on All Orders Above 2000-/ 🚚
+          </h1>
+        </div>
+        <div>
+          <h1 className="text-center whitespace-nowrap">
+            Welcome to{" "}
+            <a href="/" className="text-blue-400 underline">
+              Karime
+            </a>
           </h1>
         </div>
       </div>
@@ -438,24 +448,33 @@ export default function MainHome() {
             <HomeCom />
             <div className="w-full py-5 bg-gray-100 border border-gray-200 shadow-md flex justify-center items-center">
               <div className="w-full max-w-4xl px-6  text-center">
-                <h2 className="text-3xl font-bold">Shop Your Style</h2>
+                <h2
+                  className="text-4xl font-bold"
+                  style={{ fontFamily: "var(--font-playfair)" }}
+                >
+                  Shop Your Style
+                </h2>
                 <p className=" mb-4">
                   Find the perfect look for every occasion
                 </p>
                 <div className="flex w-full justify-center gap-10">
                   {categories.map((item) => (
                     <div
-                      className="flex flex-col hover:underline transition-transform  cursor-pointer"
+                      className="flex flex-col hover:underline transition-transform cursor-pointer"
                       onClick={() => {
                         router.push(`${item.subCategoryID}/shop`);
                       }}
                       key={item.subCategoryID}
                     >
                       <img
-                        src={item?.imageList[0]?.url || "/collection1.jpg"}
-                        className={`w-20 h-20 bg-black rounded-full hover:scale-[1.05] transition-transform`}
+                        src={
+                          item?.subCategory?.[0]?.imagelist?.[0]?.url ||
+                          "/collection1.jpg"
+                        }
+                        className="w-30 h-30 bg-black rounded-full hover:scale-[1.05] transition-transform"
                       />
-                      <p className="mt-2 text-md font-bold ">
+
+                      <p className="mt-2 text-md font-bold">
                         {item.subCategoryName}
                       </p>
                     </div>
@@ -464,259 +483,58 @@ export default function MainHome() {
               </div>
             </div>
             {/* Top Collection Section */}
-            <div className="w-full  mt-2 mb-2">
-              <div className="mx-auto max-w-7xl px-4 ">
-                {/* CATEGORY + FILTER */}
+            <div className="w-full mt-4 mb-4">
+              <div className="mx-auto max-w-7xl px-4">
+                {categories.map((category) => (
+                  <div key={category.subCategoryID} className="mb-12">
+                    <h2
+                      className="text-4xl font-semibold mb-6"
+                      style={{ fontFamily: "var(--font-playfair)" }}
+                    >
+                      Shop By {category.subCategoryName}
+                    </h2>
 
-                {/* PRODUCTS GRID */}
-                <div className="m-10">
-                  {(loading1 || productListFeatured.length > 0) && (
-                    <>
-                      <h1 className="text-3xl font-bold mt-2 mb-2 ">
-                        Featured Products
-                      </h1>
-                      <hr className="w-full border-gray-400 mt-2 mb-6 " />
-                      <div className="relative w-full">
-                        {/* LEFT ARROW */}
-                        {productListFeatured.length > 4 && (
-                          <>
-                            <button
-                              onClick={scrollLefts}
-                              className="absolute left-0 top-[42%] z-10 -translate-y-1/2
-                              bg-white/90 hover:bg-white shadow-md rounded-full p-3
-                              hidden md:flex"
-                            >
-                              <ChevronLeft />
-                            </button>
-
-                            {/* RIGHT ARROW */}
-                            <button
-                              onClick={scrollRight}
-                              className="absolute right-0 top-[42%]  z-10 -translate-y-1/2
-                            bg-white/90 hover:bg-white shadow-md rounded-full p-3
-                            hidden md:flex"
-                            >
-                              <ChevronRight />
-                            </button>
-                          </>
-                        )}
-                        {/* CAROUSEL */}
+                    {/* Horizontal scroll cards */}
+                    <div className="flex gap-6 overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+                      {category.subCategory.map((subItem) => (
                         <div
-                          ref={carouselRef}
-                          // onMouseDown={handleMouseDown}
-                          // onMouseLeave={handleMouseLeave}
-                          // onMouseUp={handleMouseUp}
-                          // onMouseMove={handleMouseMove}
-                          className="flex gap-6 overflow-x-auto pb-4 scroll-smooth snap-x snap-mandatory
-                     select-none
-                    [&::-webkit-scrollbar]:hidden"
+                          key={subItem.subCategoryDetailID}
+                          className="mb-10 min-w-[280px] hover:text-gray-800 hover:font-bold flex-shrink-0 flex flex-col items-center bg-white shadow-md rounded-2xl p-4 transition-transform hover:scale-105"
                         >
-                          {loading1
-                            ? Array.from({ length: 8 }).map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="min-w-[240px] snap-start"
-                                >
-                                  <ProductSkeleton />
-                                </div>
-                              ))
-                            : productListFeatured
-                                .filter(
-                                  (item: any) =>
-                                    item.storeSale !== "OfflineStore"
-                                )
-                                .slice(0, 8)
-                                .map((item: any) => (
-                                  <div
-                                    key={item.productID}
-                                    className="min-w-[240px] sm:min-w-[260px] md:min-w-[280px] lg:min-w-[300px]
-                         snap-start bg-white border border-gray-200 rounded-lg shadow-sm
-                         transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-                                  >
-                                    {/* IMAGE */}
-                                    <div className="relative w-full h-[380px] overflow-hidden rounded-t-lg group">
-                                      <Image
-                                        src={
-                                          item.images[0]?.url ||
-                                          "/placeholder.png"
-                                        }
-                                        alt={item.productName}
-                                        fill
-                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                      />
-
-                                      <div className="absolute top-3 right-3 flex flex-col gap-2">
-                                        <button className="bg-white/70 p-2 rounded-full shadow hover:bg-red-100">
-                                          <Heart className="w-5 h-5 text-gray-700" />
-                                        </button>
-
-                                        {/* <button
-                                          className="bg-white/70 p-2 rounded-full shadow hover:bg-green-100
-                                     opacity-0 translate-y-2 group-hover:opacity-100
-                                     group-hover:translate-y-0 transition-all duration-300"
-                                        >
-                                          <ShoppingCart className="w-5 h-5 text-gray-700" />
-                                        </button> */}
-
-                                        <button
-                                          onClick={() => {
-                                            setProductPage(true);
-                                            fetchData2(item.productID);
-                                          }}
-                                          className="bg-white/70 p-2 rounded-full shadow hover:bg-blue-100
-                               opacity-0 translate-y-2 group-hover:opacity-100
-                               group-hover:translate-y-0 transition-all duration-300 delay-100"
-                                        >
-                                          <Search className="w-5 h-5 text-gray-700" />
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* CONTENT */}
-                                    <div className="px-5 pb-5">
-                                      <h5 className="text-lg font-semibold mt-3 text-gray-900">
-                                        {item.productName}
-                                      </h5>
-
-                                      <p className="text-gray-500 text-sm line-clamp-2">
-                                        {item.description}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                        </div>
-                      </div>
-
-                      {/* LOAD MORE */}
-                      {/* <div className="w-full flex flex-col justify-center items-center mt-8">
-                        <button
-                          // onClick={handleLoadMore}
-                          className="px-6 mt-1 py-3 bg-black text-white rounded-md shadow-md hover:bg-gray-900 text-lg"
-                        >
-                          {loading1 ? "Loading..." : "Load More"}
-                        </button>
-                      </div> */}
-                    </>
-                  )}
-                </div>
-
-                {loading1 || filteredProducts.length > 0 ? (
-                  <>
-                    <hr className="w-full border-gray-400 mt-2 mb-6" />
-
-                    {/* GRID */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {loading1
-                        ? Array.from({ length: 8 }).map((_, i) => (
-                            <ProductSkeleton key={i} />
-                          ))
-                        : filteredProducts.map((item) => (
-                            <div
-                              key={item.productID}
-                              onClick={() =>
-                                router.push(`/shop/${item.productID}`)
-                              }
-                              className="bg-white border border-gray-200 rounded-lg shadow-sm
-                                transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-                            >
-                              {/* IMAGE */}
-                              <div className="relative w-full h-[380px] overflow-hidden rounded-t-lg group">
-                                <Image
-                                  src={
-                                    item.images[0]?.url || "/placeholder.png"
-                                  }
-                                  alt={item.productName}
-                                  fill
-                                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                />
-
-                                <div className="absolute top-3 right-3 flex flex-col gap-2">
-                                  <button className="bg-white/70 p-2 rounded-full shadow hover:bg-red-100">
-                                    <Heart className="w-5 h-5 text-gray-700" />
-                                  </button>
-
-                                  {/* <button
-                                      className="bg-white/70 p-2 rounded-full shadow hover:bg-green-100
-                                      opacity-0 translate-y-2 group-hover:opacity-100
-                                      group-hover:translate-y-0 transition-all duration-300"
-                                    >
-                                      <ShoppingCart className="w-5 h-5 text-gray-700" />
-                                    </button> */}
-
-                                  <button
-                                    onClick={() => {
-                                      setProductPage(true);
-                                      fetchData(item.productID);
-                                    }}
-                                    className="bg-white/70 p-2 rounded-full shadow hover:bg-blue-100
-                                      opacity-0 translate-y-2 group-hover:opacity-100
-                                      group-hover:translate-y-0 transition-all duration-300 delay-100"
-                                  >
-                                    <Info className="w-5 h-5 text-gray-700" />
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* CONTENT */}
-                              <div className="px-5 pb-2">
-                                <h5 className="text-lg font-semibold mt-3 text-gray-900">
-                                  {item.productName}
-                                </h5>
-
-                                <p className="text-gray-500 text-sm line-clamp-2">
-                                  {item.description}
-                                </p>
-                                <p className="text-lg font-semibold mt-3 text-gray-900">
-                                  <span className="text-gray-900">
-                                    Rs.{" "}
-                                    {Number(
-                                      item.variants[0].variantValues[0]
-                                        .salePrice
-                                    ) -
-                                      (Number(
-                                        item.variants[0].variantValues[0]
-                                          .salePrice
-                                      ) *
-                                        Number(item.discount)) /
-                                        100}{" "}
-                                    <del className="text-gray-500 ml-2 text-base font-normal">
-                                      Rs.{" "}
-                                      {
-                                        item.variants[0].variantValues[0]
-                                          .salePrice
-                                      }
-                                    </del>
-                                  </span>
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                    </div>
-
-                    {/* LOAD MORE */}
-                    {productList.length < totalCount && (
-                      <div className="w-full flex justify-center mt-8">
-                        {loading1 ? (
-                          <Spinner />
-                        ) : (
-                          <button
-                            onClick={() => getProduct()}
-                            className="px-6 py-3 bg-black text-white rounded-md shadow-md hover:bg-gray-900 text-lg"
+                          <Link
+                            href={{
+                              pathname: `/${category.subCategoryID}/shop`,
+                              query: { qID: subItem.subCategoryDetailID },
+                            }}
                           >
-                            Load More
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <p>No products found for selected filters.</p>
-                )}
+                            <div className="card">
+                              <img
+                                src={
+                                  subItem?.imagelist?.[0]?.url ||
+                                  "/collection1.jpg"
+                                }
+                                alt={subItem.name}
+                                className="w-64 h-64 md:w-72 md:h-72 object-cover rounded-2xl"
+                              />
+                              <p className="mt-3 text-lg font-medium text-center">
+                                {subItem.name}
+                              </p>
+                            </div>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
             <section className="py-16 ">
               <div className="max-w-7xl mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+                <h2
+                  className="text-3xl font-bold text-center text-gray-900 mb-12"
+                  style={{ fontFamily: "var(--font-playfair)" }}
+                >
                   Why Choose Us
                 </h2>
 
@@ -724,7 +542,7 @@ export default function MainHome() {
                   {features.map((feature, index) => (
                     <div
                       key={index}
-                      className="bg-white rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition"
+                      className="bg-gray-50 rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition"
                     >
                       <div className="flex justify-center mb-4">
                         {feature.icon}
@@ -742,7 +560,12 @@ export default function MainHome() {
             </section>
             <div className="w-full py-16 my-5   flex justify-center items-center">
               <div className="w-full max-w-4xl px-6 text-center">
-                <h2 className="text-3xl font-bold mb-4">BE THE FIRST</h2>
+                <h2
+                  className="text-3xl font-bold mb-4"
+                  style={{ fontFamily: "var(--font-playfair)" }}
+                >
+                  BE THE FIRST
+                </h2>
                 <p className="text-gray-700 mb-8">
                   New arrivals. Exclusive previews. First access to sales. Sign
                   up to stay in the know.

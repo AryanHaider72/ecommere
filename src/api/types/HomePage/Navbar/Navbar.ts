@@ -1,13 +1,13 @@
 export interface SubCategoryDetail {
   subCategoryDetailID: string;
   name: string;
+  imagelist: imageListCategory[];
 }
 
 export interface Category {
   subCategoryID: string;
   subCategoryName: string;
   subCategory: SubCategoryDetail[];
-  imageList: imageListCategory[];
 }
 
 export interface NavbarApiResponse {
