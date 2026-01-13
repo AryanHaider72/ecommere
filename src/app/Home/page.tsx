@@ -15,10 +15,13 @@ import {
   ChevronRight,
   CreditCard,
   Ellipsis,
+  Facebook,
   Filter,
   Headphones,
   Heart,
   Info,
+  Instagram,
+  Linkedin,
   MessageCircle,
   Minus,
   Plus,
@@ -28,6 +31,7 @@ import {
   ShoppingCartIcon,
   Star,
   Truck,
+  Twitter,
   X,
 } from "lucide-react";
 import ProductInfoPage from "@/useFullComponent/productInfo/page";
@@ -35,7 +39,6 @@ import ProductInfoPage from "@/useFullComponent/productInfo/page";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import {
   GetProductHomeApiResponse,
-  ProductHome,
   ProductHomePage,
 } from "@/api/types/HomePage/Product/product";
 import { Product } from "@/api/types/product/getProduct";
@@ -100,20 +103,20 @@ export default function MainHome() {
   const [loading2, setLoading2] = useState(false);
   const [productName, setProductName] = useState("");
   const [discount, setDiscount] = useState("");
-  const [NumberofProduct, setNumberofProduct] = useState(0);
-  const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [listVarient, setListVarient] = useState<Varient[]>([]);
+  const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
+  const [NumberofProduct, setNumberofProduct] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [CartData, setCartData] = useState<CartData[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
 
   const [totalCount, setTotalCount] = useState(0);
   const [productList, setProductList] = useState<ProductHomePage[]>([]);
-  const [productListFeatured, setProductListFeatured] = useState<ProductHome[]>(
-    []
-  );
-  const [listVarient, setListVarient] = useState<Varient[]>([]);
-  const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
+  const [productListFeatured, setProductListFeatured] = useState<
+    ProductHomePage[]
+  >([]);
   const [imageUrl, setImageUrl] = useState("");
   const [cartList, setCartList] = useState<CartData[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -160,15 +163,9 @@ export default function MainHome() {
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as GetProductHomeApiResponse;
-
-        if (pageIndex >= data.productList.length) {
-          setHasMore(false);
-          return;
-        }
+        console.log(data.productList);
+        setProductList(data.productList);
         setTotalCount(data.totalCount);
-        const currentPage = data.productList[pageIndex];
-        setProductList((prev) => [...prev, ...currentPage.products]);
-        setPageIndex((prev) => prev + 1);
       }
     } catch (error) {
       console.error("Failed to fetch products", error);
@@ -235,8 +232,8 @@ export default function MainHome() {
   };
 
   const fetchData2 = (productID: string) => {
-    const data = productListFeatured[0].products.find(
-      (item) => item.productID === productID
+    const data = productListFeatured.find(
+      (item: any) => item.productID === productID
     );
     if (data) {
       setProductName(data.productName);
@@ -244,7 +241,7 @@ export default function MainHome() {
       setDescription(data.description);
       setImageUrl(data.images[0].url);
       setListImages({
-        listImage: data.images.map((img) =>
+        listImage: data.images.map((img: any) =>
           img.urlID ? { urlID: img.urlID, url: img.url } : { url: img.url }
         ),
       });
@@ -254,9 +251,9 @@ export default function MainHome() {
         setAmount(String(data.variants[0].variantValues[0].salePrice));
       }
       setListVarient(
-        data.variants.map((variant) => ({
+        data.variants.map((variant: any) => ({
           varientName: variant.variantName,
-          varientAttributes: variant.variantValues.map((attr) => ({
+          varientAttributes: variant.variantValues.map((attr: any) => ({
             varientValue: attr.varientValue,
             qty: attr.qty,
             costPrice: attr.costPrice,
@@ -322,42 +319,42 @@ export default function MainHome() {
     }
   };
 
-  const addToCart = async (ID: string) => {
-    try {
-      const data = productList.find((item) => item.productID === ID);
-      if (!data) return;
+  // const addToCart = async (ID: string) => {
+  //   try {
+  //     const data = productList.find((item) => item.productID === ID);
+  //     if (!data) return;
 
-      const price =
-        data.variants[0].variantValues[0].salePrice === 0
-          ? data.variants[0].variantValues[1].salePrice
-          : data.variants[0].variantValues[0].salePrice;
+  //     const price =
+  //       data.variants[0].variantValues[0].salePrice === 0
+  //         ? data.variants[0].variantValues[1].salePrice
+  //         : data.variants[0].variantValues[0].salePrice;
 
-      const newItem: CartData = {
-        productID: data.productID,
-        productName: data.productName,
-        weight: data.weight,
-        storeID: data.storeID,
-        storeName: data.storeName,
-        description: data.description,
-        quantity: 1,
-        discount: data.discount,
-        salePrice: price,
-        image: data.images?.[0]?.url,
-      };
+  //     const newItem: CartData = {
+  //       productID: data.productID,
+  //       productName: data.productName,
+  //       weight: data.weight,
+  //       storeID: data.storeID,
+  //       storeName: data.storeName,
+  //       description: data.description,
+  //       quantity: 1,
+  //       discount: data.discount,
+  //       salePrice: price,
+  //       image: data.images?.[0]?.url,
+  //     };
 
-      const currentCart = await getServerCart();
-      const updatedCart = [...currentCart, newItem];
+  //     const currentCart = await getServerCart();
+  //     const updatedCart = [...currentCart, newItem];
 
-      const res = await addToServerCart(updatedCart);
-      if (res) {
-        checkAuth(ID);
-      }
-      serverCartData();
-      setCartList(updatedCart);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  //     const res = await addToServerCart(updatedCart);
+  //     if (res) {
+  //       checkAuth(ID);
+  //     }
+  //     serverCartData();
+  //     setCartList(updatedCart);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
 
   const handleShowCategories = async () => {
     const token = localStorage.getItem("token");
@@ -388,6 +385,44 @@ export default function MainHome() {
   };
   return (
     <div className="w-full min-h-screen bg-white">
+      <div className="w-full  flex justify-between text-sm p-2">
+        <div className="flex items-center gap-3 mx-3">
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
+               hover:bg-blue-600 hover:text-white transition-colors duration-300"
+          >
+            <Facebook size={10} />
+          </a>
+
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
+               hover:bg-pink-500 hover:text-white transition-colors duration-300"
+          >
+            <Instagram size={10} />
+          </a>
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold 
+               hover:bg-sky-500 hover:text-white transition-colors duration-300"
+          >
+            <Twitter size={10} />
+          </a>
+          <a
+            href="#"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
+               hover:bg-blue-700 hover:text-white transition-colors duration-300"
+          >
+            <Linkedin size={10} />
+          </a>
+        </div>
+        <div>
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
+            Free Shipping on All Orders Above 2000-/ 🚚
+          </h1>
+        </div>
+      </div>
       <Navbar
         onPageChange={(page) => console.log("Navigate to:", page)}
         SubCategoryID={(page) => console.log("Navigate to:", page)}
@@ -411,7 +446,9 @@ export default function MainHome() {
                   {categories.map((item) => (
                     <div
                       className="flex flex-col hover:underline transition-transform  cursor-pointer"
-                      onClick={() => setSelectedCategoryId(item.subCategoryID)}
+                      onClick={() => {
+                        router.push(`${item.subCategoryID}/shop`);
+                      }}
                       key={item.subCategoryID}
                     >
                       <img
@@ -483,12 +520,13 @@ export default function MainHome() {
                                   <ProductSkeleton />
                                 </div>
                               ))
-                            : productListFeatured[0].products
+                            : productListFeatured
                                 .filter(
-                                  (item) => item.storeSale !== "OfflineStore"
+                                  (item: any) =>
+                                    item.storeSale !== "OfflineStore"
                                 )
                                 .slice(0, 8)
-                                .map((item) => (
+                                .map((item: any) => (
                                   <div
                                     key={item.productID}
                                     className="min-w-[240px] sm:min-w-[260px] md:min-w-[280px] lg:min-w-[300px]
@@ -562,18 +600,6 @@ export default function MainHome() {
                   )}
                 </div>
 
-                <div className="flex flex-col md:flex-row mt-4 mb-6 gap-3 w-full">
-                  <h1 className="text-3xl font-bold mt-2 mb-2">
-                    Other Products
-                  </h1>
-                  <button
-                    title="filter"
-                    onClick={() => setFilters(true)}
-                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-600 shadow-sm transition-all duration-300"
-                  >
-                    <Filter className="w-5 h-5" />
-                  </button>
-                </div>
                 {loading1 || filteredProducts.length > 0 ? (
                   <>
                     <hr className="w-full border-gray-400 mt-2 mb-6" />
@@ -930,162 +956,6 @@ export default function MainHome() {
               </div>
             </div>
           </div>
-        )}
-
-        {Filters && (
-          <>
-            {/* Overlay */}
-            <div
-              className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300"
-              onClick={() => setFilters(false)}
-            ></div>
-
-            {/* Drawer */}
-            <div
-              className={`
-                fixed top-0 left-0 z-50 h-full 
-                bg-white shadow-xl transform transition-transform duration-500 ease-in-out
-                w-[80vw] sm:w-[60vw] md:w-[45vw] lg:w-[30vw] xl:w-[20vw]
-                flex flex-col
-              `}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-800">Filters</h2>
-                <button
-                  title="Close"
-                  className="text-gray-500 hover:text-red-500 transition"
-                  onClick={() => setFilters(false)}
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="w-full h-[100vh] flex flex-col p-5 rounded-2xl">
-                  <h1 className="text-3xl font-bold mb-4 text-gray-900">
-                    Filter & Sorting
-                  </h1>
-
-                  <div className="space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300">
-                    {/* === Main Categories Accordion === */}
-                    <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
-                      <button
-                        type="button"
-                        onClick={() => toggleAccordion(0)}
-                        className="flex items-center justify-between w-full p-4 font-semibold text-gray-800 hover:bg-gray-50 transition-all"
-                      >
-                        Categories
-                        <ChevronDown
-                          className={`w-5 h-5 transition-transform duration-300 ${
-                            activeIndex === 0 ? "rotate-180" : ""
-                          }`}
-                        />
-                      </button>
-                      {activeIndex === 0 && (
-                        <div className="p-4 border-t border-gray-100">
-                          {categories.map((cat) => (
-                            <label
-                              key={cat.subCategoryID}
-                              className="flex items-center gap-3 mb-2"
-                            >
-                              <input
-                                type="radio"
-                                name="category"
-                                checked={
-                                  selectedCategoryId === cat.subCategoryID
-                                }
-                                onChange={() =>
-                                  setSelectedCategoryId(cat.subCategoryID)
-                                }
-                                className="w-5 h-5 rounded accent-gray-900"
-                              />
-                              <span className="text-lg">
-                                {cat.subCategoryName}
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* === Subcategories Accordion === */}
-                    {/* {selectedSubCategories.length > 0 && ( */}
-                    <>
-                      {selectedCategoryId &&
-                        (() => {
-                          const selectedCategory = categories.find(
-                            (cat) => cat.subCategoryID === selectedCategoryId
-                          );
-
-                          if (
-                            !selectedCategory ||
-                            selectedCategory.subCategory.length === 0
-                          ) {
-                            return null; // don't render if no subcategories
-                          }
-
-                          return (
-                            <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
-                              <button
-                                type="button"
-                                onClick={() => toggleAccordion(1)}
-                                className="flex items-center justify-between w-full p-4 font-semibold text-gray-800 hover:bg-gray-50 transition-all"
-                              >
-                                Sub Categories
-                                <ChevronDown
-                                  className={`w-5 h-5 transition-transform duration-300 ${
-                                    activeIndex === 1 ? "rotate-180" : ""
-                                  }`}
-                                />
-                              </button>
-                              {activeIndex === 1 && (
-                                <div className="p-4 border-t border-gray-100 grid grid-cols-2 gap-2">
-                                  {selectedCategory.subCategory.map((sub) => (
-                                    <label
-                                      key={sub.subCategoryDetailID}
-                                      className="flex items-center gap-3"
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedSubCategories.includes(
-                                          sub.subCategoryDetailID
-                                        )}
-                                        onChange={() =>
-                                          handleSubCategoryChange(
-                                            sub.subCategoryDetailID
-                                          )
-                                        }
-                                        className="w-5 h-5 rounded accent-gray-900"
-                                      />
-                                      <span className="text-lg">
-                                        {sub.name}
-                                      </span>
-                                    </label>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                    </>
-
-                    {/* )} */}
-                  </div>
-
-                  {/* Apply Button */}
-                  <button
-                    // onClick={applyFilters}
-                    className="mt-4 flex items-center justify-between px-4 py-3 bg-black text-white rounded-lg hover:bg-white hover:text-black transition-all duration-300"
-                  >
-                    Apply
-                    <ArrowRight />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
         )}
       </main>
       <a

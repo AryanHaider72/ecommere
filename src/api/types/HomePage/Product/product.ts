@@ -49,10 +49,10 @@ export interface ProductHomePage {
 export interface GetProductHomeApiResponse {
   message: string;
   totalCount: number;
-  productList: ProductHome[];
+  productList: ProductHomePage[];
 }
 
-export interface ProductHome {
-  range: string;
-  products: ProductHomePage[];
-}
+// export interface ProductHome {
+//   range: string;
+//   products: [];
+// }

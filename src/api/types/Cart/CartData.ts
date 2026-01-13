@@ -5,7 +5,8 @@ export interface CartData {
   storeID: string;
   productID: string;
   weight: number;
-
+  varinetID: string;
+  varinetName: string;
   storeName: string;
   productName: string;
   description: string;

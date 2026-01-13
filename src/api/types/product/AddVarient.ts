@@ -24,6 +24,7 @@ export interface Varient {
   varientAttributes: VarientAttribute[];
 }
 export interface VarientAttribute {
+  attributeID: string;
   varientValue: string;
   qty: number;
   costPrice: number;

@@ -146,44 +146,6 @@ export default function Navbar({
 
   return (
     <>
-      <div className="w-full  flex justify-between text-sm p-2">
-        <div className="flex items-center gap-3 mx-3">
-          <a
-            href="#"
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
-               hover:bg-blue-600 hover:text-white transition-colors duration-300"
-          >
-            <Facebook size={10} />
-          </a>
-
-          <a
-            href="#"
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
-               hover:bg-pink-500 hover:text-white transition-colors duration-300"
-          >
-            <Instagram size={10} />
-          </a>
-          <a
-            href="#"
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold 
-               hover:bg-sky-500 hover:text-white transition-colors duration-300"
-          >
-            <Twitter size={10} />
-          </a>
-          <a
-            href="#"
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-200 text-black font-bold  
-               hover:bg-blue-700 hover:text-white transition-colors duration-300"
-          >
-            <Linkedin size={10} />
-          </a>
-        </div>
-        <div>
-          <p className="absolute left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
-            Free Shipping on All Orders Above 2000-/ 🚚
-          </p>
-        </div>
-      </div>
       <nav className="w-full sticky top-0 z-50 bg-white p-4 flex justify-between items-center px-6 relative shadow">
         <a href="/" className="mx-10 flex items-center">
           {image && (

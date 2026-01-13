@@ -161,14 +161,19 @@ export default function CartComponent({
                       <div>
                         <img src={item.image} width={80} height={50} />
                       </div>
-                      <div className="ml-4 flex flex-col">
-                        <h3 className="text-lg mt-2">{item.productName}</h3>
-                        {/* <p className="text-gray-500">{item.description}</p> */}
-                        <p className="text-gray-500">
-                          {item.salePrice -
-                            (item.salePrice * item.discount) / 100}
-                          -/
+                      <div className="flex flex-col">
+                        <p className="text-gray-600 mx-3 text-sm">
+                          {item.varinetName}
                         </p>
+                        <div className="ml-4 flex flex-col">
+                          <h3 className="text-lg mt-2">{item.productName}</h3>
+                          {/* <p className="text-gray-500">{item.description}</p> */}
+                          <p className="text-gray-500">
+                            {item.salePrice -
+                              (item.salePrice * item.discount) / 100}
+                            -/
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-col justify-between items-end">
