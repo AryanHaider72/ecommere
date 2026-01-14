@@ -81,8 +81,8 @@ const AutoCarousel = () => {
                   }`}
                 >
                   <img
-                    // src={slide.url}
-                    src="/new1.webp"
+                    src={slide.url}
+                    // src="/new1.webp"
                     alt={"Carousel image ${index + 1}"}
                     className="w-full h-full object-cover"
                   />

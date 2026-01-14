@@ -76,6 +76,7 @@ export default function Shop() {
   const [listVarient, setListVarient] = useState<Varient[]>([]);
   const [listImages, setListImages] = useState<ImagesList>({ listImage: [] });
   const [loading1, setLoading1] = useState(false);
+  const [selectedAttributeID, setSelectedAttributeID] = useState("");
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>(
     []
   );
@@ -196,9 +197,11 @@ export default function Shop() {
       const allVariantValues = data.flatMap((product) =>
         product.variants.flatMap((variant) => variant.variantValues)
       );
+      if (allVariantValues) {
+        setSelectedAttributeID(allVariantValues[0].attributeID);
+      }
 
       const allImages = data.find((item) => item.productID === productID);
-
       setImageUrl(allImages?.images[0].url || "");
       const firstAvailableVariant = allVariantValues.find((v) => v.qty > 0);
       if (firstAvailableVariant) {
@@ -253,7 +256,7 @@ export default function Shop() {
       let varientValue = "";
       for (const variant of data.variants) {
         const foundAttr = variant.variantValues.find(
-          (attr) => attr.attributeID === attributeID
+          (attr) => attr.attributeID === selectedAttributeID
         );
         if (foundAttr) {
           selectedVariantAttribute = foundAttr;
@@ -274,8 +277,8 @@ export default function Shop() {
         storeID: data.storeID,
         storeName: data.storeName,
         description: data.description,
-        quantity: 1,
-        varinetID: attributeID,
+        quantity: NumberofProduct,
+        varinetID: selectedAttributeID,
         varinetName: varientValue,
         discount: data.discount,
         salePrice: price,
@@ -417,96 +420,90 @@ export default function Shop() {
               </div>
             </div>
 
-            {loading1 || filteredProducts.length > 0 ? (
-              <>
-                {/* GRID */}
+            {/* PRODUCT GRID */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {loading1 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {loading1
-                    ? Array.from({ length: 8 }).map((_, i) => (
-                        <ProductSkeleton key={i} />
-                      ))
-                    : filteredProducts.map((item) => (
-                        <div
-                          key={item.productID}
-                          // onClick={() => router.push(`/shop/${item.productID}`)}
-                          className="
-                          group bg-white rounded-2xl border border-gray-200
-                          overflow-hidden cursor-pointer
-                          transition-all duration-300
-                          hover:shadow-xl hover:-translate-y-1
-                        "
-                        >
-                          {/* IMAGE */}
-                          <div className="relative w-full h-[380px] overflow-hidden rounded-t-lg group">
-                            <Image
-                              src={item.images[0]?.url || "/placeholder.png"}
-                              alt={item.productName}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-
-                            <div className="absolute top-3 right-3 flex flex-col gap-2">
-                              <button className="bg-white/70 p-2 rounded-full shadow hover:bg-red-100">
-                                <Heart className="w-5 h-5 text-gray-700" />
-                              </button>
-
-                              {/* <button
-                                      className="bg-white/70 p-2 rounded-full shadow hover:bg-green-100
-                                      opacity-0 translate-y-2 group-hover:opacity-100
-                                      group-hover:translate-y-0 transition-all duration-300"
-                                    >
-                                      <ShoppingCart className="w-5 h-5 text-gray-700" />
-                                    </button> */}
-
-                              <button
-                                onClick={() => {
-                                  setProductPage(true);
-                                  setProductID(item.productID);
-                                  // fetchData(item.productID);
-                                }}
-                                className="bg-white/70 p-2 rounded-full shadow hover:bg-blue-100
-                                      opacity-0 translate-y-2 group-hover:opacity-100
-                                      group-hover:translate-y-0 transition-all duration-300 delay-100"
-                              >
-                                <Info className="w-5 h-5 text-gray-700" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* CONTENT */}
-                          <div className="px-5 pb-2">
-                            <h5 className="text-lg font-semibold mt-3 text-gray-900">
-                              {item.productName}
-                            </h5>
-
-                            <p className="text-gray-500 text-sm line-clamp-2">
-                              {item.description}
-                            </p>
-                            <p className="text-lg font-semibold mt-3 text-gray-900">
-                              <span className="text-gray-900">
-                                Rs.{" "}
-                                {Number(
-                                  item.variants[0].variantValues[0].salePrice
-                                ) -
-                                  (Number(
-                                    item.variants[0].variantValues[0].salePrice
-                                  ) *
-                                    Number(item.discount)) /
-                                    100}{" "}
-                                <del className="text-gray-500 ml-2 text-base font-normal">
-                                  Rs.{" "}
-                                  {item.variants[0].variantValues[0].salePrice}
-                                </del>
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <ProductSkeleton key={i} />
+                  ))}
                 </div>
-              </>
-            ) : (
-              <p>No products found for selected filters.</p>
-            )}
+              ) : filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {filteredProducts.map((item) => (
+                    <div
+                      key={item.productID}
+                      className="
+                    group bg-white rounded-2xl border border-gray-200
+                    overflow-hidden flex flex-col cursor-pointer
+                    transition-all duration-300
+                    hover:shadow-xl hover:-translate-y-1
+                  "
+                    >
+                      {/* IMAGE */}
+                      <div className="relative w-full aspect-[3/4] overflow-hidden">
+                        <Image
+                          src={item.images[0]?.url || "/placeholder.png"}
+                          alt={item.productName}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+
+                        {/* ACTION BUTTONS */}
+                        <div className="absolute top-3 right-3 flex flex-col gap-2">
+                          <button className="bg-white/80 p-2 rounded-full shadow hover:bg-red-100">
+                            <Heart className="w-5 h-5 text-gray-700" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setProductPage(true);
+                              setProductID(item.productID);
+                            }}
+                            className="
+                bg-white/80 p-2 rounded-full shadow hover:bg-blue-100
+                opacity-0 translate-y-2
+                group-hover:opacity-100 group-hover:translate-y-0
+                transition-all duration-300
+              "
+                          >
+                            <Info className="w-5 h-5 text-gray-700" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* CONTENT */}
+                      <div className="px-5 py-4 flex flex-col flex-1">
+                        <h5 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                          {item.productName}
+                        </h5>
+
+                        <p className="text-gray-500 text-sm line-clamp-2 mt-1 flex-1">
+                          {item.description}
+                        </p>
+
+                        <p className="text-lg font-semibold mt-3 text-gray-900">
+                          Rs.{" "}
+                          {Number(item.variants[0].variantValues[0].salePrice) -
+                            (Number(
+                              item.variants[0].variantValues[0].salePrice
+                            ) *
+                              Number(item.discount)) /
+                              100}
+                          <del className="text-gray-500 ml-2 text-base font-normal">
+                            Rs. {item.variants[0].variantValues[0].salePrice}
+                          </del>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-20">
+                  No products found for selected filters.
+                </p>
+              )}
+            </div>
           </div>
         </div>
         {productPage && (
@@ -611,45 +608,43 @@ export default function Shop() {
                   <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
                     {item.description}
                   </p>
-                  <div className="flex flex-col">
-                    {item.variants.map((item) => (
-                      <>
-                        <h1 className="text-md font-bold">
-                          {item.variantName}
+                  <div className="flex flex-col gap-3">
+                    {item.variants.map((variant) => (
+                      <div key={variant.varientID}>
+                        <h1 className="text-md font-bold mb-2">
+                          {variant.variantName}
                         </h1>
-                        <div className="flex gap-2">
-                          {item.variantValues.map((attr, idx) => (
-                            <div key={idx}>
-                              {attr.qty === 0 ? (
-                                <button
-                                  className="w-10 h-10 font-bold  text-gray-400 px-2  py-1 shadow-md border border-gray-100 rounded-full cursor-not-allowed"
-                                  disabled
-                                >
-                                  {attr.varientValue}
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setAmount(String(attr.salePrice));
-                                    setAttributeID(attr.attributeID);
-                                  }}
-                                  className={`min-w-[40px] h-10 font-bold text-sm px-3 py-1.5 shadow-md border border-gray-100 rounded-full cursor-pointer  flex items-center justify-center
-                                ${
-                                  amount === String(attr.salePrice)
-                                    ? "bg-gray-800 text-white"
-                                    : "text-gray-800"
-                                }
-                              `}
-                                >
-                                  {attr.varientValue}
-                                </button>
-                              )}
-                            </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {variant.variantValues.map((attr) => (
+                            <button
+                              key={attr.attributeID}
+                              disabled={attr.qty === 0}
+                              onClick={() => {
+                                setSelectedAttributeID(attr.attributeID || ""); // UNIQUE selection
+                                setAmount(String(attr.salePrice));
+                              }}
+                              className={`
+                              min-w-[40px] h-10 px-3 rounded-full text-sm font-semibold
+                              border shadow-sm flex items-center justify-center
+                              transition-all duration-200
+                              ${
+                                attr.qty === 0
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : selectedAttributeID === attr.attributeID
+                                  ? "bg-gray-800 text-white border-gray-800"
+                                  : "bg-white text-gray-800 hover:border-gray-500"
+                              }
+                            `}
+                            >
+                              {attr.varientValue}
+                            </button>
                           ))}
                         </div>
-                      </>
+                      </div>
                     ))}
                   </div>
+
                   <div className="flex items-center justify-between w-32 border border-gray-300 rounded-md shadow-sm bg-gray-200 px-3 py-2">
                     {NumberofProduct === 0 ? (
                       <button

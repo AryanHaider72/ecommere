@@ -1,5 +1,4 @@
 import axios from "axios";
-
 export async function SendDataToApi(file: File) {
   const formData = new FormData();
   formData.append("file", file);
@@ -9,7 +8,6 @@ export async function SendDataToApi(file: File) {
   );
   try {
     const response = await axios.post(
-      //   `cloudinary://${process.env.CLOUDINARY_API_KEY}:${process.env.CLOUDINARY_API_SECRET}@${process.env.CLOUDINARY_CLOUD_NAME}`,
       `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
       formData,
       {
