@@ -32,6 +32,7 @@ import {
   ladingPageDetailResponse,
 } from "@/api/types/HomePage/LandignPage/CarasoulText";
 import CheckAuth from "@/api/authentication/checkAuth";
+import Link from "next/link";
 
 export default function Navbar({
   onPageChange,
@@ -165,9 +166,16 @@ export default function Navbar({
               {categories.map((category) => (
                 <li key={category.subCategoryID} className="relative group">
                   {/* Category Name */}
-                  <button className="text-gray-800 font-bold hover:text-blue-500 transition capitalize">
-                    {category.subCategoryName.toUpperCase()}
-                  </button>
+                  <Link
+                    href={{
+                      pathname: `/${category.subCategoryID}/shop`,
+                    }}
+                    className="flex flex-col gap-2 hover:scale-105 transition-transform duration-300 cursor-pointer"
+                  >
+                    <button className="text-gray-800 font-bold hover:text-blue-500 transition capitalize">
+                      {category.subCategoryName.toUpperCase()}
+                    </button>
+                  </Link>
 
                   {/* Dropdown */}
                   {category.subCategory?.length > 0 ? (
@@ -179,12 +187,15 @@ export default function Navbar({
                       <ul className="space-y-2">
                         {category.subCategory.map((item: any) => (
                           <li key={item.subCategoryDetailID}>
-                            <a
-                              // href={`/shop?category=${item.subCategoryDetailID}`}
+                            <Link
+                              href={{
+                                pathname: `/${category.subCategoryID}/shop`,
+                                query: { qID: item.subCategoryDetailID },
+                              }}
                               className="flex flex-col gap-2 hover:scale-105 transition-transform duration-300 cursor-pointer"
                             >
                               {item.name.toUpperCase()}
-                            </a>
+                            </Link>
                           </li>
                         ))}
                       </ul>

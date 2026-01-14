@@ -153,27 +153,27 @@ export default function MainHome() {
     carouselRef.current?.scrollBy({ left: 300, behavior: "smooth" });
   };
 
-  const getProduct = async () => {
-    if (loading1 || !hasMore) return;
+  // const getProduct = async () => {
+  //   if (loading1 || !hasMore) return;
 
-    try {
-      setLoading1(true);
+  //   try {
+  //     setLoading1(true);
 
-      const token = localStorage.getItem("token") ?? "";
-      const response = await GetProductHome(token);
+  //     const token = localStorage.getItem("token") ?? "";
+  //     const response = await GetProductHome(token);
 
-      if (response.status === 200 || response.status === 201) {
-        const data = response.data as GetProductHomeApiResponse;
-        console.log(data.productList);
-        setProductList(data.productList);
-        setTotalCount(data.totalCount);
-      }
-    } catch (error) {
-      console.error("Failed to fetch products", error);
-    } finally {
-      setLoading1(false);
-    }
-  };
+  //     if (response.status === 200 || response.status === 201) {
+  //       const data = response.data as GetProductHomeApiResponse;
+  //       console.log(data.productList);
+  //       setProductList(data.productList);
+  //       setTotalCount(data.totalCount);
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to fetch products", error);
+  //   } finally {
+  //     setLoading1(false);
+  //   }
+  // };
 
   const getProductFeatured = async () => {
     try {
@@ -267,7 +267,7 @@ export default function MainHome() {
   useEffect(() => {
     handleShowCategories();
     getProductFeatured();
-    getProduct();
+    // getProduct();
     serverCartData();
   }, []);
 
@@ -319,43 +319,6 @@ export default function MainHome() {
       }
     }
   };
-
-  // const addToCart = async (ID: string) => {
-  //   try {
-  //     const data = productList.find((item) => item.productID === ID);
-  //     if (!data) return;
-
-  //     const price =
-  //       data.variants[0].variantValues[0].salePrice === 0
-  //         ? data.variants[0].variantValues[1].salePrice
-  //         : data.variants[0].variantValues[0].salePrice;
-
-  //     const newItem: CartData = {
-  //       productID: data.productID,
-  //       productName: data.productName,
-  //       weight: data.weight,
-  //       storeID: data.storeID,
-  //       storeName: data.storeName,
-  //       description: data.description,
-  //       quantity: 1,
-  //       discount: data.discount,
-  //       salePrice: price,
-  //       image: data.images?.[0]?.url,
-  //     };
-
-  //     const currentCart = await getServerCart();
-  //     const updatedCart = [...currentCart, newItem];
-
-  //     const res = await addToServerCart(updatedCart);
-  //     if (res) {
-  //       checkAuth(ID);
-  //     }
-  //     serverCartData();
-  //     setCartList(updatedCart);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
 
   const handleShowCategories = async () => {
     const token = localStorage.getItem("token");
@@ -467,11 +430,8 @@ export default function MainHome() {
                       key={item.subCategoryID}
                     >
                       <img
-                        src={
-                          item?.subCategory?.[0]?.imagelist?.[0]?.url ||
-                          "/collection1.jpg"
-                        }
-                        className="w-30 h-30 bg-black rounded-full hover:scale-[1.05] transition-transform"
+                        src={item?.subCategory?.[0]?.imagelist?.[0]?.url}
+                        className="w-32 h-32 bg-gray-300 rounded-full object-cover hover:scale-[1.05] transition-transform"
                       />
 
                       <p className="mt-2 text-md font-bold">
@@ -481,6 +441,49 @@ export default function MainHome() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div className="w-full mt-4 mb-4">
+              {productListFeatured.length > 0 && (
+                <div className="px-20">
+                  <h2
+                    className="text-4xl font-semibold mb-6"
+                    style={{ fontFamily: "var(--font-playfair)" }}
+                  >
+                    Featured Products
+                  </h2>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {productListFeatured.map((item) => {
+                      return (
+                        <div
+                          key={item.productID}
+                          className="group bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col cursor-pointer transition-shadow duration-300 hover:shadow-lg"
+                        >
+                          {/* Product Image */}
+                          <Link href={`/product/${item.productID}`}>
+                            <div className="relative w-full aspect-[3/4] overflow-hidden">
+                              <Image
+                                src={item.images[0]?.url || "/placeholder.png"}
+                                alt={item.productName}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            </div>
+                          </Link>
+
+                          {/* Product Info */}
+                          <div className="p-4 flex flex-col flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                              {item.productName}
+                            </h3>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             {/* Top Collection Section */}
             <div className="w-full mt-4 mb-4">
@@ -509,10 +512,7 @@ export default function MainHome() {
                           >
                             <div className="card">
                               <img
-                                src={
-                                  subItem?.imagelist?.[0]?.url ||
-                                  "/collection1.jpg"
-                                }
+                                src={subItem?.imagelist?.[0]?.url}
                                 alt={subItem.name}
                                 className="w-64 h-64 md:w-72 md:h-72 object-cover rounded-2xl"
                               />

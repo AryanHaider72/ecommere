@@ -50,6 +50,7 @@ type urlTypes = {
   url: string;
 };
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 export default function Shop() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -442,13 +443,14 @@ export default function Shop() {
                     >
                       {/* IMAGE */}
                       <div className="relative w-full aspect-[3/4] overflow-hidden">
-                        <Image
-                          src={item.images[0]?.url || "/placeholder.png"}
-                          alt={item.productName}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-
+                        <Link href={`/product/${item.productID}`}>
+                          <Image
+                            src={item.images[0]?.url || "/placeholder.png"}
+                            alt={item.productName}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </Link>
                         {/* ACTION BUTTONS */}
                         <div className="absolute top-3 right-3 flex flex-col gap-2">
                           <button className="bg-white/80 p-2 rounded-full shadow hover:bg-red-100">
