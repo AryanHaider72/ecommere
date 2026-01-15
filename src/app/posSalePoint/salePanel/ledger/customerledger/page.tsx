@@ -86,6 +86,7 @@ export default function CustomerledgerForm() {
       const response = await AddLedgerCustomer(formData, String(token));
       if (response.status === 200) {
         FetchArrear(customerID);
+        getLedger();
         setAmount(0);
         setremarks("");
         setPostingDate("");
@@ -276,7 +277,7 @@ export default function CustomerledgerForm() {
                             <p className="text-gray-600 mt-2"></p>
                             <p className="text-gray-600 mt-2">
                               <span className="font-bold">Description:</span>{" "}
-                              {item.remarks}
+                              {item.additionalInfo}
                             </p>
                           </div>
                           <div className="flex gap-4">

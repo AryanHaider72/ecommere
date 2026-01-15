@@ -14,5 +14,5 @@ export interface CustomerLedgerGet {
   postingDate: string;
   debitAmount: number;
   creditAmount: number;
-  remarks: string;
+  additionalInfo: string;
 }

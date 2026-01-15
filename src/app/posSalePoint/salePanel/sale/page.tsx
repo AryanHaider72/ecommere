@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   Building2,
   Mail,
@@ -111,6 +111,7 @@ export default function SaleForm() {
   const [Description, setDescription] = useState("");
   const [SearchBy, setSearchBy] = useState("SearchByBarcode");
   const [isLoading, setIsLoading] = useState(false);
+  const [Loading1, setLoading1] = useState(false);
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
@@ -136,7 +137,7 @@ export default function SaleForm() {
     const token = localStorage.getItem("token");
     if (!token) return router.push("/posSalePoint/login");
     try {
-      setLoading(true);
+      setLoading1(true);
       const formData = {
         customerName: customerName,
         phoneNo: phoneNo,
@@ -155,21 +156,12 @@ export default function SaleForm() {
         setAddCustomerForm(false);
         setResponseBack(response.data.message || "Customer Added Successfully");
         setShowMessage(true);
-      } else if (response.status === 400) {
-        setResponseBack(
-          response.data.message || "PLease Fill in All Required Fields"
-        );
-        setShowMessage(false);
-      } else {
-        setResponseBack(
-          response.data.message ||
-            "Something Went Wrong. Please Try Again later."
-        );
-        setShowMessage(false);
+      } else if (response.status === 401) {
+        router.push("/posSalePoint/login");
       }
     } catch (error) {
     } finally {
-      setLoading(false);
+      setLoading1(false);
     }
   };
 
@@ -551,7 +543,7 @@ export default function SaleForm() {
                 }}
                 className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
               >
-                {loading ? "Saving..." : "Save"}
+                {Loading1 ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
@@ -976,7 +968,7 @@ export default function SaleForm() {
                       className="border-t hover:bg-gray-50 transition"
                     >
                       <td className="px-4 py-2">{item.barcode}</td>
-                      <td className="px-4 py-2">{item.productName}</td>
+                      <td className="px-4 py-2 text-sm">{item.productName}</td>
                       <td className="px-4 py-2">{item.varinet}</td>
                       <td className="px-4 py-2 text-center">
                         <input

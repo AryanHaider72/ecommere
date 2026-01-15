@@ -141,17 +141,6 @@ export default function MainHome() {
       description: "We provide top-quality products and highest standards.",
     },
   ];
-  const toggleAccordion = (index: number) => {
-    setActiveIndex(activeIndex === index ? null : index);
-  };
-
-  const scrollLefts = () => {
-    carouselRef.current?.scrollBy({ left: -300, behavior: "smooth" });
-  };
-
-  const scrollRight = () => {
-    carouselRef.current?.scrollBy({ left: 300, behavior: "smooth" });
-  };
 
   // const getProduct = async () => {
   //   if (loading1 || !hasMore) return;
@@ -201,81 +190,12 @@ export default function MainHome() {
     }
   };
 
-  const fetchData = (productID: string) => {
-    const data = filteredProducts.find((item) => item.productID === productID);
-    if (data) {
-      setProductName(data.productName);
-      setDiscount(data.discount.toString());
-      setDescription(data.description);
-      setImageUrl(data.images[0].url);
-      setListImages({
-        listImage: data.images.map((img) =>
-          img.urlID ? { urlID: img.urlID, url: img.url } : { url: img.url }
-        ),
-      });
-      if (data.variants[0].variantValues[0].qty === 0) {
-        setAmount(String(data.variants[0].variantValues[1].salePrice));
-      } else {
-        setAmount(String(data.variants[0].variantValues[0].salePrice));
-      }
-      setListVarient(
-        data.variants.map((variant) => ({
-          varientName: variant.variantName,
-          varientAttributes: variant.variantValues.map((attr) => ({
-            varientValue: attr.varientValue,
-            qty: attr.qty,
-            salePrice: attr.salePrice,
-            costPrice: attr.costPrice,
-          })),
-        }))
-      );
-    }
-  };
-
-  const fetchData2 = (productID: string) => {
-    const data = productListFeatured.find(
-      (item: any) => item.productID === productID
-    );
-    if (data) {
-      setProductName(data.productName);
-      setDiscount(data.discount.toString());
-      setDescription(data.description);
-      setImageUrl(data.images[0].url);
-      setListImages({
-        listImage: data.images.map((img: any) =>
-          img.urlID ? { urlID: img.urlID, url: img.url } : { url: img.url }
-        ),
-      });
-      if (data.variants[0].variantValues[0].qty === 0) {
-        setAmount(String(data.variants[0].variantValues[1].salePrice));
-      } else {
-        setAmount(String(data.variants[0].variantValues[0].salePrice));
-      }
-      setListVarient(
-        data.variants.map((variant: any) => ({
-          varientName: variant.variantName,
-          varientAttributes: variant.variantValues.map((attr: any) => ({
-            varientValue: attr.varientValue,
-            qty: attr.qty,
-            costPrice: attr.costPrice,
-            salePrice: attr.salePrice,
-          })),
-        }))
-      );
-    }
-  };
   useEffect(() => {
     handleShowCategories();
     getProductFeatured();
     // getProduct();
     serverCartData();
   }, []);
-
-  const handleSubCategoryChange = (id: string) => {
-    setSelectedSubCategories((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
 
   const filteredProducts = productList.filter((product) => {
     if (product.storeSale === "OfflineStore") return false;
@@ -295,31 +215,6 @@ export default function MainHome() {
     return true;
   });
 
-  const checkAuth = async (ID: string) => {
-    const token1 = localStorage.getItem("token1");
-    console.log(token1);
-    const response = await CheckAuth(token1 as string);
-    // console.log(token1);
-    console.log("Response from CheckAuth API:", response);
-    if (response?.status === 200 || response?.status === 201) {
-      const data = response.data as any;
-      if (data.loggedBy === "Customer") {
-        setUplaoding(true);
-        const data = productList.find((item) => item.productID === ID);
-        const token = localStorage.getItem("token1");
-        if (data) {
-          const formData = {
-            productID: data.productID,
-            qty: 1,
-          };
-          await AddToCart(formData, String(token));
-        }
-      } else {
-        setUplaoding(false);
-      }
-    }
-  };
-
   const handleShowCategories = async () => {
     const token = localStorage.getItem("token");
     const response = await GetNavbar(token || "");
@@ -332,6 +227,7 @@ export default function MainHome() {
       setCategories([]);
     }
   };
+
   useEffect(() => {
     if (CartData.length === 0) return;
     addToServerCart(CartData);

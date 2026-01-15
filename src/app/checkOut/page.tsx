@@ -38,7 +38,8 @@ export default function CheckOut() {
   const [selected, setSelected] = useState("COD");
   const [isShow, setIsShow] = useState(false);
   const [cartList, setCartList] = useState<CartData[]>([]);
-  const [selectedOption2, setSelectedOption2] = useState("");
+  const [selectedOption2, setSelectedOption2] = useState("PlaceOrder");
+  const [orderDate, setOrderDate] = useState("");
   const [paymentList, setPaymentList] = useState<paymentget[]>([]);
   const [accountTitle, setAccountTitle] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -118,7 +119,7 @@ export default function CheckOut() {
     const response = await GetCustomerLoginData(String(token), {});
     if (response.status === 200 || response.status == 201) {
       const data = response.data as CustomerDetailResponse;
-      setCustomerID(data.customerData[0].customerID);
+      setCustomerID(data.customerData[0].userID);
       setFullName(data.customerData[0].customerName);
       setEmail(data.customerData[0].email);
       setPhoneNo(data.customerData[0].phoneNo);
@@ -166,9 +167,13 @@ export default function CheckOut() {
 
         orderMainList: [
           {
-            orderDate: new Date().toISOString(),
+            orderDate:
+              selectedOption2 === "PlaceOrder"
+                ? new Date().toISOString()
+                : orderDate,
             paymentID: paymentID,
             paymentStatus: "Unpaid",
+            orderMethod: selectedOption2,
             delievryCharges:
               getTotalShipping(cartList, shippingListInformation) || 0.0,
             shippingAddress: countryID + " " + cityName + " " + Address,
@@ -192,6 +197,7 @@ export default function CheckOut() {
           },
         ],
       };
+      console.log(formData);
       const response = await AddOrder(formData);
       if (response.status === 200 || response.status === 201) {
         cartList.map((item) => {
@@ -694,11 +700,24 @@ export default function CheckOut() {
                     </h3>
 
                     <div className="text-sm mt-4 space-y-1">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-600">
+                          Order Date
+                        </label>
+                        <input
+                          value={orderDate}
+                          onChange={(e) => setOrderDate(e.target.value)}
+                          type="datetime-local"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-500
+                          focus:border-blue-500"
+                        />
+                      </div>
+
                       <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span>{getCartSubTotal(cartList).toFixed(2)} -/</span>
                       </div>
-
                       <div className="flex justify-between">
                         <span>Total Shipping</span>
                         <span>
@@ -706,12 +725,10 @@ export default function CheckOut() {
                           -/
                         </span>
                       </div>
-
                       <div className="flex justify-between text-gray-900">
                         <span>Date/Time</span>
-                        <span>02-Nov-2025 (15-30-00)</span>
+                        <span>{new Date().toLocaleDateString()}</span>
                       </div>
-
                       <div className="flex justify-between font-semibold text-gray-900">
                         <span>Total</span>
                         <span>
@@ -835,8 +852,11 @@ export default function CheckOut() {
                     </div>
                   </div>
 
-                  <button className="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition">
-                    Place Order
+                  <button
+                    onClick={() => addOrder()}
+                    className="mt-6 w-full bg-blue-500 text-white py-2 rounded-lg font-semibold hover:bg-blue-600 transition"
+                  >
+                    {isLoading ? "Placing Order..." : "Place Order"}
                   </button>
                 </div>
               )}

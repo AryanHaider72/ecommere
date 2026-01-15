@@ -15,6 +15,7 @@ import {
   Clock,
   ShoppingCart,
   CheckCheck,
+  ShoppingBag,
 } from "lucide-react";
 import SellerOrderGet from "@/api/lib/Order/SellerOrdersGet";
 import {
@@ -33,6 +34,9 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
   const [qty, setQty] = useState(0);
   const [ResponseBack, setResponseBack] = useState("");
   const [isTrue, setIsTrue] = useState(false);
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   const [selectedOrder, setSelectedOrder] = useState<storesListSeller | null>(
     null
@@ -108,66 +112,134 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
 
   useEffect(() => {
     getOrders();
+    const data = new Date().toISOString().split("T")[0];
+    setDateFrom(data);
+    setDateTo(data);
   }, []);
+  const filteredProductList = productList.filter((order) => {
+    const orderDate = order.orderDate.split("T")[0];
 
+    const isAfterFrom = dateFrom ? orderDate >= dateFrom : true;
+    const isBeforeTo = dateTo ? orderDate <= dateTo : true;
+    const matchesStatus = statusFilter ? order.status === statusFilter : true;
+
+    return isAfterFrom && isBeforeTo && matchesStatus;
+  });
   return (
     <div className="w-full relative">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
         Seller Order Management
       </h1>
+      <div className="w-full flex flex-col md:flex-row justify-around gap-2 mt-2 mb-2">
+        <div className="w-full">
+          <label className="block text-gray-700 font-medium mb-2">
+            Date From
+          </label>
+          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 bg-gray-50">
+            <Calendar className="text-gray-400 mr-2" size={18} />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full bg-transparent outline-none text-gray-900"
+            />
+          </div>
+        </div>
+        <div className="w-full">
+          <label className="block text-gray-700 font-medium mb-2">
+            Date To
+          </label>
+          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 bg-gray-50">
+            <Calendar className="text-gray-400 mr-2" size={18} />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full bg-transparent outline-none text-gray-900"
+            />
+          </div>
+        </div>
+        <div className="w-full">
+          <label className="block text-gray-700 font-medium mb-2">Status</label>
+          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 bg-gray-50">
+            <ShoppingBag className="text-gray-400 mr-2" size={18} />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full p-1 bg-transparent outline-none text-gray-900"
+            >
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Canceled">Canceled</option>
+              <option value="Shipped">Shipped</option>
+            </select>
+          </div>
+        </div>
+      </div>
       {isLoading ? (
         <Spinner />
       ) : (
         <div className="space-y-5">
-          {productList.map((order) => (
-            <div
-              key={order.orderID}
-              className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
-            >
-              {/* === LEFT: Customer Info === */}
-              <div className="flex flex-col w-full md:w-1/3">
-                <h3 className="font-semibold text-gray-900">
-                  {order.productName}
-                </h3>
-                <p className="text-sm text-gray-500">{order.customerName}</p>
-                <p className="text-xs text-gray-400">{order.email}</p>
-              </div>
-
-              {/* === CENTER: Status + Date === */}
-              <div className="flex items-center gap-4 mt-3 md:mt-0 w-full md:w-1/3 justify-center">
-                <span
-                  className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
-                    order.status
-                  )}`}
+          {filteredProductList.length !== 0 ? (
+            <>
+              {filteredProductList.map((order) => (
+                <div
+                  key={order.orderID}
+                  className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
                 >
-                  {order.status}
-                </span>
-                <p className="text-sm text-gray-500">
-                  {order.orderDate.split("T")[0]}
-                </p>
-              </div>
+                  {/* === LEFT: Customer Info === */}
+                  <div className="flex flex-col w-full md:w-1/3">
+                    <h3 className="font-semibold text-gray-900">
+                      {order.productName}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {order.customerName}
+                    </p>
+                    <p className="text-xs text-gray-400">{order.email}</p>
+                  </div>
 
-              {/* === RIGHT: Controls === */}
-              <div className="flex items-center gap-3 mt-3 md:mt-0 w-full md:w-1/3 justify-end">
-                <p className="text-lg font-semibold text-gray-900">
-                  Rs. {order.totalAmount + order.delievryCharges}
-                </p>
-                <button
-                  onClick={() => fetchData(order.orderID)}
-                  className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
-                >
-                  <Eye size={16} /> View
-                </button>
-              </div>
+                  {/* === CENTER: Status + Date === */}
+                  <div className="flex items-center gap-4 mt-3 md:mt-0 w-full md:w-1/3 justify-center">
+                    <span
+                      className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                        order.status
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
+                    <p className="text-sm text-gray-500">
+                      {order.orderDate.split("T")[0]}
+                    </p>
+                  </div>
+
+                  {/* === RIGHT: Controls === */}
+                  <div className="flex items-center gap-3 mt-3 md:mt-0 w-full md:w-1/3 justify-end">
+                    <p className="text-lg font-semibold text-gray-900">
+                      Rs. {order.totalAmount.toLocaleString()}
+                    </p>
+                    <button
+                      onClick={() => fetchData(order.orderID)}
+                      className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
+                    >
+                      <Eye size={16} /> View
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+              No Record Found
             </div>
-          ))}
+          )}
         </div>
       )}
 
       {/* === Order Detail Modal === */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 relative overflow-y-auto max-h-[90vh]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-6 relative overflow-y-auto max-h-[90vh]">
             <button
               onClick={() => {
                 setSelectedOrder(null);
@@ -212,12 +284,11 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                     <thead className="bg-gray-100">
                       <tr className="text-left text-sm font-semibold text-gray-700">
                         <th className="p-3">Product</th>
-                        <th className="p-3">Quantity</th>
-                        <th className="p-3">Item Price</th>
-                        <th className="p-3">Shipping</th>
-                        <th className="p-3">Status</th>
-                        <th className="p-3">Bags</th>
-
+                        <th className="p-3 text-center">Quantity</th>
+                        <th className="p-3 text-right">Item Price</th>
+                        <th className="p-3 text-right">Shipping</th>
+                        <th className="p-3 text-center">Status</th>
+                        <th className="p-3 text-center">Bags</th>
                         <th className="p-3 text-center">Actions</th>
                       </tr>
                     </thead>
@@ -240,38 +311,44 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                                   className="object-cover"
                                 />
                               </div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-gray-900 text-sm">
                                 {item.productName}
                               </p>
                             </div>
                           </td>
 
                           {/* Quantity */}
-                          <td className="p-3 text-gray-600">Qty: {item.qty}</td>
+                          <td className="p-3 text-center text-gray-600 font-medium">
+                            Qty: {item.qty}
+                          </td>
 
                           {/* Item Price */}
-                          <td className="p-3 font-medium text-gray-900">
-                            {item.salePrice -
-                              (item.salePrice * item.discount) / 100}{" "}
-                            -/
+                          <td className="p-3 text-right font-medium text-gray-900">
+                            {(
+                              item.salePrice -
+                              (item.salePrice * item.discount) / 100
+                            ).toLocaleString()}{" "}
                           </td>
-                          <td className="p-3 text-gray-700">
+
+                          {/* Shipping */}
+                          <td className="p-3 text-right text-gray-700 font-medium">
+                            {item.shippingCharges.toLocaleString()}
+                          </td>
+
+                          {/* Status */}
+                          <td className="p-3 text-center">
                             <span
-                              className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                              className={`px-3 py-1 text-sm font-medium rounded-full border inline-block ${statusStyle(
                                 item.status
                               )}`}
                             >
                               {item.status}
                             </span>
                           </td>
-                          {/* Shipping */}
-                          <td className="p-3 text-gray-700">
-                            {item.shippingCharges} -/
-                          </td>
 
                           {/* Bags */}
-                          {item.status === "pending" ? (
-                            <td className="p-3">
+                          <td className="p-3 text-center">
+                            {item.status === "pending" ? (
                               <input
                                 type="number"
                                 value={bags[item.orderDetailID] || ""}
@@ -283,16 +360,16 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                                     ),
                                   }))
                                 }
-                                className="w-24 p-2 border rounded-md"
+                                className="w-20 p-2 border rounded-md text-center"
                               />
-                            </td>
-                          ) : (
-                            <td>{item.bags}</td>
-                          )}
+                            ) : (
+                              <span className="font-medium">{item.bags}</span>
+                            )}
+                          </td>
 
                           {/* Actions */}
-                          {item.status === "pending" ? (
-                            <td className="p-3 text-center">
+                          <td className="p-3 text-center">
+                            {item.status === "pending" ? (
                               <div className="flex justify-center gap-2">
                                 <button
                                   onClick={() =>
@@ -317,10 +394,10 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
                                   <X />
                                 </button>
                               </div>
-                            </td>
-                          ) : (
-                            <td>N/A</td>
-                          )}
+                            ) : (
+                              <span className="text-gray-500">N/A</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -378,12 +455,27 @@ export default function SellerOrders({ storeID }: { storeID: string }) {
               </div>
 
               {/* === Summary === */}
-              <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
-                <div className="flex justify-between">
-                  <span>Total</span>
-                  <span className="font-semibold text-gray-900 text-base">
-                    Rs.{" "}
-                    {selectedOrder.totalAmount + selectedOrder.delievryCharges}
+
+              <div className="flex font-semibold justify-between">
+                <span className="text-sm">Sub-Total</span>
+                <span className=" text-gray-900 text-sm">
+                  Rs:{" "}
+                  {(
+                    selectedOrder.totalAmount - selectedOrder.delievryCharges
+                  ).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex font-semibold justify-between">
+                <span className="text-sm">Shipment Charges:</span>
+                <span className=" text-gray-900 text-sm">
+                  Rs: {selectedOrder.delievryCharges.toLocaleString()}
+                </span>
+              </div>
+              <div className="border-t mt-2 text-sm text-gray-700">
+                <div className="flex  p-1 font-semibold justify-between">
+                  <span className="">Grand Total:</span>
+                  <span className=" text-gray-900 text-sm">
+                    Rs: {selectedOrder.totalAmount.toLocaleString()}
                   </span>
                 </div>
               </div>

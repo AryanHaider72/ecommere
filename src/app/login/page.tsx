@@ -93,16 +93,16 @@ export default function LoginPage() {
       const response = await CustomerLogin(formData);
 
       if (response.status === 200) {
-        router.push("/");
-        console.log(response.data.token);
-        localStorage.setItem("token1", response.data.token);
-        setResponseBack(response.message);
+        const data = response.data as any;
+        localStorage.setItem("token1", data.token);
+        setResponseBack(response.data.message);
         setShowMessage(true);
         setEmail("");
         setPassword("");
+        // router.push("/");
       } else {
         console.log(response);
-        setResponseBack(response.message);
+        setResponseBack("Invalid Email/Password");
         setShowMessage(true);
       }
     } catch (error: any) {

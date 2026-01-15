@@ -27,215 +27,9 @@ export default function Order() {
   const [selectedOrder, setSelectedOrder] = useState<storesListSeller | null>(
     null
   );
-  const [orders] = useState([
-    {
-      id: "#4578",
-      product: "Beige Trouser",
-      image: "/collection1.jpg",
-      amount: "Rs. 1500",
-      status: "Delivered",
-      date: "Oct 25, 2025",
-      details: {
-        items: [
-          {
-            name: "Beige Trouser",
-            image: "/collection1.jpg",
-            qty: 1,
-            price: 1500,
-          },
-          {
-            name: "White Shirt",
-            image: "/collection1.jpg",
-            qty: 2,
-            price: 2400,
-          },
-        ],
-        address: "House #45, DHA Phase 6, Karachi, Pakistan",
-        paymentMethod: "Cash on Delivery",
-        deliveryMethod: "Leopard Courier",
-        subtotal: 3900,
-        deliveryFee: 200,
-        total: 4100,
-        estimatedDelivery: "Oct 28, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection3.jpg",
-      amount: "Rs. 2500",
-      status: "Pending",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection3.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection2.jpg",
-      amount: "Rs. 2500",
-      status: "Pending",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection2.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection3.jpg",
-      amount: "Rs. 2500",
-      status: "Delivered",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection3.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection1.jpg",
-      amount: "Rs. 2500",
-      status: "Delivered",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection1.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection2.jpg",
-      amount: "Rs. 2500",
-      status: "Shipped",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection2.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection3.jpg",
-      amount: "Rs. 2500",
-      status: "Pending",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection3.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-    {
-      id: "#4576",
-      product: "Denim Jacket",
-      image: "/collection1.jpg",
-      amount: "Rs. 2500",
-      status: "Canceled",
-      date: "Oct 30, 2025",
-      details: {
-        items: [
-          {
-            name: "Denim Jacket",
-            image: "/collection1.jpg",
-            qty: 1,
-            price: 2500,
-          },
-        ],
-        address: "123 Clifton Block 8, Karachi, Pakistan",
-        paymentMethod: "Credit Card",
-        deliveryMethod: "TCS Express",
-        subtotal: 2500,
-        deliveryFee: 150,
-        total: 2650,
-        estimatedDelivery: "Nov 3, 2025",
-      },
-    },
-  ]);
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
 
   const statusStyle = (status: string) => {
     if (status === "Delivered")
@@ -273,8 +67,22 @@ export default function Order() {
       setSelectedOrder(data);
     }
   };
+
+  const filteredProductList = productList.filter((order) => {
+    const orderDate = order.orderDate.split("T")[0];
+
+    const isAfterFrom = dateFrom ? orderDate >= dateFrom : true;
+    const isBeforeTo = dateTo ? orderDate <= dateTo : true;
+    const matchesStatus = statusFilter ? order.status === statusFilter : true;
+
+    return isAfterFrom && isBeforeTo && matchesStatus;
+  });
+
   useEffect(() => {
     getOrders();
+    const data = new Date().toISOString().split("T")[0];
+    setDateFrom(data);
+    setDateTo(data);
   }, []);
   return (
     <div className="w-full relative">
@@ -288,11 +96,9 @@ export default function Order() {
             <Calendar className="text-gray-400 mr-2" size={18} />
             <input
               type="date"
-              name="email"
-              // value={formData.email}
-              // onChange={handleChange}
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
               className="w-full bg-transparent outline-none text-gray-900"
-              placeholder="Enter your email"
             />
           </div>
         </div>
@@ -304,11 +110,9 @@ export default function Order() {
             <Calendar className="text-gray-400 mr-2" size={18} />
             <input
               type="date"
-              name="email"
-              // value={formData.email}
-              // onChange={handleChange}
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
               className="w-full bg-transparent outline-none text-gray-900"
-              placeholder="Enter your email"
             />
           </div>
         </div>
@@ -316,11 +120,16 @@ export default function Order() {
           <label className="block text-gray-700 font-medium mb-2">Status</label>
           <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 bg-gray-50">
             <ShoppingBag className="text-gray-400 mr-2" size={18} />
-            <select className="w-full p-1 bg-transparent outline-none text-gray-900">
-              <option>Pending</option>
-              <option>Delivered</option>
-              <option>Canceled</option>
-              <option>Shipped</option>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full p-1 bg-transparent outline-none text-gray-900"
+            >
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Canceled">Canceled</option>
+              <option value="Shipped">Shipped</option>
             </select>
           </div>
         </div>
@@ -329,51 +138,57 @@ export default function Order() {
         <Spinner />
       ) : (
         <div className="space-y-5">
-          {productList.map((order) => (
-            <div
-              key={order.orderID}
-              className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
-            >
-              {/* === LEFT === */}
-              <div className="flex items-center gap-4 w-full md:w-1/3">
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {order.productName}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {order.customerName}, {order.email}
-                  </p>
+          {filteredProductList.length !== 0 ? (
+            <>
+              {filteredProductList.map((order) => (
+                <div
+                  key={order.orderID}
+                  className="flex flex-col md:flex-row items-center justify-between bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5"
+                >
+                  {/* === LEFT === */}
+                  <div className="flex items-center gap-4 w-full md:w-1/3">
+                    <div className="flex flex-col">
+                      <h1 className="text-gray-800 font-bold">
+                        {order.customerName}
+                      </h1>
+                      <p className="text-sm text-gray-500"> {order.email}</p>
+                    </div>
+                  </div>
+
+                  {/* === CENTER === */}
+                  <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-1/3 justify-center">
+                    <span
+                      className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                        order.status
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
+                    <p className="text-sm text-gray-500">
+                      {order.orderDate.split("T")[0]}
+                    </p>
+                  </div>
+
+                  {/* === RIGHT === */}
+                  <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-1/3 justify-end">
+                    <p className="text-lg font-semibold text-gray-900">
+                      {order.totalAmount}-/
+                    </p>
+                    <button
+                      onClick={() => fetchData(order.orderID)}
+                      className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
+                    >
+                      <Eye size={16} /> View
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              {/* === CENTER === */}
-              <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-1/3 justify-center">
-                <span
-                  className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
-                    order.status
-                  )}`}
-                >
-                  {order.status}
-                </span>
-                <p className="text-sm text-gray-500">
-                  {order.orderDate.split("T")[0]}
-                </p>
-              </div>
-
-              {/* === RIGHT === */}
-              <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-1/3 justify-end">
-                <p className="text-lg font-semibold text-gray-900">
-                  {order.totalAmount}
-                </p>
-                <button
-                  onClick={() => fetchData(order.orderID)}
-                  className="flex items-center gap-2 text-sm text-white bg-black hover:bg-gray-900 rounded-lg px-4 py-2 transition"
-                >
-                  <Eye size={16} /> View
-                </button>
-              </div>
+              ))}
+            </>
+          ) : (
+            <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+              No Record Found
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -417,26 +232,27 @@ export default function Order() {
                 <h3 className="font-semibold text-gray-900 mb-3">Items</h3>
                 <div className="space-y-3">
                   {selectedOrder.storesSubList.map((item) => (
-                    <div className="flex items-center justify-between border border-gray-100 rounded-xl p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
+                    <div className="flex items-center justify-between border border-gray-100 rounded-xl p-4">
+                      {/* Left: Image + Details */}
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           <Image
                             src={"/collection1.jpg"}
-                            alt={"/collection1.jpg"}
+                            alt={item.productName}
                             width={56}
                             height={56}
                             className="object-cover"
                           />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-gray-900 text-sm">
                             {item.productName}
                           </p>
                           <p className="text-sm text-gray-500">
                             Qty: {item.qty}
                           </p>
                           <span
-                            className={`px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
+                            className={`inline-block px-3 py-1 text-sm font-medium rounded-full border ${statusStyle(
                               item.status
                             )}`}
                           >
@@ -444,14 +260,20 @@ export default function Order() {
                           </span>
                         </div>
                       </div>
-                      <p className="font-semibold text-gray-900">
-                        Rs.{" "}
-                        {item.salePrice -
-                          (item.salePrice * item.discount) / 100}
-                      </p>
-                      <button className="px-2 py-2 bg-black rounded-md text-white hover:bg-gray-900">
-                        Order Again
-                      </button>
+
+                      {/* Right: Price and Button */}
+                      <div className="flex items-center gap-4">
+                        <p className="font-semibold text-gray-900 whitespace-nowrap">
+                          Rs.{" "}
+                          {(
+                            item.salePrice -
+                            (item.salePrice * item.discount) / 100
+                          ).toFixed(2)}
+                        </p>
+                        <button className="px-4 py-2 bg-black rounded-md text-white hover:bg-gray-900 whitespace-nowrap">
+                          Order Again
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -510,7 +332,10 @@ export default function Order() {
               <div className="border-t pt-4 space-y-2 text-sm text-gray-700">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>Rs. {selectedOrder.totalAmount}</span>
+                  <span>
+                    Rs.{" "}
+                    {selectedOrder.totalAmount - selectedOrder.delievryCharges}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee</span>
@@ -518,10 +343,7 @@ export default function Order() {
                 </div>
                 <div className="flex justify-between font-semibold text-gray-900 text-base">
                   <span>Total</span>
-                  <span>
-                    Rs.{" "}
-                    {selectedOrder.delievryCharges + selectedOrder.totalAmount}
-                  </span>
+                  <span>Rs. {selectedOrder.totalAmount}</span>
                 </div>
               </div>
             </>

@@ -48,6 +48,9 @@ export default function ProductPage() {
   const [SelectiveproductList, setSelectiveProductList] = useState<
     ProductHomePage[]
   >([]);
+  const [OtherproductList, setOtherProductList] = useState<ProductHomePage[]>(
+    []
+  );
   const [SuggestedProductList, setSuggestedProductList] = useState<
     ProductHomePage[]
   >([]);
@@ -88,6 +91,7 @@ export default function ProductPage() {
       date: "5 days ago",
     },
   ]);
+
   const handleRating = (rating: number) => {
     setNewReview({ ...newReview, rating });
   };
@@ -104,20 +108,6 @@ export default function ProductPage() {
     setNewReview({ name: "", message: "", rating: 0 });
   };
   const images = ["/collection1.jpg", "/collection2.jpg", "/collection3.jpg"];
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-  const handleNavClick = (page: string) => {
-    setActivePage(page);
-  };
-  // const product = () => {
-  //   window.location.href = "/product";
-  // };
 
   const handleMouseMove = (e: any) => {
     if (!imageRef.current) return;
@@ -142,24 +132,33 @@ export default function ProductPage() {
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as GetProductHomeApiResponse;
-        const find = data.productList.filter((item) => item.productID === ID);
-        if (find) {
-          setProductList(find);
-        }
-        const extarctID = data.productList.find(
+
+        const selectedProduct = data.productList.find(
           (item) => item.productID === ID
         );
-        if (extarctID) {
-          const suggested = data.productList.filter(
-            (item2) => item2.subCategoryID === extarctID.subCategoryID
-          );
-          setSuggestedProductList(suggested);
-        }
+
+        if (!selectedProduct) return;
+
+        // Selected product
+        setProductList([selectedProduct]);
+
+        const suggested = data.productList.filter(
+          (item) =>
+            item.subCategoryID === selectedProduct.subCategoryID &&
+            item.productID !== selectedProduct.productID
+        );
+        setSuggestedProductList(suggested);
+
+        const otherProducts = data.productList.filter(
+          (item) => item.subCategoryID !== selectedProduct.subCategoryID
+        );
+        setOtherProductList(otherProducts);
       }
     } catch (error) {
       console.error("Failed to fetch products", error);
     }
   };
+
   const onClear = async () => {
     await clearServerCart();
     const freshCart = await getServerCart();
@@ -275,7 +274,10 @@ export default function ProductPage() {
         onClear={onClear}
       />
       <div className="flex flex-col items-center w-full min-h-[calc(100vh-200px)]  px-4 py-10">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+        <h1
+          style={{ fontFamily: "var(--font-playfair)" }}
+          className="text-4xl font-bold text-gray-800 mb-6"
+        >
           Product Information
         </h1>
         <hr className="w-1/2 border-gray-300 mb-10" />
@@ -508,13 +510,77 @@ export default function ProductPage() {
       </div>
       {/* === SUGGESTED PRODUCTS === */}
       <div className="w-full max-w-7xl mx-auto mt-16 px-4">
-        <h2 className="text-2xl  flex justify-start font-semibold text-gray-900 mb-3 text-center">
+        <h2
+          style={{ fontFamily: "var(--font-playfair)" }}
+          className="text-4xl  flex justify-start font-semibold text-gray-900 mb-3 text-center"
+        >
           Suggested For You
         </h2>
         {/* <hr className="w-1/2 mb-3 text-gray-400" /> */}
 
         <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-10">
           {SuggestedProductList.map((item) => (
+            <div
+              key={item.productID}
+              className="w-full bg-white border border-gray-200 rounded-lg shadow-sm 
+                 transform transition-all duration-300 ease-in-out 
+                 hover:scale-[1.02] hover:shadow-lg"
+            >
+              {/* Product Image */}
+              <div className="relative w-full h-[420px] overflow-hidden rounded-t-lg group">
+                <Link href={`/product/${item.productID}`}>
+                  <Image
+                    src={item.images[0].url}
+                    alt={item.productName}
+                    fill
+                    className="object-cover bg-white group-hover:scale-105 transition-transform duration-500"
+                  />
+                </Link>
+
+                {/* Action Buttons */}
+                <div className="absolute top-3 right-3 flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <button className="bg-white p-2 rounded-full shadow hover:bg-red-100 transition">
+                    <Heart className="text-gray-700 w-4 h-4" />
+                  </button>
+                  <button className="bg-white p-2 rounded-full shadow hover:bg-green-100 transition">
+                    <ShoppingCart className="text-gray-700 w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProductID(item.productID);
+                      setProductPage(true);
+                    }}
+                    className="bg-white p-2 rounded-full shadow hover:bg-blue-100 transition"
+                  >
+                    <Search className="text-gray-700 w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Info */}
+              <div className="p-5 space-y-2">
+                <h5 className="text-lg font-semibold text-gray-900 truncate">
+                  {item.productName}
+                </h5>
+                <p className="text-gray-500 text-sm line-clamp-2">
+                  {item.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="w-full max-w-7xl mx-auto mt-16 px-4">
+        <h2
+          style={{ fontFamily: "var(--font-playfair)" }}
+          className="text-4xl  flex justify-start font-semibold text-gray-900 mb-3 text-center"
+        >
+          You May Also Like
+        </h2>
+        {/* <hr className="w-1/2 mb-3 text-gray-400" /> */}
+
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-10">
+          {OtherproductList.map((item) => (
             <div
               key={item.productID}
               className="w-full bg-white border border-gray-200 rounded-lg shadow-sm 

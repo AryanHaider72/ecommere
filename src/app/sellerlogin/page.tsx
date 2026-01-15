@@ -48,14 +48,14 @@ export default function Login() {
         setEmail("");
         setPassword("");
         setShowMessage(true);
-        setResponseBack(response.message);
+        setResponseBack("Login Successfully");
         const token = response.data?.token;
         localStorage.setItem("token", token as string);
         verfiedSeller(String(token));
         console.log(response);
       } else {
         setShowMessage(true);
-        setResponseBack(response.message);
+        setResponseBack("Invalid Email/Password");
       }
     } catch (error) {
       console.log(error);
