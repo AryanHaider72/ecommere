@@ -55,6 +55,8 @@ export default function Shop() {
   const params = useParams();
   const searchParams = useSearchParams();
   const [productID, setProductID] = useState("");
+  const [product, setProduct] = useState<ProductHomePage[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
   const [attributeID, setAttributeID] = useState("");
   const [sortType, setSortType] = useState<string | null>(null);
   const [uploading, setUplaoding] = useState(false);
@@ -62,13 +64,11 @@ export default function Shop() {
   const [Filter, setFilters] = useState(false);
   const [Open, setOpen] = useState(false);
   const [activePage, setActivePage] = useState("login");
-  const [imageUrl, setImageUrl] = useState("");
   const [activeIndex, setActiveIndex] = useState<number | null>(0);
   const [productPage, setProductPage] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [cartList, setCartList] = useState<CartData[]>([]);
   const [productList, setProductList] = useState<ProductHomePage[]>([]);
-  const [product, setProduct] = useState<ProductHomePage[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [productName, setProductName] = useState("");
   const [discount, setDiscount] = useState("");

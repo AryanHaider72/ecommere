@@ -28,72 +28,7 @@ import {
 } from "@/api/types/HomePage/Product/product";
 import GetProductHome from "@/api/lib/HomePage/Product/Product";
 import CheckAuth from "@/api/authentication/checkAuth";
-const products = [
-  {
-    id: 1,
-    name: "DESIGN smart Bermuda ",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    price: "$599",
-    rating: 5.0,
-    image: "/collection1.jpg",
-  },
-  {
-    id: 2,
-    name: "Linen blend culottes ",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    price: "$499",
-    rating: 4.8,
-    image: "/collection3.jpg",
-  },
-  {
-    id: 3,
-    name: "DESIGN smart Bermuda",
-    price: "$699",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    rating: 4.9,
-    image: "/collection2.jpg",
-  },
-  {
-    id: 4,
-    name: "Linen blend culottes",
-    price: "$329",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    rating: 4.6,
-    image: "/collection1.jpg",
-  },
-  {
-    id: 5,
-    name: "DESIGN smart Bermuda",
-    price: "$799",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    rating: 5.0,
-    image: "/collection2.jpg",
-  },
-  {
-    id: 6,
-    name: "Linen blend culottes",
-    price: "$279",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    rating: 4.7,
-    image: "/collection3.jpg",
-  },
-  {
-    id: 7,
-    name: "Linen blend culottes",
-    price: "$329",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    rating: 4.6,
-    image: "/collection1.jpg",
-  },
-  {
-    id: 8,
-    name: "DESIGN smart Bermuda",
-    price: "$799",
-    description: "High-quality linen blend culottes perfect for summer wear.",
-    rating: 5.0,
-    image: "/collection2.jpg",
-  },
-];
+import Link from "next/link";
 
 export default function ProductPage() {
   const params = useParams();
@@ -104,10 +39,15 @@ export default function ProductPage() {
   const [activePage, setActivePage] = useState("home");
   const [activeSize, setActiveSize] = useState("");
   const [productID, setProductID] = useState("");
+  const [product, setProduct] = useState<ProductHomePage[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
   const [NumberofProduct, setNumberofProduct] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [productList, setProductList] = useState<ProductHomePage[]>([]);
+  const [SelectiveproductList, setSelectiveProductList] = useState<
+    ProductHomePage[]
+  >([]);
   const [SuggestedProductList, setSuggestedProductList] = useState<
     ProductHomePage[]
   >([]);
@@ -175,9 +115,9 @@ export default function ProductPage() {
   const handleNavClick = (page: string) => {
     setActivePage(page);
   };
-  const product = () => {
-    window.location.href = "/product";
-  };
+  // const product = () => {
+  //   window.location.href = "/product";
+  // };
 
   const handleMouseMove = (e: any) => {
     if (!imageRef.current) return;
@@ -293,6 +233,35 @@ export default function ProductPage() {
       setProductID("");
     }
   }, [params]);
+
+  useEffect(() => {
+    if (!productID) return;
+    const data = SuggestedProductList.filter(
+      (item) => item.productID === productID
+    );
+    if (data && data.length > 0) {
+      console.log(data);
+      setSelectiveProductList(data);
+      const allVariantValues = data.flatMap((product) =>
+        product.variants.flatMap((variant) => variant.variantValues)
+      );
+      if (allVariantValues && allVariantValues.length > 0) {
+        setSelectedAttributeID(allVariantValues[0].attributeID);
+      } else {
+        // Optional: Reset or handle case where no variants exist
+        setSelectedAttributeID("");
+      }
+
+      const allImages = data.find((item) => item.productID === productID);
+      setImageUrl(allImages?.images[0]?.url || "");
+      const firstAvailableVariant = allVariantValues.find((v) => v.qty > 0);
+      if (firstAvailableVariant) {
+        setAmount(String(firstAvailableVariant.salePrice));
+      } else {
+        setAmount("0"); // fallback if none available
+      }
+    }
+  }, [productID]);
 
   return (
     <>
@@ -554,13 +523,14 @@ export default function ProductPage() {
             >
               {/* Product Image */}
               <div className="relative w-full h-[420px] overflow-hidden rounded-t-lg group">
-                <Image
-                  src={item.images[0].url}
-                  alt={item.productName}
-                  fill
-                  className="object-cover bg-white group-hover:scale-105 transition-transform duration-500"
-                  onClick={product}
-                />
+                <Link href={`/product/${item.productID}`}>
+                  <Image
+                    src={item.images[0].url}
+                    alt={item.productName}
+                    fill
+                    className="object-cover bg-white group-hover:scale-105 transition-transform duration-500"
+                  />
+                </Link>
 
                 {/* Action Buttons */}
                 <div className="absolute top-3 right-3 flex flex-col items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -571,7 +541,10 @@ export default function ProductPage() {
                     <ShoppingCart className="text-gray-700 w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setProductPage(true)}
+                    onClick={() => {
+                      setProductID(item.productID);
+                      setProductPage(true);
+                    }}
                     className="bg-white p-2 rounded-full shadow hover:bg-blue-100 transition"
                   >
                     <Search className="text-gray-700 w-4 h-4" />
@@ -701,181 +674,188 @@ export default function ProductPage() {
 
       {productPage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-3 sm:px-6">
-          <div className="relative bg-white rounded-xl p-4 sm:p-6 w-full max-w-4xl flex flex-col md:flex-row gap-6 max-h-[95vh] shadow-xl overflow-y-auto animate-slideUp">
-            <button
-              className="absolute top-3 right-1 z-50 p-2 text-gray-600 hover:text-red-500 bg-gray-100 rounded-full transition"
-              onClick={() => setProductPage(false)}
+          {SelectiveproductList.map((item) => (
+            <div
+              key={item.productID}
+              className="relative bg-white rounded-xl p-4 sm:p-6 w-full max-w-4xl flex flex-col md:flex-row gap-6 max-h-[95vh] shadow-xl overflow-y-auto animate-slideUp"
             >
-              <X size={20} />
-            </button>
+              <button
+                className="absolute top-3 right-1 z-50 p-2 text-gray-600 hover:text-red-500 bg-gray-100 rounded-full transition"
+                onClick={() => {
+                  setProductPage(false);
+                  setAmount("");
+                  setNumberofProduct(0);
+                }}
+              >
+                <X size={20} />
+              </button>
 
-            <div className="relative w-full md:w-1/2 flex items-center justify-center">
-              <div className="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden rounded-lg">
-                {images.map((src, index) => (
-                  <div
-                    key={index}
-                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                      index === currentIndex ? "opacity-100" : "opacity-0"
-                    }`}
-                  >
-                    <Image
-                      src={src}
-                      alt={`Product image ${index + 1}`}
-                      fill
-                      className="object-cover rounded-lg"
-                      priority={index === 0}
+              <div className="relative w-full md:w-1/2 flex flex-col items-center justify-center gap-3">
+                {/* Main Image Container */}
+                <>
+                  <div className="relative w-full h-80 bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center shadow-sm">
+                    <img
+                      src={imageUrl} // Current main image URL from state
+                      alt="Product Main"
+                      className="max-w-full max-h-full object-contain"
                     />
                   </div>
-                ))}
+
+                  {/* Thumbnails */}
+
+                  <div className="flex gap-3 overflow-x-auto max-w-full px-2">
+                    {item.images.map((img, idx) => (
+                      <button
+                        key={img.urlID || idx}
+                        onClick={() => setImageUrl(img.url)} // Update main image on click
+                        className={`border rounded-lg p-1 flex-shrink-0 hover:border-blue-500 transition ${
+                          imageUrl === img.url
+                            ? "border-blue-600"
+                            : "border-gray-300"
+                        }`} // Highlight selected thumbnail
+                      >
+                        <img
+                          src={img.url}
+                          alt={`Thumbnail ${idx + 1}`}
+                          className="w-16 h-16 object-contain rounded"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </>
               </div>
 
-              <button
-                onClick={prevSlide}
-                className="absolute left-3 md:left-2 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur transition"
-              >
-                <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-white" />
-              </button>
-              <button
-                onClick={nextSlide}
-                className="absolute right-3 md:right-2 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur transition"
-              >
-                <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-white" />
-              </button>
+              <div className="flex flex-col justify-center md:w-1/2 space-y-4 text-gray-800">
+                <h1 className="text-xl sm:text-2xl font-semibold leading-tight">
+                  {item.productName}
+                </h1>
 
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentIndex(index)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all ${
-                      currentIndex === index
-                        ? "bg-white scale-110"
-                        : "bg-gray-400"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                          i < 4 ? "text-yellow-400" : "text-gray-300"
+                        }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 22 20"
+                      >
+                        <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded">
+                    4.8
+                  </span>
+                </div>
 
-            <div className="flex flex-col justify-center md:w-1/2 space-y-4 text-gray-800">
-              <h1 className="text-xl sm:text-2xl font-semibold leading-tight">
-                Beige Trouser New | Ladies Fashion
-              </h1>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold">
+                    MRP:{" "}
+                    <span className="text-gray-900">
+                      Rs.{" "}
+                      {Number(amount) -
+                        (Number(amount) * Number(item.discount)) / 100}{" "}
+                      <del className="text-gray-500 ml-2 text-base font-normal">
+                        Rs. {amount}
+                      </del>
+                    </span>
+                    <span className="ml-3 px-2 py-1 bg-green-100 text-green-600 text-xs rounded-md font-semibold">
+                      {item.discount}% OFF
+                    </span>
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Inclusive of all taxes
+                  </p>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                        i < 4 ? "text-yellow-400" : "text-gray-300"
-                      }`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="currentColor"
-                      viewBox="0 0 22 20"
-                    >
-                      <path d="M20.924 7.625a1.523 1.523 0 0 0-1.238-1.044l-5.051-.734-2.259-4.577a1.534 1.534 0 0 0-2.752 0L7.365 5.847l-5.051.734A1.535 1.535 0 0 0 1.463 9.2l3.656 3.563-.863 5.031a1.532 1.532 0 0 0 2.226 1.616L11 17.033l4.518 2.375a1.534 1.534 0 0 0 2.226-1.617l-.863-5.03L20.537 9.2a1.523 1.523 0 0 0 .387-1.575Z" />
-                    </svg>
+                <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+                  {item.description}
+                </p>
+                <div className="flex flex-col gap-3">
+                  {item.variants.map((variant) => (
+                    <div key={variant.varientID}>
+                      <h1 className="text-md font-bold mb-2">
+                        {variant.variantName}
+                      </h1>
+
+                      <div className="flex flex-wrap gap-2">
+                        {variant.variantValues.map((attr) => (
+                          <button
+                            key={attr.attributeID}
+                            disabled={attr.qty === 0}
+                            onClick={() => {
+                              setSelectedAttributeID(attr.attributeID || ""); // UNIQUE selection
+                              setAmount(String(attr.salePrice));
+                            }}
+                            className={`
+                              min-w-[40px] h-10 px-3 rounded-full text-sm font-semibold
+                              border shadow-sm flex items-center justify-center
+                              transition-all duration-200
+                              ${
+                                attr.qty === 0
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : selectedAttributeID === attr.attributeID
+                                  ? "bg-gray-800 text-white border-gray-800"
+                                  : "bg-white text-gray-800 hover:border-gray-500"
+                              }
+                            `}
+                          >
+                            {attr.varientValue}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
-                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded">
-                  4.8
-                </span>
-              </div>
 
-              <div>
-                <h2 className="text-lg sm:text-xl font-semibold">
-                  MRP:{" "}
-                  <span className="text-gray-900">
-                    Rs. 1500{" "}
-                    <del className="text-gray-500 ml-2 text-base font-normal">
-                      Rs. 2000
-                    </del>
-                  </span>
-                  <span className="ml-3 px-2 py-1 bg-green-100 text-green-600 text-xs rounded-md font-semibold">
-                    25% OFF
-                  </span>
-                </h2>
-                <p className="text-gray-500 text-sm mt-1">
-                  Inclusive of all taxes
-                </p>
-              </div>
+                <div className="flex items-center justify-between w-32 border border-gray-300 rounded-md shadow-sm bg-gray-200 px-3 py-2">
+                  {NumberofProduct === 0 ? (
+                    <button
+                      onClick={() => setNumberofProduct(NumberofProduct)}
+                      className="p-1  bg-white  shadow-sm rounded"
+                    >
+                      <Minus size={16} color="gray" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setNumberofProduct(NumberofProduct - 1)}
+                      className="p-1  bg-white hover:bg-gray-200 shadow-sm rounded"
+                    >
+                      <Minus size={16} color="black" />
+                    </button>
+                  )}
+                  <p className="text-lg font-medium">{NumberofProduct}</p>
+                  <button
+                    onClick={() => setNumberofProduct(NumberofProduct + 1)}
+                    className="p-1 bg-white hover:bg-gray-100 shadow-sm rounded"
+                  >
+                    <Plus size={16} color="black" />
+                  </button>
+                </div>
 
-              <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-                Elegant beige trousers for everyday and formal wear. Crafted
-                with soft fabric for comfort and style. Available in all sizes.
-              </p>
-              <div className="flex flex-col">
-                <h1 className="text-md font-bold">Sizes</h1>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setActiveSize("sm")}
-                    className={`w-10 h-10 font-bold text-sm p-2 shadow-md border border-gray-100 rounded-full ${
-                      activeSize === "sm"
-                        ? `bg-gray-900 text-white`
-                        : `bg-white text-black`
-                    }`}
-                  >
-                    sm
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button className="w-full md:w-3/5 bg-black border border-black-400 text-white py-3 rounded hover:bg-white hover:text-black transition-all duration-300">
+                    <div
+                      onClick={() => addToCart(productID)}
+                      className="flex justify-center items-center gap-2"
+                    >
+                      <ShoppingCart />
+                      Add to Cart
+                    </div>
                   </button>
-                  <button
-                    onClick={() => setActiveSize("md")}
-                    className={`w-10 h-10 font-bold text-sm p-2 shadow-md border border-gray-100 rounded-full ${
-                      activeSize === "md"
-                        ? `bg-gray-900 text-white`
-                        : `bg-white text-black`
-                    }`}
-                  >
-                    md
-                  </button>
-                  <button
-                    onClick={() => setActiveSize("lg")}
-                    className={`w-10 h-10 font-bold text-sm p-2 shadow-md border border-gray-100 rounded-full ${
-                      activeSize === "lg"
-                        ? `bg-gray-900 text-white`
-                        : `bg-white text-black`
-                    }`}
-                  >
-                    lg
-                  </button>
-                  <button
-                    onClick={() => setActiveSize("xl")}
-                    className={`w-10 h-10 font-bold text-sm p-2 shadow-md border border-gray-100 rounded-full ${
-                      activeSize === "xl"
-                        ? `bg-gray-900 text-white`
-                        : `bg-white text-black`
-                    }`}
-                  >
-                    xl
+                  <button className="w-full md:w-3/5 bg-black border border-black-400 text-white py-3 rounded hover:bg-white hover:text-black transition-all duration-300">
+                    <div className="flex justify-center items-center gap-2">
+                      <CreditCard />
+                      <span>Buy Now</span>
+                    </div>
                   </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between w-32 border border-gray-200 rounded-md shadow-sm bg-gray-50 px-3 py-2">
-                <button className="p-1 bg-white hover:bg-gray-100 shadow-sm rounded">
-                  <Minus size={16} />
-                </button>
-                <p className="text-lg font-medium">1</p>
-                <button className="p-1 bg-white hover:bg-gray-100 shadow-sm rounded">
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button className="w-full md:w-3/5 bg-black border border-black-400 text-white py-3 rounded hover:bg-white hover:text-black transition-all duration-300">
-                  <div className="flex justify-center items-center gap-2">
-                    <ShoppingCart />
-                    <span>Add to Cart</span>
-                  </div>
-                </button>
-                <button className="w-full md:w-3/5 bg-black border border-black-400 text-white py-3 rounded hover:bg-white hover:text-black transition-all duration-300">
-                  <div className="flex justify-center items-center gap-2">
-                    <CreditCard />
-                    <span>Buy Now</span>
-                  </div>
-                </button>
-              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
       <Footer />

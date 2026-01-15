@@ -33,7 +33,6 @@ import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import GetProductHome from "@/api/lib/HomePage/Product/Product";
 import {
   GetProductHomeApiResponse,
-  ProductHome,
   ProductHomePage,
 } from "@/api/types/HomePage/Product/product";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
@@ -93,6 +92,7 @@ export default function SaleForm() {
   const [SubVarinetName, setSubVarinetName] = useState("");
   const [storeID, setStoreID] = useState("");
   const [VarinetID, setVarinetID] = useState("");
+  const [productName, setProductName] = useState("");
   const [ProductID, setProductID] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
 
@@ -660,7 +660,10 @@ export default function SaleForm() {
                     name="CustomerType"
                     value="WalkingCustomer"
                     checked={CustomerType === "WalkingCustomer"}
-                    onChange={(e) => setCustomerType("WalkingCustomer")}
+                    onChange={(e) => {
+                      setCustomer("");
+                      setCustomerType("WalkingCustomer");
+                    }}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -673,7 +676,10 @@ export default function SaleForm() {
                     name="CustomerType"
                     value="RegularCustomer"
                     checked={CustomerType === "RegularCustomer"}
-                    onChange={(e) => setCustomerType("RegularCustomer")}
+                    onChange={(e) => {
+                      setCustomer("");
+                      setCustomerType("RegularCustomer");
+                    }}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -804,34 +810,38 @@ export default function SaleForm() {
                   </select>
                 </div>
               </div>
-              <div className="w-full">
+              <div className="w-full min-w-0">
                 <label className="block text-gray-700 font-medium mb-2">
                   Product Name
                 </label>
+
                 <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                   <Tag className="text-gray-400 mr-2" size={18} />
-                  <select
-                    value={ProductID}
+
+                  <input
+                    type="text"
+                    list="productList"
+                    value={productName}
                     onChange={(e) => {
-                      setProductID(e.target.value);
-                      fetchDataVarientList(e.target.value);
+                      const value = e.target.value;
+                      setProductName(value);
+                      const data = productList.find(
+                        (item) => item.productName === value
+                      );
+                      if (data) {
+                        setProductID(data.productID);
+                        fetchDataVarientList(data.productID);
+                      }
                     }}
-                    className="flex-1 bg-transparent outline-none text-gray-900 p-1"
-                  >
-                    {productList.length === 0 ? (
-                      <option value="">No Record Found</option>
-                    ) : (
-                      <>
-                        {productList.map((item) => (
-                          <>
-                            <option key={item.productID} value={item.productID}>
-                              {item.productName}
-                            </option>
-                          </>
-                        ))}
-                      </>
-                    )}
-                  </select>
+                    placeholder="Select product"
+                    className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                  />
+
+                  <datalist id="productList">
+                    {productList.map((item) => (
+                      <option key={item.productID} value={item.productName} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
             </div>
