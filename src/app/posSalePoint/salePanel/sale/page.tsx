@@ -20,6 +20,7 @@ import {
   NotepadText,
   List,
   X,
+  Receipt,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
@@ -47,6 +48,7 @@ import {
 import AddSalePos from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
 import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
 import Spinner from "@/component/spinner/page";
+import jsPDF from "jspdf";
 interface Item {
   barcode: string;
   attributeID: string;
@@ -54,6 +56,7 @@ interface Item {
   qty: number;
   price: number;
   varinet: string;
+  stockQty: number;
 }
 interface VarientsList {
   varientID: string;
@@ -112,6 +115,7 @@ export default function SaleForm() {
   const [SearchBy, setSearchBy] = useState("SearchByBarcode");
   const [isLoading, setIsLoading] = useState(false);
   const [Loading1, setLoading1] = useState(false);
+  const [qty, setQty] = useState(1);
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
@@ -121,7 +125,87 @@ export default function SaleForm() {
     price: 0,
     barcode: "",
     varinet: "",
+    stockQty: 0,
   });
+
+  const pdfRecipt = () => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [80, 250],
+    });
+
+    // Logo position and size
+    const logoX = 5;
+    const logoY = 5;
+    const logoWidth = 25;
+    const logoHeight = 20;
+    const logoBase64 =
+      "https://res.cloudinary.com/daz8ajhg3/image/upload/v1766325653/ir3kwpslvkrt20eoiuag.png";
+    // Add logo
+    doc.addImage(logoBase64, "PNG", logoX, logoY, logoWidth, logoHeight);
+
+    // Store name
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("Karime", logoX + logoWidth + 5, logoY + 10);
+
+    // Receipt title
+    doc.setFontSize(15);
+    doc.text("Sale Receipt", logoX - 5 + logoWidth + 10, logoY + 25);
+
+    const infoY = logoY + logoHeight + 15;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+
+    // Left side: Date
+    doc.text("Date: 2026-01-16", logoX, infoY);
+
+    // Right side: Invoice No (approx right aligned by x pos)
+    doc.text("Invoice No: 12345", 40, infoY); // 60mm x position (80mm total width - right padding)
+
+    // --- Next line: Customer label with dashed line
+
+    const custY = infoY + 10;
+
+    doc.text("Customer:", logoX, custY);
+
+    // Draw dashed line from end of "Customer:" label to right margin
+    const dashStartX = doc.getTextWidth("Customer:") + logoX + 2;
+    const dashEndX = 75;
+
+    // Draw dashed line manually (small lines with gaps)
+    let x = dashStartX;
+    while (x < dashEndX) {
+      doc.line(x, custY - 1, x + 2, custY - 1); // small dash 2mm length
+      x += 4; // dash + gap
+    }
+
+    // --- Next: Table header and rows
+
+    let tableY = custY + 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Item", logoX, tableY);
+    doc.text("Qty", 45, tableY);
+    doc.text("Price", 60, tableY);
+
+    tableY += 6;
+    doc.setFont("helvetica", "normal");
+    // Example rows:
+    doc.text("Burger", logoX, tableY);
+    doc.text("2", 45, tableY);
+    doc.text("500", 60, tableY);
+
+    tableY += 6;
+    doc.text("Fries", logoX, tableY);
+    doc.text("1", 45, tableY);
+    doc.text("200", 60, tableY);
+
+    // Save file
+    doc.save("thermal-receipt.pdf");
+  };
 
   const CustomerGet = async () => {
     const token = localStorage.getItem("token");
@@ -201,6 +285,7 @@ export default function SaleForm() {
         );
 
         if (attribute) {
+          setQty(attribute.qty);
           setItems((prev) => {
             const existingIndex = prev.findIndex(
               (item) => item.attributeID === attribute.attributeID
@@ -223,9 +308,10 @@ export default function SaleForm() {
                 barcode: attribute.barcode,
                 attributeID: attribute.attributeID,
                 productName: product.productName,
-                qty: attribute.qty, // start with 1
+                qty: 1,
                 price: attribute.salePrice,
                 varinet: attribute.varientValue,
+                stockQty: attribute.qty,
               },
             ];
           });
@@ -260,14 +346,11 @@ export default function SaleForm() {
   };
 
   const fetchDataAttributeList = (varientID: string) => {
-    for (var atribute of VarientsList) {
-      if (atribute) {
-        const data = VarientsList.find((p) => p.varientID === varientID);
-        if (data) {
-          setAttributeList(data.variantValues);
-        }
-        setAttributeList(atribute.variantValues);
-      }
+    const data = VarientsList.find((p) => p.varientID === varientID);
+    if (data) {
+      setAttributeList(data.variantValues);
+    } else {
+      setAttributeList([]);
     }
   };
 
@@ -339,19 +422,28 @@ export default function SaleForm() {
       setSaleListItem(data.itemList);
     }
   };
-  const fetchDataForModify = (saleID: string) => {
-    const data = SaleList.find((item) => item.saleID === saleID);
-    if (data) {
-      setCustomerName(data.customer);
-      setSaleDate(data.saleDate);
-      setItems(data.itemList);
-    }
-  };
+  // const fetchDataForModify = (saleID: string) => {
+  //   const data = SaleList.find((item) => item.saleID === saleID);
+  //   if (data) {
+  //     setCustomerName(data.customer);
+  //     setSaleDate(data.saleDate);
+  //     setItems(data.itemList);
+  //   }
+  // };
 
-  const totalSum = items.reduce((total, variant) => {
-    return total + variant.qty * variant.price;
-  }, 0);
+  useEffect(() => {
+    const totalSum = items.reduce(
+      (total, variant) => total + variant.qty * variant.price,
+      0
+    );
 
+    setAmountPaid(totalSum);
+  }, [items]);
+
+  const totalSum = items.reduce(
+    (total, variant) => total + variant.qty * variant.price,
+    0
+  );
   useEffect(() => {
     setTimeout(() => {
       if (ShowMessage) {
@@ -361,6 +453,8 @@ export default function SaleForm() {
     }, 2000);
   }, [ShowMessage, RescponseBack]);
   useEffect(() => {
+    const date = new Date().toISOString().split("T")[0];
+    setSaleDate(date);
     saleGet();
     CustomerGet();
     storesget();
@@ -587,19 +681,40 @@ export default function SaleForm() {
                               (item2) => item2.customerID === item.customer
                             )?.customerName || item.customer}
                           </h3>
+                          <p className="text-gray-600">
+                            <span className="text-gray-600 font-bold">
+                              Invoice No:
+                            </span>{" "}
+                            {item.invoiceNo}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="text-gray-600 font-bold">
+                              Sale Date:
+                            </span>{" "}
+                            {item.saleDate.split("T")[0]}
+                          </p>
 
-                          <p className="text-gray-600">
-                            Sale Date: {item.saleDate}
-                          </p>
-                          <p className="text-gray-600">
-                            Total Bill: {item.totalBill}
-                          </p>
-                          <p className="text-gray-600">
-                            Adjustment: {item.adjustment}
-                          </p>
-                          <p className="text-gray-600">
-                            Amount Paid: {item.amountPaid}
-                          </p>
+                          <div className="flex gap-2">
+                            <p className="text-gray-600">
+                              <span className="text-gray-600 font-bold">
+                                {" "}
+                                Total Bill:
+                              </span>{" "}
+                              {item.totalBill}
+                            </p>
+                            <p className="text-gray-600">
+                              <span className="text-gray-600 font-bold">
+                                Adjustment:{" "}
+                              </span>
+                              {item.adjustment}
+                            </p>
+                            <p className="text-gray-600">
+                              <span className="text-gray-600 font-bold">
+                                Amount Paid:
+                              </span>{" "}
+                              {item.amountPaid}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex gap-4">
                           {item.itemList.length > 0 ? (
@@ -620,6 +735,15 @@ export default function SaleForm() {
                               <List className="w-5 h-5" />
                             </button>
                           )}
+                          {/* <button
+                            onClick={() => {
+                              pdfRecipt();
+                            }}
+                            className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 transition"
+                            title="Delete"
+                          >
+                            <Receipt className="w-5 h-5" />
+                          </button> */}
                           <button
                             // onClick={() => {
                             // }}
@@ -696,6 +820,7 @@ export default function SaleForm() {
                       onChange={(e) => setSaleDate(e.target.value)}
                       type="date"
                       name="productName"
+                      readOnly
                       placeholder="Enter PurchaseDate"
                       className="flex-1 bg-transparent outline-none text-gray-900"
                     />
@@ -809,26 +934,46 @@ export default function SaleForm() {
 
                 <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                   <Tag className="text-gray-400 mr-2" size={18} />
-
-                  <input
-                    type="text"
-                    list="productList"
-                    value={productName}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setProductName(value);
-                      const data = productList.find(
-                        (item) => item.productName === value
-                      );
-                      if (data) {
-                        setProductID(data.productID);
-                        fetchDataVarientList(data.productID);
-                      }
-                    }}
-                    placeholder="Select product"
-                    className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
-                  />
-
+                  {productList.length === 0 ? (
+                    <input
+                      type="text"
+                      list="productList"
+                      value={productName}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProductName(value);
+                        const data = productList.find(
+                          (item) => item.productName === value
+                        );
+                        if (data) {
+                          setProductID(data.productID);
+                          fetchDataVarientList(data.productID);
+                        }
+                      }}
+                      disabled
+                      placeholder="No Product Found"
+                      className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      list="productList"
+                      value={productName}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProductName(value);
+                        const data = productList.find(
+                          (item) => item.productName === value
+                        );
+                        if (data) {
+                          setProductID(data.productID);
+                          fetchDataVarientList(data.productID);
+                        }
+                      }}
+                      placeholder="Select product"
+                      className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                    />
+                  )}
                   <datalist id="productList">
                     {productList.map((item) => (
                       <option key={item.productID} value={item.productName} />
@@ -879,7 +1024,7 @@ export default function SaleForm() {
                 </div>
                 <div className="w-full">
                   <label className="block text-gray-700 font-medium mb-2">
-                    Barcode
+                    Sub Variant
                   </label>
 
                   <div className="flex items-center gap-2 w-full">
@@ -890,15 +1035,15 @@ export default function SaleForm() {
                         value={SubVarinetName}
                         onChange={(e: any) => {
                           const value = e.target.value;
+                          setSubVarinetName(value);
                           const data = AttributeList.find(
                             (item) => item.varientValue === value
                           );
                           if (data) {
                             setSearchByProduct(data.attributeID);
-                            setSubVarinetName(data.varientValue);
                           }
                         }}
-                        placeholder="Select Barcode"
+                        placeholder="Select Sub Variant"
                         className="w-full bg-transparent outline-none text-gray-900 "
                       />
 
@@ -935,7 +1080,7 @@ export default function SaleForm() {
 
             {/* Table */}
             <div className="w-full overflow-x-auto">
-              <table className="w-full border border-gray-200 rounded-lg overflow-hidden ">
+              <table className="w-full border border-gray-50 rounded-lg overflow-hidden ">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-4 py-2 text-left text-gray-700 font-medium">
@@ -963,56 +1108,70 @@ export default function SaleForm() {
                 </thead>
                 <tbody>
                   {items.map((item, index) => (
-                    <tr
-                      key={item.attributeID}
-                      className="border-t hover:bg-gray-50 transition"
-                    >
-                      <td className="px-4 py-2">{item.barcode}</td>
-                      <td className="px-4 py-2 text-sm">{item.productName}</td>
-                      <td className="px-4 py-2">{item.varinet}</td>
-                      <td className="px-4 py-2 text-center">
-                        <input
-                          type="number"
-                          value={item.qty}
-                          onChange={(e) => {
-                            const newItems = [...items];
-                            newItems[index].qty = Number(e.target.value);
-                            setItems(newItems);
-                          }}
-                          className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <input
-                          type="number"
-                          value={item.price}
-                          onChange={(e) => {
-                            const newItems = [...items];
-                            newItems[index].price = Number(e.target.value);
-                            setItems(newItems);
-                          }}
-                          className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center text-gray-800 font-medium">
-                        {(
-                          Number(item.qty || 0) * Number(item.price || 0)
-                        ).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() =>
-                            setItems(items.filter((_, i) => i !== index))
-                          }
-                          className="text-red-500 hover:text-red-700"
-                          title="Delete Item"
+                    <>
+                      <tr
+                        key={item.attributeID}
+                        className={`border-t ${
+                          item.qty <= item.stockQty
+                            ? `hover:bg-gray-50`
+                            : `bg-red-500 text-white hover:bg-red-600`
+                        }  transition`}
+                      >
+                        <td className="px-4 py-2">{item.barcode}</td>
+                        <td className="px-4 py-2 text-sm">
+                          {item.productName}
+                        </td>
+                        <td className="px-4 py-2">{item.varinet}</td>
+                        <td className="px-4 py-2 text-center">
+                          <input
+                            type="number"
+                            value={item.qty}
+                            onChange={(e) => {
+                              const newItems = [...items];
+                              newItems[index].qty = Number(e.target.value);
+                              setItems(newItems);
+                            }}
+                            className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                            placeholder="0"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <input
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => {
+                              const newItems = [...items];
+                              newItems[index].price = Number(e.target.value);
+                              setItems(newItems);
+                            }}
+                            className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                            placeholder="0"
+                          />
+                        </td>
+                        <td
+                          className={`px-4 py-2 text-center text-gray-800 font-medium ${
+                            item.qty <= item.stockQty
+                              ? `text-black`
+                              : `text-white`
+                          }`}
                         >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
+                          {(
+                            Number(item.qty || 0) * Number(item.price || 0)
+                          ).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() =>
+                              setItems(items.filter((_, i) => i !== index))
+                            }
+                            className="text-red-500 hover:text-red-700"
+                            title="Delete Item"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    </>
                   ))}
 
                   {/* Row to Add New Item */}
@@ -1129,7 +1288,8 @@ export default function SaleForm() {
                             newItem.productName &&
                             newItem.qty &&
                             newItem.price &&
-                            newItem.varinet
+                            newItem.varinet &&
+                            newItem.stockQty
                           ) {
                             setItems([...items, newItem]);
                             setNewItem({
@@ -1139,6 +1299,7 @@ export default function SaleForm() {
                               price: 0,
                               barcode: "",
                               varinet: "",
+                              stockQty: 0,
                             });
                           }
                         }}
@@ -1213,7 +1374,12 @@ export default function SaleForm() {
                   <label className="block text-gray-700 font-medium mb-2">
                     Remaining Balance
                   </label>
-                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <div
+                    className={`flex items-center  ${
+                      totalSum - AmountPaid - Discount < 0 &&
+                      `text-red-100 border-red-200 bg-red-100`
+                    }  border border-gray-200 rounded-lg px-3 py-2 bg-gray-50`}
+                  >
                     <Coins className="text-gray-400 mr-2" size={18} />
                     <input
                       value={totalSum - AmountPaid - Discount || 0}
@@ -1221,7 +1387,9 @@ export default function SaleForm() {
                       name="remainingBalance"
                       placeholder="Auto Calculated"
                       readOnly
-                      className="w-full bg-transparent outline-none text-gray-900"
+                      className={`w-full text-center ${
+                        totalSum - AmountPaid - Discount < 0 && `text-red-500`
+                      } bg-transparent outline-none text-gray-900`}
                     />
                   </div>
                 </div>

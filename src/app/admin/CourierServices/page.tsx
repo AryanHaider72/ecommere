@@ -1,5 +1,7 @@
 "use client";
 
+import AddCourier from "@/api/lib/Admin/CourierService/AddCourier/AddCourier";
+import ModifyCourier from "@/api/lib/Admin/CourierService/ModifyCourier/MpodifyCouriere";
 import AddPayment from "@/api/lib/payment/addPayment/addPayment";
 import DeletePaymentApi from "@/api/lib/payment/deletePayment/deletePayment";
 import GetPayment from "@/api/lib/payment/getPayment/getPayment";
@@ -20,25 +22,102 @@ export default function CourierService() {
   const [loading, setLoading] = useState(false);
   const [update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [responseBack, setResponseBack] = useState(0);
 
   const [ID, setID] = useState("");
   const [ServiceName, setServiceName] = useState("");
   const [PhoneNo, setPhoneNo] = useState("");
   const [Email, setEmail] = useState("");
   const [Description, setDescription] = useState("");
+  const [OpeningBalance, setOpeningBalance] = useState(0);
+  const [responseBack, setResponseBack] = useState("");
+  const [ShowMessage, setShowMessage] = useState(false);
 
   const [paymentList, setPaymentList] = useState<paymentget[]>([]);
 
+  const handleSaveService = async () => {
+    try {
+      setLoading(true);
+      const formData = {
+        serviceName: ServiceName,
+        phoneNo: PhoneNo,
+        email: Email,
+        openingBalance: OpeningBalance,
+        description: Description,
+      };
+      const token = localStorage.getItem("token");
+      const response = await AddCourier(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        setServiceName("");
+        setEmail("");
+        setPhoneNo("");
+        setDescription("");
+        setOpeningBalance(0);
+
+        setShowMessage(true);
+        setResponseBack(response.message || "Record Added Successfully");
+        return;
+      }
+      if (response.status === 400) {
+        setShowMessage(true);
+        setResponseBack("Please Fill in Required Fields");
+        return;
+      }
+      if (response.status === 401) {
+        router.push("/adminlogin");
+      } else {
+        setShowMessage(true);
+        setResponseBack("Something Went Wrong. Please Try Again Later.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleModifyService = async () => {
+    try {
+      setLoading(true);
+      const formData = {
+        courierID: ID,
+        serviceName: ServiceName,
+        phoneNo: PhoneNo,
+        email: Email,
+        openingBalance: OpeningBalance,
+        description: Description,
+      };
+      const token = localStorage.getItem("token");
+      const response = await ModifyCourier(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        setID("");
+        setServiceName("");
+        setEmail("");
+        setPhoneNo("");
+        setDescription("");
+        setOpeningBalance(0);
+
+        setShowMessage(true);
+        setResponseBack(response.message || "Record Added Successfully");
+        return;
+      }
+      if (response.status === 400) {
+        setShowMessage(true);
+        setResponseBack("Please Fill in Required Fields");
+        return;
+      }
+      if (response.status === 401) {
+        router.push("/adminlogin");
+      } else {
+        setShowMessage(true);
+        setResponseBack("Something Went Wrong. Please Try Again Later.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (
-      responseBack === 1 ||
-      responseBack === 2 ||
-      responseBack === 3 ||
-      responseBack === 4
-    ) {
+    if (ShowMessage) {
       setTimeout(() => {
-        setResponseBack(0);
+        setResponseBack("");
+        setShowMessage(false);
       }, 2000);
     }
   }, [responseBack]);
@@ -129,36 +208,39 @@ export default function CourierService() {
               {/* Bank Name */}
               <div>
                 <label className="block text-gray-700 font-medium mb-1">
-                  Service Name
+                  Service Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={ServiceName}
                   onChange={(e) => setServiceName(e.target.value)}
-                  className={`w-full px-3 py-3 border rounded-md ${
-                    responseBack === 2 && !ServiceName
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                  className={`w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
                 />
               </div>
 
               {/* Account Title */}
               <div>
                 <label className="block text-gray-700 font-medium mb-1">
-                  Phone No
+                  Phone No <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={PhoneNo}
                   onChange={(e) => setPhoneNo(e.target.value)}
-                  className={`w-full px-3 py-3 border rounded-md ${
-                    responseBack === 2 && !PhoneNo
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                  className={`w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Opening Balance
+                </label>
+                <input
+                  type="number"
+                  value={OpeningBalance ?? 0}
+                  onChange={(e) => setOpeningBalance(Number(e.target.value))}
+                  className={`w-full px-3 py-3 border rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
                 />
               </div>
 
@@ -169,19 +251,15 @@ export default function CourierService() {
                 </label>
                 <input
                   type="text"
-                  required
                   value={Email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-3 py-3 border rounded-md ${
-                    responseBack === 2 && !Email
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  } focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                  className={`w-full px-3 py-3 border rounded-md 
+                  border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
                 />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">
-                  Email
+                  Description
                 </label>
                 <textarea
                   value={Description}
@@ -191,31 +269,28 @@ export default function CourierService() {
               </div>
 
               {/* Response Messages */}
-              {responseBack === 2 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Fill in All Required Fields
-                </div>
-              )}
-              {responseBack === 3 && (
-                <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                  Network Error
-                </div>
-              )}
-              {responseBack === 1 && (
-                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
-                  Record Added Successfully
-                </div>
-              )}
-              {responseBack === 4 && (
-                <div className="w-full bg-green-100 text-green-800 text-center px-4 py-3 mb-2 rounded">
-                  Record Modified Successfully
-                </div>
+              {ShowMessage && (
+                <>
+                  {responseBack && (
+                    <div
+                      className={`w-full text-center px-4 py-3 mb-2 rounded ${
+                        responseBack === "Record Added Successfully" ||
+                        responseBack === "Login Successfully" ||
+                        responseBack === "Request successful"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {responseBack}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Submit Button */}
               {update ? (
                 <button
-                  // onClick={UpdatePayment}
+                  onClick={handleModifyService}
                   type="button"
                   className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
                 >
@@ -223,7 +298,7 @@ export default function CourierService() {
                 </button>
               ) : (
                 <button
-                  // onClick={addPayment}
+                  onClick={handleSaveService}
                   type="button"
                   className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
                 >

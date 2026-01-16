@@ -39,6 +39,7 @@ import {
   ReturnSaleItem,
 } from "@/api/types/PosIntegration/SaleReturn/Return";
 import Spinner from "@/component/spinner/page";
+import GetSalePosInvoice from "@/api/lib/PosIntegration/Sale/SaleGetInvoice/SaleGetInvoice";
 
 interface SaleItem {
   barcode: string;
@@ -404,7 +405,7 @@ export default function SaleReturnModule() {
   };
   const saleGet = async () => {
     const token = localStorage.getItem("token");
-    const response = await GetSalePos(String(token));
+    const response = await GetSalePosInvoice(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseGetSale;
       console.log(data);
