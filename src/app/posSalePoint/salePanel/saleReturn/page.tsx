@@ -62,6 +62,8 @@ interface responseList {
 }
 
 interface historyData {
+  customerID: string;
+  customerName: string;
   saleID: string;
   productName: string;
   attributeID: string;
@@ -119,7 +121,7 @@ export default function SaleReturnModule() {
   const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
   const [GetDataReturn, setGetDataReturn] = useState<ReturnSale[]>([]);
   const [GetDataReturnList, setGetDataReturnList] = useState<ReturnSaleItem[]>(
-    []
+    [],
   );
   const [ShowInvoiceItem, setShowInvoiceItem] = useState(false);
   const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
@@ -160,8 +162,8 @@ export default function SaleReturnModule() {
         prev.map((item) =>
           item.attributeID === id
             ? { ...item, qty, total: qty * item.rate }
-            : item
-        )
+            : item,
+        ),
       );
     }
   }
@@ -240,13 +242,13 @@ export default function SaleReturnModule() {
     for (const product of productList) {
       for (const variant of product.variants) {
         const attribute = variant.variantValues.find(
-          (v) => v.attributeID === attributeID
+          (v) => v.attributeID === attributeID,
         );
 
         if (attribute) {
           setItems((prev) => {
             const existingIndex = prev.findIndex(
-              (item) => item.attributeID === attribute.attributeID
+              (item) => item.attributeID === attribute.attributeID,
             );
 
             // 🔁 If already exists → increase qty
@@ -410,7 +412,7 @@ export default function SaleReturnModule() {
       const data = response.data as responseGetSale;
       console.log(data);
       const filterData = data.saleList.filter(
-        (item) => item.itemList.length > 0
+        (item) => item.itemList.length > 0,
       );
       if (filterData) {
         setSaleList(filterData);
@@ -656,7 +658,7 @@ export default function SaleReturnModule() {
                         setProductID(e.target.value);
                         const value = e.target.value;
                         const data = productList.find(
-                          (item) => item.productName === value
+                          (item) => item.productName === value,
                         );
                         if (data) {
                           getProductHistory(data.productID);
@@ -699,7 +701,7 @@ export default function SaleReturnModule() {
                         setInvoiceNo(e.target.value);
                         const value = e.target.value;
                         const data = SaleList.find(
-                          (item) => item.invoiceNo === Number(value)
+                          (item) => item.invoiceNo === Number(value),
                         );
                         if (data) {
                           getInvoiceHistory(data.saleID);
@@ -936,7 +938,7 @@ export default function SaleReturnModule() {
                           onChange={(e: any) => {
                             const value = e.target.value;
                             const data = AttributeList.find(
-                              (item) => item.varientValue === value
+                              (item) => item.varientValue === value,
                             );
                             if (data) {
                               setSearchByProduct(data.attributeID);
@@ -1073,7 +1075,7 @@ export default function SaleReturnModule() {
                               for (const product of productList) {
                                 for (const variant of product.variants) {
                                   const match = variant.variantValues.find(
-                                    (vv) => vv.barcode === value
+                                    (vv) => vv.barcode === value,
                                   );
 
                                   if (match) {
@@ -1321,7 +1323,7 @@ export default function SaleReturnModule() {
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
                             {CustomerList.find(
-                              (item2) => item2.customerID === item.customer
+                              (item2) => item2.customerID === item.customer,
                             )?.customerName || item.customer}
                           </h3>
                           <p className="text-gray-600">

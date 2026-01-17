@@ -116,6 +116,8 @@ export default function SaleForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [Loading1, setLoading1] = useState(false);
   const [qty, setQty] = useState(1);
+  const [newSaleList, setNewSaleList] = useState<Sale[]>([]);
+  const [loadRecipt, setLoadRecipt] = useState(false);
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
@@ -128,83 +130,113 @@ export default function SaleForm() {
     stockQty: 0,
   });
 
-  const pdfRecipt = () => {
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: [80, 250],
-    });
+  const pdfRecipt = (sale: any) => {
+    if (!sale || !sale.itemList || sale.itemList.length === 0) return;
 
-    // Logo position and size
-    const logoX = 5;
-    const logoY = 5;
-    const logoWidth = 25;
-    const logoHeight = 20;
-    const logoBase64 =
-      "https://res.cloudinary.com/daz8ajhg3/image/upload/v1766325653/ir3kwpslvkrt20eoiuag.png";
-    // Add logo
-    doc.addImage(logoBase64, "PNG", logoX, logoY, logoWidth, logoHeight);
+    setLoadRecipt(true);
 
-    // Store name
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("Karime", logoX + logoWidth + 5, logoY + 10);
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: [80, 250],
+      });
 
-    // Receipt title
-    doc.setFontSize(15);
-    doc.text("Sale Receipt", logoX - 5 + logoWidth + 10, logoY + 25);
+      // Logo
+      doc.addImage(
+        "https://res.cloudinary.com/daz8ajhg3/image/upload/v1766325653/ir3kwpslvkrt20eoiuag.png",
+        "PNG",
+        5,
+        5,
+        30,
+        20,
+      );
 
-    const infoY = logoY + logoHeight + 15;
+      // Store name
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text("Karime", 40, 15, { align: "center" });
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
+      // Title
+      doc.setFontSize(13);
+      doc.text("Sale Receipt", 40, 30, { align: "center" });
 
-    // Left side: Date
-    doc.text("Date: 2026-01-16", logoX, infoY);
+      let y = 40;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
 
-    // Right side: Invoice No (approx right aligned by x pos)
-    doc.text("Invoice No: 12345", 40, infoY); // 60mm x position (80mm total width - right padding)
+      // Date & invoice
+      const date = new Date(sale.saleDate).toISOString().split("T")[0];
+      doc.text(`Date: ${date}`, 5, y);
+      doc.text(`Invoice: ${sale.invoiceNo}`, 75, y, { align: "right" });
 
-    // --- Next line: Customer label with dashed line
+      y += 4;
+      doc.line(5, y, 75, y);
 
-    const custY = infoY + 10;
+      // 🔁 LOOP THROUGH ITEMS
+      sale.itemList.forEach((item: any, index: number) => {
+        // Product name
+        y += 6;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(item.productName || "Product", 5, y, { maxWidth: 65 });
 
-    doc.text("Customer:", logoX, custY);
+        // Divider
+        y += 6;
+        doc.line(5, y, 75, y);
 
-    // Draw dashed line from end of "Customer:" label to right margin
-    const dashStartX = doc.getTextWidth("Customer:") + logoX + 2;
-    const dashEndX = 75;
+        // Table header
+        y += 5;
+        doc.setFontSize(10);
+        doc.text("#", 5, y);
+        doc.text("Barcode", 25, y);
+        doc.text("Qty", 45, y);
+        doc.text("Amount", 75, y, { align: "right" });
 
-    // Draw dashed line manually (small lines with gaps)
-    let x = dashStartX;
-    while (x < dashEndX) {
-      doc.line(x, custY - 1, x + 2, custY - 1); // small dash 2mm length
-      x += 4; // dash + gap
+        // Header divider
+        y += 2;
+        doc.line(5, y, 75, y);
+
+        // Table row
+        y += 4;
+        doc.setFont("helvetica", "normal");
+        doc.text(String(index + 1), 5, y);
+        doc.text(item.barcode || "-", 25, y);
+        doc.text(String(item.qty), 45, y);
+        doc.text(String(item.price * item.qty), 75, y, { align: "right" });
+
+        // Row divider
+        y += 4;
+        doc.line(5, y, 75, y);
+      });
+
+      // Totals
+      // Totals section (flex style)
+      y += 5;
+      doc.text("Thank you for shopping!", 5, y);
+      doc.text(`Total: ${sale.totalBill}`, 75, y, { align: "right" });
+
+      y += 5;
+      doc.text("Visit us again!", 5, y);
+      doc.text(`Paid: ${sale.amountPaid}`, 75, y, { align: "right" });
+
+      y += 5;
+      doc.text("We appreciate you", 5, y);
+      doc.text(`Discount: 0`, 75, y, { align: "right" });
+
+      y += 5;
+      doc.text("Have a nice day!", 5, y);
+      doc.text(`Adjustment: ${sale.adjustment}`, 75, y, { align: "right" });
+
+      // Footer
+      y += 7;
+      doc.setFont("helvetica", "italic");
+      doc.text("Thank you for shopping!", 40, y, { align: "center" });
+
+      doc.save(`receipt-${sale.invoiceNo}.pdf`);
+    } finally {
+      setLoadRecipt(false);
     }
-
-    // --- Next: Table header and rows
-
-    let tableY = custY + 10;
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", logoX, tableY);
-    doc.text("Qty", 45, tableY);
-    doc.text("Price", 60, tableY);
-
-    tableY += 6;
-    doc.setFont("helvetica", "normal");
-    // Example rows:
-    doc.text("Burger", logoX, tableY);
-    doc.text("2", 45, tableY);
-    doc.text("500", 60, tableY);
-
-    tableY += 6;
-    doc.text("Fries", logoX, tableY);
-    doc.text("1", 45, tableY);
-    doc.text("200", 60, tableY);
-
-    // Save file
-    doc.save("thermal-receipt.pdf");
   };
 
   const CustomerGet = async () => {
@@ -281,14 +313,14 @@ export default function SaleForm() {
     for (const product of productList) {
       for (const variant of product.variants) {
         const attribute = variant.variantValues.find(
-          (v) => v.attributeID === attributeID
+          (v) => v.attributeID === attributeID,
         );
 
         if (attribute) {
           setQty(attribute.qty);
           setItems((prev) => {
             const existingIndex = prev.findIndex(
-              (item) => item.attributeID === attribute.attributeID
+              (item) => item.attributeID === attribute.attributeID,
             );
 
             // 🔁 If already exists → increase qty
@@ -376,6 +408,7 @@ export default function SaleForm() {
       console.log(formData);
       const response = await AddSalePos(formData, String(token));
       if (response.status === 200 || response.status === 201) {
+        saleGet();
         setCustomerName("");
         setSaleDate("");
         setItems([]);
@@ -386,13 +419,13 @@ export default function SaleForm() {
         setShowMessage(true);
       } else if (response.status === 400) {
         setRersponseBack(
-          response.data.message || "PLease Fill in All Required Fields"
+          response.data.message || "PLease Fill in All Required Fields",
         );
         setShowMessage(false);
       } else {
         setRersponseBack(
           response.data.message ||
-            "Something Went Wrong. Please Try Again later."
+            "Something Went Wrong. Please Try Again later.",
         );
         setShowMessage(false);
       }
@@ -430,11 +463,18 @@ export default function SaleForm() {
   //     setItems(data.itemList);
   //   }
   // };
+  const fetchDataAgainFroRecipt = (ID: string) => {
+    const sale = SaleList.find((item) => item.saleID === ID);
+    if (!sale) return;
+
+    console.log(sale);
+    pdfRecipt(sale);
+  };
 
   useEffect(() => {
     const totalSum = items.reduce(
       (total, variant) => total + variant.qty * variant.price,
-      0
+      0,
     );
 
     setAmountPaid(totalSum);
@@ -442,7 +482,7 @@ export default function SaleForm() {
 
   const totalSum = items.reduce(
     (total, variant) => total + variant.qty * variant.price,
-    0
+    0,
   );
   useEffect(() => {
     setTimeout(() => {
@@ -678,7 +718,7 @@ export default function SaleForm() {
                         <div>
                           <h3 className="text-lg font-semibold text-gray-800">
                             {CustomerList.find(
-                              (item2) => item2.customerID === item.customer
+                              (item2) => item2.customerID === item.customer,
                             )?.customerName || item.customer}
                           </h3>
                           <p className="text-gray-600">
@@ -735,15 +775,19 @@ export default function SaleForm() {
                               <List className="w-5 h-5" />
                             </button>
                           )}
-                          {/* <button
+                          <button
                             onClick={() => {
-                              pdfRecipt();
+                              fetchDataAgainFroRecipt(item.saleID);
                             }}
                             className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 transition"
                             title="Delete"
                           >
-                            <Receipt className="w-5 h-5" />
-                          </button> */}
+                            {loadRecipt ? (
+                              <Spinner />
+                            ) : (
+                              <Receipt className="w-5 h-5" />
+                            )}
+                          </button>
                           <button
                             // onClick={() => {
                             // }}
@@ -943,7 +987,7 @@ export default function SaleForm() {
                         const value = e.target.value;
                         setProductName(value);
                         const data = productList.find(
-                          (item) => item.productName === value
+                          (item) => item.productName === value,
                         );
                         if (data) {
                           setProductID(data.productID);
@@ -963,7 +1007,7 @@ export default function SaleForm() {
                         const value = e.target.value;
                         setProductName(value);
                         const data = productList.find(
-                          (item) => item.productName === value
+                          (item) => item.productName === value,
                         );
                         if (data) {
                           setProductID(data.productID);
@@ -1037,7 +1081,7 @@ export default function SaleForm() {
                           const value = e.target.value;
                           setSubVarinetName(value);
                           const data = AttributeList.find(
-                            (item) => item.varientValue === value
+                            (item) => item.varientValue === value,
                           );
                           if (data) {
                             setSearchByProduct(data.attributeID);
@@ -1194,7 +1238,7 @@ export default function SaleForm() {
                           for (const product of productList) {
                             for (const variant of product.variants) {
                               const match = variant.variantValues.find(
-                                (vv) => vv.barcode === value
+                                (vv) => vv.barcode === value,
                               );
 
                               if (match) {

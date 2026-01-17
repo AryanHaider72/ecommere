@@ -40,7 +40,7 @@ export default function CustomerPanel() {
     { id: "Ledger", label: "Ledger", icon: BookOpen }, // <-- new dropdown
     { id: "expense", label: "Expense", icon: Coins },
     { id: "sale", label: "Sale", icon: ShoppingCart },
-    { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },
+    // { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },
   ];
 
   const verfiy = async () => {
@@ -155,7 +155,7 @@ export default function CustomerPanel() {
                             <subItem.icon className="w-4 h-4" />
                             <span>{subItem.label}</span>
                           </button>
-                        )
+                        ),
                       )}
                     </div>
                   )}
