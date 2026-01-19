@@ -47,6 +47,7 @@ interface SaleItem {
   productName: string;
   qty: number;
   rate: number;
+  maxQty: number;
 }
 interface Item {
   barcode: string;
@@ -55,6 +56,7 @@ interface Item {
   qty: number;
   rate: number;
   varinet: string;
+  stockQty: number;
 }
 interface responseList {
   message: string;
@@ -72,6 +74,7 @@ interface historyData {
   barcode: string;
   qty: number;
   rate: number;
+  maxQty: number;
 }
 interface VarientsList {
   varientID: string;
@@ -91,15 +94,13 @@ export default function SaleReturnModule() {
   const [AmountPaid, setAmountPaid] = useState(0);
   const [Discount, setDiscount] = useState(0);
   const [invoiceNo, setInvoiceNo] = useState("");
-  const [ProductID, setProductID] = useState("");
-  const [ProductName, setProductName] = useState("");
   const [SaleID, setSaleID] = useState("");
   const [returnType, setReturnType] = useState("refund");
   const [ReturnDate, setReturnDate] = useState("");
-  const [selectedOption, setSelectedOption] = useState("product");
+  const [selectedOption, setSelectedOption] = useState("inovice");
   const [barcodeInput, setBarcodeInput] = useState("");
   const [AddCustomerForm, setAddCustomerForm] = useState(false);
-  const [Customer, setCustomer] = useState("");
+  const [CustomerID, setCustomerID] = useState("");
   const [loading, setLoading] = useState(false);
   const [isGetData, setIsGetData] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -110,6 +111,9 @@ export default function SaleReturnModule() {
   const [SubVarinetName, setSubVarinetName] = useState("");
   const [storeID, setStoreID] = useState("");
   const [VarinetID, setVarinetID] = useState("");
+  const [productName, setProductName] = useState("");
+  const [ProductID, setProductID] = useState("");
+  const [ShowMaxQty, setShowMaxQty] = useState(0);
 
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [returnItems, setReturnItems] = useState<SaleItem[]>([]);
@@ -123,6 +127,7 @@ export default function SaleReturnModule() {
   const [GetDataReturnList, setGetDataReturnList] = useState<ReturnSaleItem[]>(
     [],
   );
+  const [SaleListItem, setSaleListItem] = useState<ReturnSaleItem[]>([]);
   const [ShowInvoiceItem, setShowInvoiceItem] = useState(false);
   const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
   const [SaleList, setSaleList] = useState<Sale[]>([]);
@@ -134,13 +139,7 @@ export default function SaleReturnModule() {
     rate: 0,
     barcode: "",
     varinet: "",
-  });
-  const [newExchange, setNewExchange] = useState({
-    barcode: "",
-    attributeID: "",
-    productName: "",
-    qty: 0,
-    rate: 0,
+    stockQty: 0,
   });
   const [showList, setShowList] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
@@ -157,16 +156,24 @@ export default function SaleReturnModule() {
 
   function handleQtyChange(id: string, value: string) {
     const qty = parseInt(value);
-    if (!isNaN(qty) && qty >= 0) {
-      setReturnItems((prev) =>
-        prev.map((item) =>
-          item.attributeID === id
-            ? { ...item, qty, total: qty * item.rate }
-            : item,
-        ),
-      );
-    }
+    if (isNaN(qty) || qty < 0) return;
+
+    setReturnItems((prev) => {
+      return prev.map((item) => {
+        if (item.attributeID === id) {
+          const maxQty = item.maxQty ?? item.qty;
+
+          return {
+            ...item,
+            maxQty,
+            qty: Math.min(qty, maxQty),
+          };
+        }
+        return item;
+      });
+    });
   }
+
   const CustomerGet = async () => {
     const token = localStorage.getItem("token");
     const response = await GetCustomer(String(token));
@@ -177,18 +184,26 @@ export default function SaleReturnModule() {
       router.push("/sellerlogin");
     }
   };
-  const handleSave = async () => {
+  const handleSave = async (type: string) => {
     let totalBill = 0;
     let amountPaid = 0;
-    if (returnType === "refund") {
-      totalBill = -totalReturn;
-      amountPaid = AmountPaid;
+    // if (returnType === "refund") {
+    //   totalBill = -totalReturn;
+    //   amountPaid = AmountPaid;
+    // }
+    if (type === "refund") {
+      totalBill = totalReturn;
+      amountPaid = totalReturn;
     }
-    if (returnType === "credit") {
+    // if (type === "credit") {
+    //   totalBill = -totalReturn;
+    //   amountPaid = 0;
+    // }
+    if (type === "credit") {
       totalBill = -totalReturn;
       amountPaid = 0;
     }
-    if (returnType === "exchange") {
+    if (type === "exchange") {
       totalBill =
         totalExchange - totalReturn > 0
           ? totalExchange - totalReturn - Discount
@@ -198,15 +213,15 @@ export default function SaleReturnModule() {
     }
     const formData = {
       saleID: SaleID,
-      customerID: Customer,
+      customerID: CustomerID,
       postingDate: ReturnDate,
       totalBill,
       amountPaid,
       adjustment: Discount,
-      RetunrType: returnType,
+      RetunrType: type,
       remarks: "",
 
-      ...(returnType === "exchange"
+      ...(type === "exchange"
         ? {
             listReturn: returnItems,
             listExcahnge: items,
@@ -268,9 +283,10 @@ export default function SaleReturnModule() {
                 barcode: attribute.barcode,
                 attributeID: attribute.attributeID,
                 productName: product.productName,
-                qty: attribute.qty, // start with 1
+                qty: 1, // start with 1
                 rate: attribute.salePrice,
                 varinet: attribute.varientValue,
+                stockQty: attribute.qty,
               },
             ];
           });
@@ -349,6 +365,9 @@ export default function SaleReturnModule() {
       const data = response.data as responseList;
       console.log(data);
       setInvocieHistory(data.showHistory || []);
+      setReturnItems(data.showHistory);
+      setCustomerID(data.showHistory[0].customerID);
+      setCustomerName(data.showHistory[0].customerName);
     }
   };
   const getProductHistory = async (ID: string) => {
@@ -393,6 +412,7 @@ export default function SaleReturnModule() {
       const token = localStorage.getItem("token");
       const response = await GetSalePosReturn(String(token));
       const data = response.data as GetReturnResponse;
+      console.log(data);
       setGetDataReturn(data.mainList);
     } finally {
       setIsGetData(false);
@@ -421,11 +441,31 @@ export default function SaleReturnModule() {
   };
 
   useEffect(() => {
+    CustomerGet();
+    const date = new Date().toISOString().split("T")[0];
+    setReturnDate(date);
+    storesget();
     getSaleReturn();
     saleGet();
-    storesget();
-    CustomerGet();
   }, []);
+
+  useEffect(() => {
+    const totalReturn = returnItems.reduce(
+      (total, variant) => total + variant.qty * variant.rate,
+      0,
+    );
+
+    if (returnType !== "exchange") {
+      setAmountPaid(totalReturn);
+    } else {
+      const totalExchange = items.reduce(
+        (total, variant) => total + variant.qty * variant.rate,
+        0,
+      );
+
+      setAmountPaid(totalReturn - totalExchange);
+    }
+  }, [returnItems, items, returnType]);
 
   const totalReturn = returnItems.reduce((total, variant) => {
     return total + variant.qty * variant.rate;
@@ -459,6 +499,92 @@ export default function SaleReturnModule() {
       <h2 className="text-2xl font-semibold text-gray-800">
         Sale Return Management
       </h2>
+      {ShowInvoiceItem && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-2xl ">
+            <div className="flex w-full justify-end">
+              <button onClick={() => setShowInvoiceItem(false)}>
+                <X className="text-gray-500 hover:text-red-500" />
+              </button>
+            </div>
+            {/* Header */}
+            <h2 className="text-xl font-semibold text-gray-800">
+              Invoice Items
+            </h2>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full border-collapse bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Barcode
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Product Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Variant
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                      Unit Price
+                    </th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-200">
+                  {GetDataReturnList.length > 0 ? (
+                    GetDataReturnList.map((item, index) => (
+                      <tr
+                        key={item.attributeID}
+                        className="hover:bg-gray-50 transition"
+                      >
+                        <td className="px-4 py-3 text-sm text-gray-800">
+                          {index + 1}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-800">
+                          {item.barcode}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-800">
+                          {item.productName}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                          {item.varinet}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {item.qty}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                          {item.price}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                          {item.qty * item.price}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-sm text-gray-500"
+                      >
+                        No records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
       <div className=" mt-5 max-w-5xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition">
         <div className="flex justify-between items-center mb-6">
           <button
@@ -476,92 +602,7 @@ export default function SaleReturnModule() {
             )}
           </button>
         </div>
-        {ShowInvoiceItem && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-            <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-2xl ">
-              <div className="flex w-full justify-end">
-                <button onClick={() => setShowInvoiceItem(false)}>
-                  <X className="text-gray-500 hover:text-red-500" />
-                </button>
-              </div>
-              {/* Header */}
-              <h2 className="text-xl font-semibold text-gray-800">
-                Invoice Items
-              </h2>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full border-collapse bg-white">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        #
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Barcode
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Product Name
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Variant
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Quantity
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Unit Price
-                      </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
 
-                  <tbody className="divide-y divide-gray-200">
-                    {GetDataReturnList.length > 0 ? (
-                      GetDataReturnList.map((item, index) => (
-                        <tr
-                          key={item.attributeID}
-                          className="hover:bg-gray-50 transition"
-                        >
-                          <td className="px-4 py-3 text-sm text-gray-800">
-                            {index + 1}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-800">
-                            {item.barcode}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-800">
-                            {item.productName}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                            {item.varinet}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">
-                            {item.qty}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                            {item.price}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                            {item.qty * item.price}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="px-4 py-6 text-center text-sm text-gray-500"
-                        >
-                          No records found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
         {!showList ? (
           <>
             <div className="p-6  rounded-xl max-w-md">
@@ -570,6 +611,19 @@ export default function SaleReturnModule() {
               </h2>
 
               <div className="flex flex-wrap gap-4 ">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="inline-radio"
+                    value="inovice"
+                    checked={selectedOption === "inovice"}
+                    onChange={(e) => setSelectedOption(e.target.value)}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-gray-700 text-sm font-medium">
+                    Invoice No
+                  </span>
+                </label>
                 {/* Option 1 */}
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -586,65 +640,10 @@ export default function SaleReturnModule() {
                 </label>
 
                 {/* Option 2 */}
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="inline-radio"
-                    value="inovice"
-                    checked={selectedOption === "inovice"}
-                    onChange={(e) => setSelectedOption(e.target.value)}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-gray-700 text-sm font-medium">
-                    Invoice No
-                  </span>
-                </label>
               </div>
             </div>
             {/* Invoice & Return Type */}
             <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="w-full">
-                <label className="block text-gray-700 font-medium mb-2">
-                  Customer Name
-                </label>
-
-                <div className="flex gap-2">
-                  <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                    <User className="text-gray-400 mr-2" size={18} />
-
-                    <select
-                      value={Customer}
-                      onChange={(e) => setCustomer(e.target.value)}
-                      className="w-full bg-transparent outline-none text-gray-900"
-                    >
-                      {CustomerList.length !== 0 ? (
-                        <>
-                          <option value="">Select Customer</option>
-
-                          {CustomerList.map((customer) => (
-                            <option
-                              key={customer.customerID}
-                              value={customer.customerID}
-                            >
-                              {customer.customerName}
-                            </option>
-                          ))}
-                        </>
-                      ) : (
-                        <option value="">No Record Found</option>
-                      )}
-                    </select>
-                  </div>
-
-                  <button
-                    onClick={() => setAddCustomerForm(true)}
-                    className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
-                  >
-                    <Plus />
-                  </button>
-                </div>
-              </div>
-
               {selectedOption === "product" ? (
                 <div>
                   <label className="text-gray-600 font-medium mb-2 block">
@@ -680,12 +679,6 @@ export default function SaleReturnModule() {
                         ))
                       )}
                     </datalist>
-                    <button
-                      onClick={() => setShowPopup(true)}
-                      className="bg-blue-600 p-2.5 rounded-lg text-white hover:bg-blue-700"
-                    >
-                      <Info size={18} />
-                    </button>
                   </div>
                 </div>
               ) : (
@@ -707,7 +700,7 @@ export default function SaleReturnModule() {
                           getInvoiceHistory(data.saleID);
                         }
                       }}
-                      placeholder="Select or type product"
+                      placeholder="Select or type Invoice No"
                       className="w-full rounded-lg border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                     <datalist id="productOptions">
@@ -723,15 +716,28 @@ export default function SaleReturnModule() {
                         ))
                       )}
                     </datalist>
-                    <button
-                      onClick={() => setShowPopup(true)}
-                      className="bg-blue-600 p-2.5 rounded-lg text-white hover:bg-blue-700"
-                    >
-                      <Info size={18} />
-                    </button>
                   </div>
                 </div>
               )}
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Customer Name
+                </label>
+
+                <div className="flex gap-2">
+                  <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <User className="text-gray-400 mr-2" size={18} />
+
+                    <input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Customer Name"
+                      readOnly
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mb-6">
               <div>
@@ -745,82 +751,121 @@ export default function SaleReturnModule() {
                   className="w-full rounded-lg border border-gray-300 p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
-              <div>
-                <label className="text-gray-600 font-medium mb-2 block">
-                  Return Type
-                </label>
-                <select
-                  value={returnType}
-                  onChange={(e) => setReturnType(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                  <option value="refund">Refund</option>
-                  <option value="exchange">Exchange</option>
-                  <option value="credit">Credit</option>
-                </select>
-              </div>
             </div>
 
             {/* Returned Items */}
             {returnItems.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4 shadow-sm mb-6">
-                <h3 className="text-lg font-semibold mb-2 text-gray-700">
+              <div className="bg-gray-50 rounded-xl p-6 shadow-sm mb-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-700">
                   Returned Items
                 </h3>
-                <table className="w-full text-sm">
-                  <thead className="text-gray-600 border-b">
-                    <tr>
-                      <th className="py-2 text-left">Barcode</th>
-                      <th className="py-2 text-left">Item</th>
-                      <th className="text-center">Qty</th>
-                      <th className="text-center">Price</th>
-                      <th className="text-center">Total</th>
-                      <th className="text-center">Remove</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {returnItems.map((item) => (
-                      <tr
-                        key={item.attributeID}
-                        className="border-b hover:bg-gray-100 transition"
-                      >
-                        <td className="py-2">{item.barcode}</td>
-                        <td className="py-2">{item.productName}</td>
-                        <td className=" py-2  text-center w-[1/2]">
-                          <input
-                            type="number"
-                            min={0}
-                            value={item.qty}
-                            onChange={(e) =>
-                              handleQtyChange(item.attributeID, e.target.value)
-                            }
-                            className="focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body"
-                            placeholder="Qty"
-                            required
-                          />
-                        </td>
-                        <td className="text-center">{item.rate}</td>
-                        <td className="text-center">{item.qty * item.rate}</td>
-                        <td className="text-center">
-                          <button
-                            onClick={() => handleRemoveReturn(item.attributeID)}
-                            className="text-red-600 hover:text-red-800"
-                            aria-label={`Remove ${item.productName}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead className="text-gray-600 border-b border-gray-300 bg-gray-100">
+                      <tr>
+                        <th className="py-3 px-4 text-left min-w-[100px]">
+                          Barcode
+                        </th>
+                        <th className="py-3 px-4 text-left min-w-[200px]">
+                          Item
+                        </th>
+                        <th className="py-3 px-4 text-center w-20">Qty</th>
+                        <th className="py-3 px-4 text-center w-24">Price</th>
+                        <th className="py-3 px-4 text-center w-28">Total</th>
+                        <th className="py-3 px-4 text-center w-24">Remove</th>
+                        <th className="py-3 px-4 text-center min-w-[160px]">
+                          Action
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {returnItems.map((item) => (
+                        <tr
+                          key={item.attributeID}
+                          className="border-b border-gray-300 hover:bg-gray-100 transition"
+                        >
+                          <td className="py-3 px-4">{item.barcode}</td>
+                          <td className="py-3 px-4 font-medium text-gray-800">
+                            {item.productName}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <input
+                              type="number"
+                              min={0}
+                              value={item.qty}
+                              onChange={(e) =>
+                                handleQtyChange(
+                                  item.attributeID,
+                                  e.target.value,
+                                )
+                              }
+                              className={`w-20 text-center rounded border px-2 py-1 ${
+                                item.qty > (item.maxQty ?? item.qty)
+                                  ? "bg-red-200 border-red-400"
+                                  : "bg-white border-gray-300"
+                              }`}
+                            />
+                          </td>
+                          <td className="py-3 px-4 text-center text-gray-700">
+                            {item.rate}
+                          </td>
+                          <td className="py-3 px-4 text-center font-semibold text-gray-900">
+                            {item.qty * item.rate}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() =>
+                                handleRemoveReturn(item.attributeID)
+                              }
+                              className="text-red-600 hover:text-red-800"
+                              aria-label={`Remove ${item.productName}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex justify-center gap-3">
+                              <button
+                                onClick={() => {
+                                  setReturnType("refund");
+                                  handleSave("refund");
+                                }}
+                                className="px-4 py-1.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
+                              >
+                                Refund
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setReturnType("credit");
+                                  handleSave("credit");
+                                }}
+                                className="px-4 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 transition"
+                              >
+                                Credit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setReturnType("exchange");
+                                  handleSave("exchange");
+                                }}
+                                className="px-4 py-1.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 transition"
+                              >
+                                Exchange
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
             {/* Exchange Section */}
             {returnType === "exchange" && returnItems.length > 0 && (
               <>
-                <div className="w-full mt-2 flex-col gap-2 md:flex-row flex">
+                <div className="w-full flex-col gap-2 md:flex-row flex">
                   {/* Customer Name */}
                   <div className="w-full">
                     <label className="block text-gray-700 font-medium mb-2">
@@ -850,37 +895,61 @@ export default function SaleReturnModule() {
                       </select>
                     </div>
                   </div>
-                  <div className="w-full">
+                  <div className="w-full min-w-0">
                     <label className="block text-gray-700 font-medium mb-2">
                       Product Name
                     </label>
+
                     <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                       <Tag className="text-gray-400 mr-2" size={18} />
-                      <select
-                        value={ProductID}
-                        onChange={(e) => {
-                          setProductID(e.target.value);
-                          fetchDataVarientList(e.target.value);
-                        }}
-                        className="flex-1 bg-transparent outline-none text-gray-900 p-1"
-                      >
-                        {productList.length === 0 ? (
-                          <option value="">No Record Found</option>
-                        ) : (
-                          <>
-                            {productList.map((item) => (
-                              <>
-                                <option
-                                  key={item.productID}
-                                  value={item.productID}
-                                >
-                                  {item.productName}
-                                </option>
-                              </>
-                            ))}
-                          </>
-                        )}
-                      </select>
+                      {productList.length === 0 ? (
+                        <input
+                          type="text"
+                          list="productList"
+                          value={productName}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setProductName(value);
+                            const data = productList.find(
+                              (item) => item.productName === value,
+                            );
+                            if (data) {
+                              setProductID(data.productID);
+                              fetchDataVarientList(data.productID);
+                            }
+                          }}
+                          disabled
+                          placeholder="No Product Found"
+                          className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          list="productList"
+                          value={productName}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setProductName(value);
+                            const data = productList.find(
+                              (item) => item.productName === value,
+                            );
+                            if (data) {
+                              setProductID(data.productID);
+                              fetchDataVarientList(data.productID);
+                            }
+                          }}
+                          placeholder="Select product"
+                          className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                        />
+                      )}
+                      <datalist id="productList">
+                        {productList.map((item) => (
+                          <option
+                            key={item.productID}
+                            value={item.productName}
+                          />
+                        ))}
+                      </datalist>
                     </div>
                   </div>
                 </div>
@@ -975,7 +1044,7 @@ export default function SaleReturnModule() {
                   </div>
                 </div>
                 <div className="w-full overflow-x-auto">
-                  <table className="w-full border border-gray-200 rounded-lg overflow-hidden ">
+                  <table className="w-full border border-gray-50 rounded-lg overflow-hidden ">
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-4 py-2 text-left text-gray-700 font-medium">
@@ -1003,56 +1072,70 @@ export default function SaleReturnModule() {
                     </thead>
                     <tbody>
                       {items.map((item, index) => (
-                        <tr
-                          key={item.attributeID}
-                          className="border-t hover:bg-gray-50 transition"
-                        >
-                          <td className="px-4 py-2">{item.barcode}</td>
-                          <td className="px-4 py-2">{item.productName}</td>
-                          <td className="px-4 py-2">{item.varinet}</td>
-                          <td className="px-4 py-2 text-center">
-                            <input
-                              type="number"
-                              value={item.qty}
-                              onChange={(e) => {
-                                const newItems = [...items];
-                                newItems[index].qty = Number(e.target.value);
-                                setItems(newItems);
-                              }}
-                              className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
-                              placeholder="0"
-                            />
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            <input
-                              type="number"
-                              value={item.rate}
-                              onChange={(e) => {
-                                const newItems = [...items];
-                                newItems[index].rate = Number(e.target.value);
-                                setItems(newItems);
-                              }}
-                              className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
-                              placeholder="0"
-                            />
-                          </td>
-                          <td className="px-4 py-2 text-center text-gray-800 font-medium">
-                            {(
-                              Number(item.qty || 0) * Number(item.rate || 0)
-                            ).toFixed(2)}
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            <button
-                              onClick={() =>
-                                setItems(items.filter((_, i) => i !== index))
-                              }
-                              className="text-red-500 hover:text-red-700"
-                              title="Delete Item"
+                        <>
+                          <tr
+                            key={item.attributeID}
+                            className={`border-t ${
+                              item.qty <= item.stockQty
+                                ? `hover:bg-gray-50`
+                                : `bg-red-500 text-white hover:bg-red-600`
+                            }  transition`}
+                          >
+                            <td className="px-4 py-2">{item.barcode}</td>
+                            <td className="px-4 py-2 text-sm">
+                              {item.productName}
+                            </td>
+                            <td className="px-4 py-2">{item.varinet}</td>
+                            <td className="px-4 py-2 text-center">
+                              <input
+                                type="number"
+                                value={item.qty}
+                                onChange={(e) => {
+                                  const newItems = [...items];
+                                  newItems[index].qty = Number(e.target.value);
+                                  setItems(newItems);
+                                }}
+                                className="w-20 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <input
+                                type="number"
+                                value={item.rate}
+                                onChange={(e) => {
+                                  const newItems = [...items];
+                                  newItems[index].rate = Number(e.target.value);
+                                  setItems(newItems);
+                                }}
+                                className="w-24 text-center bg-transparent border-b border-gray-200 focus:border-gray-400 outline-none"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td
+                              className={`px-4 py-2 text-center text-gray-800 font-medium ${
+                                item.qty <= item.stockQty
+                                  ? `text-black`
+                                  : `text-white`
+                              }`}
                             >
-                              🗑️
-                            </button>
-                          </td>
-                        </tr>
+                              {(
+                                Number(item.qty || 0) * Number(item.rate || 0)
+                              ).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <button
+                                onClick={() =>
+                                  setItems(items.filter((_, i) => i !== index))
+                                }
+                                className="text-red-500 hover:text-red-700"
+                                title="Delete Item"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        </>
                       ))}
 
                       {/* Row to Add New Item */}
@@ -1167,7 +1250,8 @@ export default function SaleReturnModule() {
                                 newItem.productName &&
                                 newItem.qty &&
                                 newItem.rate &&
-                                newItem.varinet
+                                newItem.varinet &&
+                                newItem.stockQty
                               ) {
                                 setItems([...items, newItem]);
                                 setNewItem({
@@ -1177,6 +1261,7 @@ export default function SaleReturnModule() {
                                   rate: 0,
                                   barcode: "",
                                   varinet: "",
+                                  stockQty: 0,
                                 });
                               }
                             }}
@@ -1195,7 +1280,7 @@ export default function SaleReturnModule() {
             <div className="w-full md:w-full">
               <div className="flex flex-wrap md:flex-nowrap gap-4 mt-3">
                 {/* Amount Paid */}
-                {returnType !== "credit" && (
+                {returnType === "exchange" && (
                   <>
                     <div className="w-full md:w-1/3">
                       <label className="block text-gray-700 font-medium mb-2">
@@ -1297,7 +1382,7 @@ export default function SaleReturnModule() {
             {returnItems.length > 0 && (
               <div className="flex justify-end mt-6">
                 <button
-                  onClick={handleSave}
+                  // onClick={handleSave}
                   className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700"
                 >
                   {!loading ? "Save Return" : "Saving..."}
@@ -1327,20 +1412,45 @@ export default function SaleReturnModule() {
                             )?.customerName || item.customer}
                           </h3>
                           <p className="text-gray-600">
-                            Return Type: {item.returnType}
+                            <span className="text-gray-600 font-bold">
+                              Invoice No:
+                            </span>{" "}
+                            {item.invoiceNo}
                           </p>
                           <p className="text-gray-600">
-                            Sale Date: {item.saleDate}
+                            <span className="text-gray-600 font-bold">
+                              Return Type:
+                            </span>{" "}
+                            {item.returnType}
                           </p>
                           <p className="text-gray-600">
-                            Total Bill: {item.totalBill}
+                            <span className="text-gray-600 font-bold">
+                              Sale Date:
+                            </span>{" "}
+                            {item.saleDate.split("T")[0]}
                           </p>
-                          <p className="text-gray-600">
-                            Adjustment: {item.adjustments}
-                          </p>
-                          <p className="text-gray-600">
-                            Amount Paid: {item.amountPaid}
-                          </p>
+
+                          <div className="flex gap-2">
+                            <p className="text-gray-600">
+                              <span className="text-gray-600 font-bold">
+                                {" "}
+                                Total Bill:
+                              </span>{" "}
+                              {item.totalBill}
+                            </p>
+                            <p className="text-gray-600">
+                              <span className="text-gray-600 font-bold">
+                                Adjustment:{" "}
+                              </span>
+                              {item.adjustments}
+                            </p>
+                            <p className="text-gray-600">
+                              <span className="text-gray-600 font-bold">
+                                Amount Paid:
+                              </span>{" "}
+                              {item.amountPaid}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex gap-4">
                           {item.subList.length > 0 ? (
@@ -1361,6 +1471,19 @@ export default function SaleReturnModule() {
                               <List className="w-5 h-5" />
                             </button>
                           )}
+                          {/* <button
+                            onClick={() => {
+                              // fetchDataAgainFroRecipt(item.saleID);
+                            }}
+                            className="bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 transition"
+                            title="Delete"
+                          >
+                            {loadRecipt ? (
+                              <Spinner />
+                            ) : (
+                              <Receipt className="w-5 h-5" />
+                            )}
+                          </button> */}
                           <button
                             // onClick={() => {
                             // }}
@@ -1383,166 +1506,6 @@ export default function SaleReturnModule() {
           </>
         )}
       </div>
-
-      {/* --- Sleek Popup Modal --- */}
-      {showPopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-3xl relative">
-            <button
-              onClick={() => setShowPopup(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-            >
-              <X size={20} />
-            </button>
-
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              Invoice {invoiceNo} – Sold Items
-            </h3>
-            <table className="w-full text-sm">
-              <thead className="text-gray-600 border-b">
-                <tr>
-                  <th className="py-2 text-left">Barcode</th>
-                  <th className="py-2 text-left">Name</th>
-                  <th className="text-center">Qty</th>
-                  <th className="text-center">Price</th>
-                  <th className="text-center">Sale Date</th>
-                  <th className="text-center">Total</th>
-                  <th className="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {InvocieHistory.map((item) => (
-                  <tr
-                    key={item.attributeID}
-                    className="border-b hover:bg-gray-100 transition"
-                  >
-                    <td className="py-2">{item.barcode}</td>
-                    <td className="py-2">{item.productName}</td>
-                    <td className="text-center">{item.qty}</td>
-                    <td className="text-center">{item.rate}</td>
-                    <td className="text-center">
-                      {item.saleDate.split("T")[0]}
-                    </td>
-                    <td className="text-center">{item.qty * item.rate}</td>
-                    <td className="text-center">
-                      <button
-                        onClick={() => handleAddReturn(item)}
-                        className="text-blue-600 hover:text-blue-800 "
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setShowPopup(false)}
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {AddCustomerForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md ">
-            {/* Header */}
-            <h2 className="text-xl font-semibold text-gray-800">
-              Customer Add
-            </h2>
-            <div className="mt-2 ">
-              <label className="block text-gray-700 font-medium mb-2">
-                Customer Name <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <User className="text-gray-400 mr-2" size={18} />
-                <input
-                  type="text"
-                  name="name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Enter Customer Name"
-                  className="w-full bg-transparent outline-none text-gray-900"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-
-            {/* Phone */}
-            <div className="mt-2 ">
-              <label className="block text-gray-700 font-medium mb-2">
-                Phone <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <Phone className="text-gray-400 mr-2" size={18} />
-                <input
-                  type="text"
-                  name="phone"
-                  value={phoneNo}
-                  onChange={(e) => setPhoneNo(e.target.value)}
-                  placeholder="+92 300 1234567"
-                  className="w-full bg-transparent outline-none text-gray-900"
-                />
-              </div>
-            </div>
-            <div className="mt-2 ">
-              <label className="block text-gray-700 font-medium mb-2">
-                Email
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <Mail className="text-gray-400 mr-2" size={18} />
-                <input
-                  type="text"
-                  name="phone"
-                  value={Email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@email.com"
-                  className="w-full bg-transparent outline-none text-gray-900"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Address
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <MapPin className="text-gray-400 mr-2" size={18} />
-                <input
-                  type="text"
-                  name="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Enter full address"
-                  className="w-full bg-transparent outline-none text-gray-900 resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-between gap-4">
-              <button
-                onClick={() => setAddCustomerForm(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  addCustoemr();
-                }}
-                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
-              >
-                {loading ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

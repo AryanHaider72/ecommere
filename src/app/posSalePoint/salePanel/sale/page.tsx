@@ -547,27 +547,27 @@ export default function SaleForm() {
                     SaleListItem.map((item, index) => (
                       <tr
                         key={item.attributeID}
-                        className="hover:bg-gray-50 transition"
+                        className={`${item.qty <=  0 && "bg-red-500 text-white hover:bg-red-600"} hover:bg-gray-5 transition`}
                       >
-                        <td className="px-4 py-3 text-sm text-gray-800">
+                        <td className="px-1 py-1 text-sm ">
                           {index + 1}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-800">
+                        <td className="px-1 py-1 text-sm ">
                           {item.barcode}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-800">
+                        <td className="px-1 py-1 text-sm ">
                           {item.productName}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                        <td className="px-1 py-1 text-sm text-right font-medium">
                           {item.varinet}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="px-1 py-1 text-sm ">
                           {item.qty}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                        <td className="px-1 py-1 text-sm text-right font-medium">
                           {item.price}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                        <td className="px-1 py-1 text-sm text-right font-medium">
                           {item.qty * item.price}
                         </td>
                       </tr>
