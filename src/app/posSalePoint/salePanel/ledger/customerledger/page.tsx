@@ -15,6 +15,7 @@ import {
   Pencil,
   Coins,
   Calendar,
+  Download,
 } from "lucide-react";
 import LedgerGetArrear from "@/api/lib/PosIntegration/Ledger/LedgerGetArrear/ledgerGetArrear";
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
@@ -31,6 +32,8 @@ import {
   ResponseCustomerLedgerGet,
 } from "@/api/types/PosIntegration/ledger/ledger";
 import Spinner from "@/component/spinner/page";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function CustomerledgerForm() {
   const router = useRouter();
@@ -49,6 +52,66 @@ export default function CustomerledgerForm() {
   const [ShowMessage, setShowMessage] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  const exportPDF = () => {
+    const doc = new jsPDF("p", "mm", "a4");
+
+    // Title
+    doc.setFontSize(14);
+    doc.text("Customer Ledger Statement", 14, 15);
+
+    // Table Columns
+    const tableColumn = [
+      "Date",
+      "Type",
+      "Description",
+      "Debit",
+      "Credit",
+      "Balance",
+    ];
+
+    let runningBalance = 0;
+
+    // Table Rows
+    const tableRows = LedgerList.map((item) => {
+      const debit = Number(item.debitAmount) || 0;
+      const credit = Number(item.creditAmount) || 0;
+
+      runningBalance += credit - debit;
+
+      return [
+        item.postingDate ? new Date(item.postingDate).toLocaleDateString() : "",
+        item.entryType,
+        item.additionalInfo || "",
+        debit !== 0 ? debit.toFixed(2) : "",
+        credit !== 0 ? credit.toFixed(2) : "",
+        (item.creditAmount - item.debitAmount).toFixed(2),
+      ];
+    });
+
+    // Generate Table
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 22,
+      styles: {
+        fontSize: 9,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [41, 128, 185], // blue header
+        textColor: 255,
+      },
+      columnStyles: {
+        3: { halign: "right" },
+        4: { halign: "right" },
+        5: { halign: "right" },
+      },
+    });
+
+    // Save PDF
+    doc.save("Customer_Ledger.pdf");
+  };
 
   const FetchArrear = async (ID: string) => {
     const token = localStorage.getItem("token");
@@ -82,6 +145,7 @@ export default function CustomerledgerForm() {
         postingDate: postingDate,
         amount: amount,
         remarks: remarks,
+        remaningAmount: arrear,
       };
       const response = await AddLedgerCustomer(formData, String(token));
       if (response.status === 200) {
@@ -89,18 +153,17 @@ export default function CustomerledgerForm() {
         getLedger();
         setAmount(0);
         setremarks("");
-        setPostingDate("");
         setResponseBack(response.data.message || "Record Added Successfully");
         setShowMessage(true);
       } else if (response.status === 400) {
         setResponseBack(
-          response.data.message || "PLease Fill in All Required Fields"
+          response.data.message || "PLease Fill in All Required Fields",
         );
         setShowMessage(false);
       } else {
         setResponseBack(
           response.data.message ||
-            "Something Went Wrong. Please Try Again later."
+            "Something Went Wrong. Please Try Again later.",
         );
         setShowMessage(false);
       }
@@ -120,7 +183,7 @@ export default function CustomerledgerForm() {
       const response = await GetledgerCustomer(
         formData,
         String(token),
-        customerID
+        customerID,
       );
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ResponseCustomerLedgerGet;
@@ -137,6 +200,8 @@ export default function CustomerledgerForm() {
   };
 
   useEffect(() => {
+    const date = new Date().toISOString().split("T")[0];
+    setPostingDate(date);
     CustomerGet();
   }, []);
 
@@ -242,6 +307,15 @@ export default function CustomerledgerForm() {
                 <>
                   {LedgerList.length !== 0 ? (
                     <>
+                      <button
+                        onClick={exportPDF}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md"
+                      >
+                        <span className="flex gap-2 ">
+                          <Download /> Export PDF
+                        </span>
+                      </button>
+
                       {LedgerList.map((item) => (
                         <div
                           key={item.ledgerID}
@@ -254,7 +328,7 @@ export default function CustomerledgerForm() {
                               ) : (
                                 <>
                                   {new Date(
-                                    item.postingDate
+                                    item.postingDate,
                                   ).toLocaleDateString("en-US", {
                                     day: "2-digit",
                                     month: "short",

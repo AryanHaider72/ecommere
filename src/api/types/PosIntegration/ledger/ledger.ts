@@ -3,6 +3,7 @@ export interface ledegrCustoemrAdd {
   amount: number;
   customerID: string;
   remarks: string;
+  remaningAmount: number;
 }
 export interface ResponseCustomerLedgerGet {
   message: string;
@@ -10,7 +11,7 @@ export interface ResponseCustomerLedgerGet {
 }
 export interface CustomerLedgerGet {
   ledgerID: string;
-  EntryType: string;
+  entryType: string;
   postingDate: string;
   debitAmount: number;
   creditAmount: number;

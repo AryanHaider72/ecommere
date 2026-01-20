@@ -143,7 +143,7 @@ export default function CheckOut() {
       `https://countriesnow.space/api/v0.1/countries/cities`,
       {
         country: name,
-      }
+      },
     );
     if (response.status === 200) {
       setCityList(response.data.data);
@@ -198,32 +198,32 @@ export default function CheckOut() {
         ],
       };
       console.log(formData);
-      const response = await AddOrder(formData);
-      if (response.status === 200 || response.status === 201) {
-        cartList.map((item) => {
-          removeItemFromServerCart(item.productID);
-        });
-        localStorage.removeItem("checkoutItems");
-        setIsTrue(true);
-        setResponseBack(response.data.message);
-        setCartList([]);
-        setAddress("");
-        setPhoneNo("");
-        setCountry("");
-        setCountryID("");
-        setCity("");
-        setCityList([]);
-        setPaymentID("");
-        setConfirmationBox(true);
-      } else if (response.status === 400) {
-        setIsTrue(true);
-        setConfirmationBox(false);
-        setResponseBack("PLease Fill in Required Fields");
-      } else {
-        setIsTrue(true);
-        setConfirmationBox(false);
-        setResponseBack("Something Went Wrong. Please try again later.");
-      }
+      // const response = await AddOrder(formData);
+      // if (response.status === 200 || response.status === 201) {
+      //   cartList.map((item) => {
+      //     removeItemFromServerCart(item.productID);
+      //   });
+      //   localStorage.removeItem("checkoutItems");
+      //   setIsTrue(true);
+      //   setResponseBack(response.data.message);
+      //   setCartList([]);
+      //   setAddress("");
+      //   setPhoneNo("");
+      //   setCountry("");
+      //   setCountryID("");
+      //   setCity("");
+      //   setCityList([]);
+      //   setPaymentID("");
+      //   setConfirmationBox(true);
+      // } else if (response.status === 400) {
+      //   setIsTrue(true);
+      //   setConfirmationBox(false);
+      //   setResponseBack("PLease Fill in Required Fields");
+      // } else {
+      //   setIsTrue(true);
+      //   setConfirmationBox(false);
+      //   setResponseBack("Something Went Wrong. Please try again later.");
+      // }
     } catch {
       setisLoading(true);
     } finally {
@@ -246,7 +246,7 @@ export default function CheckOut() {
 
   const getShippingPrice = (
     cartItem: CartData,
-    shippingRates?: informationList[] | null
+    shippingRates?: informationList[] | null,
   ): number => {
     if (!shippingRates || shippingRates.length === 0) {
       return 0;
@@ -265,7 +265,7 @@ export default function CheckOut() {
 
   const getTotalShipping = (
     cartList: CartData[],
-    shippingRates?: informationList[] | null
+    shippingRates?: informationList[] | null,
   ): number => {
     if (!shippingRates || shippingRates.length === 0) return 0;
 
@@ -485,7 +485,7 @@ export default function CheckOut() {
                       }}
                       className="w-full px-3 py-3 border rounded-md border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     >
-                      <option value="">Select City</option>
+                      <option value="">Select Country</option>
                       {Countries.map((item) => (
                         <option key={item.countryID} value={item.countryName}>
                           {item.countryName}

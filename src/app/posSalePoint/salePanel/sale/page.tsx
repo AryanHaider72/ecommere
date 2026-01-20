@@ -57,6 +57,7 @@ interface Item {
   price: number;
   varinet: string;
   stockQty: number;
+  discount: number;
 }
 interface VarientsList {
   varientID: string;
@@ -128,6 +129,7 @@ export default function SaleForm() {
     barcode: "",
     varinet: "",
     stockQty: 0,
+    discount: 0,
   });
 
   const pdfRecipt = (sale: any) => {
@@ -290,7 +292,15 @@ export default function SaleForm() {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponse;
-      setProductList(data.list || []);
+      const newData = data.list.filter(
+        (item) => item.storeSale !== "OnlineStore",
+      );
+      if (newData) {
+        console.log(newData);
+        setProductList(newData || []);
+      } else {
+        setProductList([]);
+      }
     }
   };
 
@@ -310,50 +320,58 @@ export default function SaleForm() {
     }
     let found = false;
 
-    for (const product of productList) {
-      for (const variant of product.variants) {
-        const attribute = variant.variantValues.find(
-          (v) => v.attributeID === attributeID,
-        );
+    const discount = productList.find((item) =>
+      item.variants.find((item2) =>
+        item2.variantValues.find((item3) => item3.attributeID === attributeID),
+      ),
+    );
+    if (discount) {
+      for (const product of productList) {
+        for (const variant of product.variants) {
+          const attribute = variant.variantValues.find(
+            (v) => v.attributeID === attributeID,
+          );
 
-        if (attribute) {
-          setQty(attribute.qty);
-          setItems((prev) => {
-            const existingIndex = prev.findIndex(
-              (item) => item.attributeID === attribute.attributeID,
-            );
+          if (attribute) {
+            setQty(attribute.qty);
+            setItems((prev) => {
+              const existingIndex = prev.findIndex(
+                (item) => item.attributeID === attribute.attributeID,
+              );
 
-            // 🔁 If already exists → increase qty
-            if (existingIndex !== -1) {
-              const updated = [...prev];
-              updated[existingIndex] = {
-                ...updated[existingIndex],
-                qty: Number(updated[existingIndex].qty) + 1,
-              };
-              return updated;
-            }
+              // 🔁 If already exists → increase qty
+              if (existingIndex !== -1) {
+                const updated = [...prev];
+                updated[existingIndex] = {
+                  ...updated[existingIndex],
+                  qty: Number(updated[existingIndex].qty) + 1,
+                };
+                return updated;
+              }
 
-            // ➕ Else add new row
-            return [
-              ...prev,
-              {
-                barcode: attribute.barcode,
-                attributeID: attribute.attributeID,
-                productName: product.productName,
-                qty: 1,
-                price: attribute.salePrice,
-                varinet: attribute.varientValue,
-                stockQty: attribute.qty,
-              },
-            ];
-          });
+              // ➕ Else add new row
+              return [
+                ...prev,
+                {
+                  barcode: attribute.barcode,
+                  attributeID: attribute.attributeID,
+                  productName: product.productName,
+                  qty: 1,
+                  price: attribute.salePrice,
+                  varinet: attribute.varientValue,
+                  stockQty: attribute.qty,
+                  discount: discount.discount,
+                },
+              ];
+            });
 
-          found = true;
-          break;
+            found = true;
+            break;
+          }
         }
-      }
 
-      if (found) break;
+        if (found) break;
+      }
     }
 
     if (!found) {
@@ -472,18 +490,26 @@ export default function SaleForm() {
   };
 
   useEffect(() => {
+    const getItemTotal = (item: any) => {
+      const totalWithoutDiscount = item.qty * item.price;
+      const discountAmount = (item.price * item.discount) / 100; // discount only once
+      return totalWithoutDiscount - discountAmount;
+    };
     const totalSum = items.reduce(
-      (total, variant) => total + variant.qty * variant.price,
+      (total, item) => total + getItemTotal(item),
       0,
     );
-
     setAmountPaid(totalSum);
   }, [items]);
 
-  const totalSum = items.reduce(
-    (total, variant) => total + variant.qty * variant.price,
-    0,
-  );
+  const getItemTotal = (item: any) => {
+    const totalWithoutDiscount = item.qty * item.price;
+    const discountAmount = (item.price * item.discount) / 100; // discount only once
+    return totalWithoutDiscount - discountAmount;
+  };
+
+  const totalSum = items.reduce((total, item) => total + getItemTotal(item), 0);
+
   useEffect(() => {
     setTimeout(() => {
       if (ShowMessage) {
@@ -547,23 +573,17 @@ export default function SaleForm() {
                     SaleListItem.map((item, index) => (
                       <tr
                         key={item.attributeID}
-                        className={`${item.qty <=  0 && "bg-red-500 text-white hover:bg-red-600"} hover:bg-gray-5 transition`}
+                        className={`${item.qty <= 0 && "bg-red-500 text-white hover:bg-red-600"} hover:bg-gray-5 transition`}
                       >
-                        <td className="px-1 py-1 text-sm ">
-                          {index + 1}
-                        </td>
-                        <td className="px-1 py-1 text-sm ">
-                          {item.barcode}
-                        </td>
+                        <td className="px-1 py-1 text-sm ">{index + 1}</td>
+                        <td className="px-1 py-1 text-sm ">{item.barcode}</td>
                         <td className="px-1 py-1 text-sm ">
                           {item.productName}
                         </td>
                         <td className="px-1 py-1 text-sm text-right font-medium">
                           {item.varinet}
                         </td>
-                        <td className="px-1 py-1 text-sm ">
-                          {item.qty}
-                        </td>
+                        <td className="px-1 py-1 text-sm ">{item.qty}</td>
                         <td className="px-1 py-1 text-sm text-right font-medium">
                           {item.price}
                         </td>
@@ -1140,10 +1160,13 @@ export default function SaleForm() {
                       Quantity
                     </th>
                     <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                      Price / Unit
+                      Orignal Price
                     </th>
                     <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                      Total
+                      Discount Price
+                    </th>
+                    <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                      Total Bill
                     </th>
                     <th className="px-4 py-2 text-center text-gray-700 font-medium">
                       Action
@@ -1192,6 +1215,9 @@ export default function SaleForm() {
                             placeholder="0"
                           />
                         </td>
+                        <td className="px-4 py-2 text-center">
+                          {item.discount}%
+                        </td>
                         <td
                           className={`px-4 py-2 text-center text-gray-800 font-medium ${
                             item.qty <= item.stockQty
@@ -1200,7 +1226,8 @@ export default function SaleForm() {
                           }`}
                         >
                           {(
-                            Number(item.qty || 0) * Number(item.price || 0)
+                            Number(item.qty || 0) * item.price -
+                            (item.price * item.discount) / 100
                           ).toFixed(2)}
                         </td>
                         <td className="px-4 py-2 text-center">
@@ -1344,6 +1371,7 @@ export default function SaleForm() {
                               barcode: "",
                               varinet: "",
                               stockQty: 0,
+                              discount: 0,
                             });
                           }
                         }}
