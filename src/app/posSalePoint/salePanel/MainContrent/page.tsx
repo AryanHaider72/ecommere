@@ -1,4 +1,5 @@
 "use client";
+import GetSellerOfflineOnBoard from "@/api/lib/PosIntegration/OnBoard/OnBoard";
 import {
   ShoppingBag,
   Clock,
@@ -10,34 +11,46 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+interface ResponseData {
+  queryTotalCredit: number;
+  queryTotalExpense: number;
+  queryTotalReturn: number;
+  queryTotalSale: number;
+}
 
 export default function SellerOfflineOverview() {
+  const [TotalExpense, setTotalExpense] = useState(0);
+  const [TotalCredit, setTotalCredit] = useState(0);
+  const [TotalReturn, setTotalReturn] = useState(0);
+  const [TotalSale, setTotalSale] = useState(0);
+
   const stats = [
     {
       id: 1,
       title: "Total Sale",
-      value: "Rs. 1,00,000",
+      value: `Rs. ${TotalSale.toLocaleString()}`,
       icon: Package,
       color: "bg-blue-100 text-blue-600",
     },
     {
       id: 2,
       title: "Total Return",
-      value: "Rs. 3000",
+      value: `Rs. ${TotalReturn.toLocaleString()}`,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
     },
     {
-      id: 4,
-      title: "Total Expesne",
-      value: "Rs. 5000",
+      id: 3,
+      title: "Total Expense",
+      value: `Rs. ${TotalExpense.toLocaleString()}`,
       icon: Wallet,
       color: "bg-purple-100 text-purple-600",
     },
     {
       id: 4,
       title: "Credit Sale",
-      value: "Rs. 12,000",
+      value: `Rs. ${TotalCredit.toLocaleString()}`,
       icon: CheckCircle,
       color: "bg-green-100 text-green-600",
     },
@@ -57,6 +70,22 @@ export default function SellerOfflineOverview() {
     },
   ];
 
+  const getData = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetSellerOfflineOnBoard(String(token));
+    if (response.status === 200) {
+      const data = response.data as ResponseData;
+      setTotalCredit(data.queryTotalCredit);
+      setTotalExpense(data.queryTotalExpense);
+      setTotalSale(data.queryTotalSale);
+      setTotalReturn(data.queryTotalReturn);
+      console.log(response.data);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
   return (
     <div className="w-full">
       <h1 className="text-2xl font-bold text-gray-900 mb-8">

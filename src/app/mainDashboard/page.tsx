@@ -57,12 +57,15 @@ import CityManagement from "./Shippment/City/page";
 import ShippingCityZoneManagemnet from "./Shippment/ShippingZone/page";
 import RateManagement from "./Shippment/ShippingRate/page";
 import CreateLogins from "./CreateLogin/page";
+import { FaCashRegister, FaMoneyBill } from "react-icons/fa";
+import TillManagement from "./TillRegister/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropDown, setDropDown] = useState(false);
+  const [Till, setTill] = useState(false);
 
   const [storeShow, setStoreShow] = useState(false);
   const [addStoreForm, setaddStoreForm] = useState(false);
@@ -72,6 +75,7 @@ export default function CustomerPanel() {
   const navItems = [
     // { id: "Code", label: "Code", icon: Plus },
     { id: "Shippment", label: "Shippment ", icon: Truck },
+    { id: "Till", label: "Cash Register ", icon: FaCashRegister },
     { id: "CreateLogin", label: "Create Login", icon: UserLock },
     { id: "StoreSetting", label: "Store Setting", icon: ShoppingBagIcon },
     { id: "payment", label: "Payment", icon: Coins },
@@ -141,7 +145,10 @@ export default function CustomerPanel() {
               {item.id === "Shippment" ? (
                 <>
                   <button
-                    onClick={() => setDropDown(!dropDown)}
+                    onClick={() => {
+                      setDropDown(!dropDown);
+                      setTill(false);
+                    }}
                     className={`flex justify-between items-center w-full gap-3 px-4 py-3 rounded-xl transition font-medium ${
                       activeTab === item.id
                         ? "bg-black text-white shadow"
@@ -206,6 +213,57 @@ export default function CustomerPanel() {
                     </div>
                   )}
                 </>
+              ) : item.id === "Till" ? (
+                <>
+                  <button
+                    onClick={() => {
+                      setDropDown(false);
+                      setTill(!Till);
+                    }}
+                    className={`flex justify-between items-center w-full gap-3 px-4 py-3 rounded-xl transition font-medium ${
+                      activeTab === item.id
+                        ? "bg-black text-white shadow"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.label}</span>
+                    </div>
+                    {dropDown ? (
+                      <ChevronDown className="w-5 h-5" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5" />
+                    )}
+                  </button>
+                  {Till && (
+                    <div className="ml-6 mt-2 space-y-1">
+                      {[
+                        {
+                          id: "TillCreate",
+                          label: "Creats Tills",
+                          icon: FaMoneyBill,
+                        },
+                      ].map((subItem) => (
+                        <button
+                          key={subItem.id}
+                          onClick={() => {
+                            setActiveTab(subItem.id);
+                            setTill(false);
+                          }}
+                          className={`flex items-center w-full gap-2 px-3 py-2 text-sm rounded-lg transition ${
+                            activeTab === subItem.id
+                              ? "bg-gray-900 text-white"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          <subItem.icon className="w-4 h-4" />
+                          <span>{subItem.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
               ) : (
                 <button
                   onClick={() => {
@@ -255,6 +313,7 @@ export default function CustomerPanel() {
         {activeTab === "shippingZone" && <ShippingCityZoneManagemnet />}
         {activeTab === "shippingRate" && <RateManagement />}
         {activeTab === "CreateLogin" && <CreateLogins />}
+        {activeTab === "TillCreate" && <TillManagement />}
 
         {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}

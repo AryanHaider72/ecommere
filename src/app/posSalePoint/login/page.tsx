@@ -1,5 +1,6 @@
 "use client";
 import LoginApi from "@/api/authentication/login";
+import LoginOfflineSeller from "@/api/lib/MainDashbaord/CreteLogin/LoginSeller";
 import { Eye, EyeClosed } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,24 +18,23 @@ export default function SellerPosLogin() {
     try {
       setLoading(true);
       const formData = { Email, password };
-      const response = await LoginApi(formData);
+      const response = await LoginOfflineSeller(formData);
       console.log("Response from Login API:", response);
       if (response?.status === 200 || response?.status === 201) {
         setEmail("");
         setPassword("");
         setShowMessage(true);
-        setResponseBack(response.message);
+        setResponseBack("Login Successfully");
         const token = response.data?.token;
-
         localStorage.setItem("token", token as string);
-        if (response.data.status === "Sales Man") {
+        if (response.status === 200) {
           router.push("/posSalePoint/salePanel/dashboard/");
         } else {
           router.push("/");
         }
       } else {
         setShowMessage(true);
-        setResponseBack(response.message);
+        setResponseBack("Invalid UserName/Password");
       }
     } catch (error) {
       console.log(error);

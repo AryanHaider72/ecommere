@@ -1,100 +1,126 @@
 "use client";
+import AddZone from "@/api/lib/Shippment/Zone/AddZone";
+import GetRegion from "@/api/lib/Shippment/Region/GetRegion";
 
-import SignUpApi from "@/api/authentication/signup";
-import {
-  paymentget,
-  paymentgetApiResponse,
-} from "@/api/types/payment/getpayment";
-import axios from "axios";
+import Spinner from "@/component/spinner/page";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
-export default function CreateLogins() {
+import { useEffect, useState } from "react";
+import ModifyZone from "@/api/lib/Shippment/Zone/ModifyZone";
+import GetZone from "@/api/lib/Shippment/Zone/GetZone";
+import DeleteZone from "@/api/lib/Shippment/Zone/DeleteZone";
+import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
+import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
+import GetInitalStoreSalesMan from "@/api/lib/store/GetStoreSalesMan/GetStoreSalesMan";
+import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
+import AddTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillCreate";
+import GetTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillGet";
+import ModifyTillForPos from "@/api/lib/MainDashbaord/TillCreate/ModifyTill";
+import DeleteTillForPos from "@/api/lib/MainDashbaord/TillCreate/DeleteTill";
+import AddLoginForPos from "@/api/lib/MainDashbaord/CreteLogin/AddLogin";
+
+interface RespiosneGet {
+  message: string;
+  tillList: TillList[];
+}
+interface TillList {
+  tillID: string;
+  tillName: string;
+  tillSubList: TillSubList[];
+}
+interface TillSubList {
+  listID: string;
+  productID: string;
+  productName: string;
+}
+
+export default function TillManagement() {
   const router = useRouter();
-  const [mode, setMode] = useState("list");
-  const [loading, setLoading] = useState(false);
-  const [update, setUpdate] = useState(false);
+  const [showList, setShowList] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [Update, setUpdate] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isTrue, setIsTrue] = useState(false);
   const [responseBack, setResponseBack] = useState("");
-  const [ShowMessage, setShowMessage] = useState(false);
+  const [isLoading, setisLoading] = useState(false);
 
   const [UserName, setUserName] = useState("");
-  const [Password, setPassword] = useState("");
   const [Email, setEmail] = useState("");
-  const [phoneNo, setPhoneNo] = useState("");
-  const [ID, setID] = useState("");
+  const [Password, setPassword] = useState("");
 
-  const [paymentList, setPaymentList] = useState<paymentget[]>([]);
+  const [TillID, setTillID] = useState("");
 
-  const SignUp = async () => {
+  const [TillList, setTillList] = useState<TillList[]>([]);
+
+  const getTill = async () => {
     try {
       setLoading(true);
-
-      const data = {
-        userName: UserName,
-        email: Email,
-        phoneNo: phoneNo,
-        password: Password,
-        status: "Sales Man",
-      };
-
-      const response = await SignUpApi(data);
-
-      if (response.status === 200 || response.status === 201) {
-        setUserName("");
-        setEmail("");
-        setPhoneNo("");
-        setPassword("");
-
-        setShowMessage(true);
-        setResponseBack(response.data.message);
-        return;
-      }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 400) {
-          setResponseBack("Please fill in all required fields");
-        } else if (error.response?.status === 401) {
-          router.push("/sellerlogin");
+      const token = localStorage.getItem("token");
+      const response = await GetTillForPos(String(token));
+      if (response.status === 200) {
+        console.log(response);
+        const data = response.data as RespiosneGet;
+        if (data) {
+          setTillID(data.tillList[0].tillID);
+          setTillList(data.tillList);
         } else {
-          setResponseBack(
-            error.response?.data?.message || "Something went wrong"
-          );
+          setTillList([]);
         }
-      } else {
-        setResponseBack("Unexpected error occurred");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (ShowMessage) {
-      setTimeout(() => {
-        setResponseBack("");
-        setShowMessage(false);
-      }, 2000);
+  const CreateLogin = async () => {
+    try {
+      setisLoading(true);
+      const token = localStorage.getItem("token");
+      const formData = {
+        userName: UserName,
+        email: Email,
+        password: Password,
+        tillID: TillID,
+      };
+      const response = await AddLoginForPos(formData, String(token));
+      if (response.status === 200) {
+        setUserName("");
+        setEmail("");
+        setPassword("");
+        setIsTrue(false);
+        setResponseBack("Record Added Successfully");
+      } else if (response.status === 400) {
+        setIsTrue(true);
+        setResponseBack("PLease Fill in Required Fields");
+      } else {
+        setIsTrue(true);
+        setResponseBack("Something Went Wrong. Please try again later.");
+      }
+    } finally {
+      setisLoading(false);
     }
+  };
+
+  useEffect(() => {
+    getTill();
+  }, []);
+
+  useEffect(() => {
+    if (!responseBack) return;
+
+    const timer = setTimeout(() => {
+      setIsTrue(false);
+      setResponseBack("");
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [responseBack]);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 font-sans">
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Create Logins</h1>
-        <button
-          onClick={() => {
-            setMode(mode === "list" ? "form" : "list");
-            setUserName("");
-            setEmail("");
-            setPassword("");
-            setID("");
-          }}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition"
-        >
-          {mode === "list" ? "Add New" : "Back"}
-        </button>
-      </div>
+    <div className="w-full relative">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Login Management
+      </h1>
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
@@ -117,7 +143,7 @@ export default function CreateLogins() {
               </button>
               <button
                 onClick={() => {
-                  //   deletePayment(ID);
+                  // deleteTill(ID);
                   setIsOpen(false);
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
@@ -128,122 +154,165 @@ export default function CreateLogins() {
           </div>
         </div>
       )}
-      {/* LIST VIEW */}
-      {mode === "list" && (
-        <div className="space-y-4">
-          <div className="space-y-4">
-            {paymentList?.length === 0 ? (
-              <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
-                No Record Found
-              </div>
-            ) : (
-              paymentList?.map((item) => (
-                <div
-                  key={item.paymentID}
-                  className="bg-white rounded-xl p-4 shadow flex justify-between items-center hover:shadow-lg transition"
-                >
-                  <div>
-                    <h2 className="font-semibold text-gray-800">
-                      {item.accountTitle}
-                    </h2>
-                    <p className="text-gray-500 text-sm">
-                      {item.accountNumber}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      //   onClick={() => fetchData(item.paymentID)}
-                      className="px-3 py-1 text-yellow-500 border border-yellow-500 rounded hover:bg-yellow-50 transition hover:bg-yellow-500 hover:text-white"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsOpen(true);
-                        setID(item.paymentID);
-                      }}
-                      className="px-3 py-1 text-red-600 border border-red-600 rounded hover:bg-red-50 transition hover:bg-red-500 hover:text-white"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* FORM VIEW (Modern) */}
-      {mode === "form" && (
-        <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-            Create New Login
-          </h2>
-          <div className="space-y-5">
-            {/* Bank Name */}
+      <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md">
+        <div className="flex justify-between items-center mb-6">
+          {/* <h2 className="text-2xl font-semibold text-gray-800">
+            Supplier Ledger
+          </h2> */}
+          <button
+            onClick={() => {
+              setShowList(!showList);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+          >
+            {showList ? (
+              <>
+                <ChevronRight size={18} /> Add New
+              </>
+            ) : (
+              <>
+                <ChevronLeft size={18} /> Show List
+              </>
+            )}
+          </button>
+        </div>
+        {showList ? (
+          <></>
+        ) : (
+          // <>
+          //   {loading ? (
+          //     <div className="flex justify-center py-10">
+          //       <Spinner />
+          //     </div>
+          //   ) : (
+          //     <>
+          //       {TillList.length > 0 ? (
+          //         <>
+          //           {TillList.map((item) => (
+          //             <div
+          //               className="p-4 border mt-2 border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition flex justify-between items-center"
+          //               key={item.tillID}
+          //             >
+          //               <div className="flex flex-col">
+          //                 <h3 className="text-lg font-semibold text-gray-800">
+          //                   {item.tillName}
+          //                 </h3>
+          //                 <div className="flex flex-wrap gap-2 mt-1">
+          //                   {item.tillSubList.map((subItem, index) => (
+          //                     <span
+          //                       key={index}
+          //                       className="inline-block bg-green-300 text-green-800 text-xs font-semibold px-2 py-1 rounded-full"
+          //                     >
+          //                       {subItem.productName}
+          //                     </span>
+          //                   ))}
+          //                 </div>
+          //               </div>
+          //               <div className="flex gap-4">
+          //                 <button
+          //                   onClick={() => fetchData(item.tillID)}
+          //                   className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
+          //                   title="Edit"
+          //                 >
+          //                   <Pencil className="w-5 h-5" />
+          //                 </button>
+          //                 <button
+          //                   onClick={() => {
+          //                     setIsOpen(true);
+          //                     setID(item.tillID);
+          //                   }}
+          //                   className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 transition"
+          //                   title="Delete"
+          //                 >
+          //                   <Trash className="w-5 h-5" />
+          //                 </button>
+          //               </div>
+          //             </div>
+          //           ))}
+          //         </>
+          //       ) : (
+          //         <div className="w-full bg-red-100 text-red-800 text-center px-4 py-3 mb-2 rounded">
+          //           No Record Found
+          //         </div>
+          //       )}
+          //     </>
+          //   )}
+          // </>
+          <div className="space-y-5 mt-2">
+            {/* === Column: Sub Category === */}
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                User Name
+              <label className="block text-gray-700 font-medium mb-2">
+                Tills
+              </label>
+              <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                <select
+                  value={TillID}
+                  onChange={(e) => {
+                    setTillID(e.target.value);
+                  }}
+                  className="flex-1 bg-transparent outline-none text-gray-900 p-1"
+                >
+                  {TillList.length === 0 ? (
+                    <option value="">No Record Found</option>
+                  ) : (
+                    <>
+                      {TillList.map((item) => (
+                        <option key={item.tillID} value={item.tillID}>
+                          {item.tillName}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-2">
+                UserName <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
-                required
                 value={UserName}
                 onChange={(e) => setUserName(e.target.value)}
+                type="text"
+                name="Zone Name"
                 placeholder="Enter UserName"
-                className={`w-full px-3 py-3 border rounded-md focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
-
-            {/* Account Title */}
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Email
+              <label className="block text-gray-700 font-medium mb-2">
+                Email <span className="text-red-500">*</span>
               </label>
               <input
-                type="text"
-                required
                 value={Email}
                 onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                name="Zone Name"
                 placeholder="Enter Email"
-                className={`w-full px-3 py-3 border rounded-md  focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Phone No
+              <label className="block text-gray-700 font-medium mb-2">
+                Password <span className="text-red-500">*</span>
               </label>
               <input
+                value={Password}
+                onChange={(e) => setPassword(e.target.value)}
                 type="text"
-                required
-                value={phoneNo}
-                onChange={(e) => setPhoneNo(e.target.value)}
-                placeholder="Enter PhoneNo"
-                className={`w-full px-3 py-3 border rounded-md  focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
+                name="Zone Name"
+                placeholder="Enter Password"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
 
-            {/* Account Number */}
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Password
-              </label>
-              <input
-                type="text"
-                required
-                value={Password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter Password"
-                className={`w-full px-3 py-3 border rounded-md  focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none`}
-              />
-            </div>
-            {ShowMessage && (
+            {isTrue && (
               <>
                 {responseBack && (
                   <div
                     className={`w-full text-center px-4 py-3 mb-2 rounded ${
-                      responseBack === "Record Added Successfully" ||
+                      responseBack === "Record Added successfully" ||
                       responseBack === "Login Successfully" ||
                       responseBack === "Request successful"
                         ? "bg-green-100 text-green-800"
@@ -255,27 +324,31 @@ export default function CreateLogins() {
                 )}
               </>
             )}
-            {/* Submit Button */}
-            {update ? (
-              <button
-                // onClick={UpdatePayment}
-                type="button"
-                className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
-              >
-                {loading ? "Updating..." : "Update"}
-              </button>
+
+            {Update ? (
+              <div className="flex justify-end pt-3">
+                <button
+                  type="button"
+                  // onClick={ModifyTill}
+                  className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
+                >
+                  {isLoading ? "Updating...." : "Update"}
+                </button>
+              </div>
             ) : (
-              <button
-                onClick={SignUp}
-                type="button"
-                className="w-full py-3 bg-indigo-500 text-white rounded-xl font-semibold shadow-lg hover:bg-indigo-600 transition-all"
-              >
-                {loading ? "Saving..." : "Save"}
-              </button>
+              <div className="flex justify-end pt-3">
+                <button
+                  type="button"
+                  onClick={CreateLogin}
+                  className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
+                >
+                  {isLoading ? "Saving...." : "Save"}
+                </button>
+              </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

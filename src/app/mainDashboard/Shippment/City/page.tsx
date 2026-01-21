@@ -48,7 +48,7 @@ export default function CityManagement() {
         setZoneName("");
         setIsTrue(true);
         setResponseBack(response.data.message);
-      } else if (response.status === 200) {
+      } else if (response.status === 400) {
         setIsTrue(true);
         setResponseBack("PLease Fill in Required Fields");
       } else {
