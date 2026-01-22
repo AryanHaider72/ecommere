@@ -78,14 +78,12 @@ export default function TillManagement() {
       setisLoading(true);
       const token = localStorage.getItem("token");
       const formData = {
-        userName: UserName,
         email: Email,
         password: Password,
         tillID: TillID,
       };
       const response = await AddLoginForPos(formData, String(token));
       if (response.status === 200) {
-        setUserName("");
         setEmail("");
         setPassword("");
         setIsTrue(false);
@@ -266,19 +264,6 @@ export default function TillManagement() {
                   )}
                 </select>
               </div>
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                UserName <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={UserName}
-                onChange={(e) => setUserName(e.target.value)}
-                type="text"
-                name="Zone Name"
-                placeholder="Enter UserName"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
-              />
             </div>
             <div>
               <label className="block text-gray-700 font-medium mb-2">

@@ -18,11 +18,9 @@ import AddTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillCreate";
 import GetTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillGet";
 import ModifyTillForPos from "@/api/lib/MainDashbaord/TillCreate/ModifyTill";
 import DeleteTillForPos from "@/api/lib/MainDashbaord/TillCreate/DeleteTill";
+import GetInitalStore from "@/api/authentication/StoreGet";
+import GetProductForTill from "@/api/lib/MainDashbaord/ProductForTill/ProductTill";
 
-interface response {
-  message: string;
-  citylist: citylist[];
-}
 interface citylist {
   cityID: string;
   cityName: string;
@@ -47,6 +45,15 @@ interface TillSubList {
   productName: string;
 }
 
+interface ProductTill {
+  message: string;
+  productList: ProductList[];
+}
+interface ProductList {
+  productID: string;
+  productName: string;
+}
+
 export default function TillManagement() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
@@ -59,7 +66,7 @@ export default function TillManagement() {
 
   const [TillName, setTillName] = useState("");
   const [ProductName, setProductName] = useState("");
-  const [productList, setProductList] = useState<Product[]>([]);
+  const [productList, setProductList] = useState<ProductList[]>([]);
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const [newList, setNewList] = useState<NewList[]>([]);
   const [storeID, setStoreID] = useState("");
@@ -69,7 +76,7 @@ export default function TillManagement() {
 
   const storesget = async () => {
     const token = localStorage.getItem("token");
-    const response = await GetInitalStoreSalesMan(String(token));
+    const response = await GetInitalStore(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
       setStoreList(data.storeList);
@@ -82,19 +89,13 @@ export default function TillManagement() {
 
     if (!token) return;
 
-    const response = await GetProduct(token, ID);
+    const response = await GetProductForTill(token, ID);
 
     if (response.status === 200 || response.status === 201) {
-      const data = response.data as ProductApiResponse;
-      if (data.list.length > 0) {
-        const newData = data.list.filter(
-          (item) => item.storeSale !== "OnlineStore",
-        );
-        if (newData.length > 0) {
-          setProductList(newData);
-        } else {
-          setProductList([]);
-        }
+      const data = response.data as ProductTill;
+      console.log(data);
+      if (data.productList.length > 0) {
+        setProductList(data.productList);
       } else {
         setProductList([]);
       }
@@ -144,9 +145,10 @@ export default function TillManagement() {
         tillName: TillName,
         listProduct: newList,
       };
-      console.log(formData);
+
       const response = await AddTillForPos(formData, String(token));
       if (response.status === 200) {
+        storesget();
         setTillName("");
         getTill();
         setNewList([]);
@@ -171,8 +173,8 @@ export default function TillManagement() {
       const token = localStorage.getItem("token");
       const response = await GetTillForPos(String(token));
       if (response.status === 200) {
-        console.log(response);
         const data = response.data as RespiosneGet;
+        console.log(data);
         if (data) {
           setTillList(data.tillList);
         } else {
@@ -202,7 +204,6 @@ export default function TillManagement() {
         tillName: TillName,
         listProduct: newList,
       };
-      console.log(formData);
       const response = await ModifyTillForPos(formData, String(token));
       if (response.status === 200) {
         setUpdate(false);
@@ -348,7 +349,7 @@ export default function TillManagement() {
                           <div className="flex flex-wrap gap-2 mt-1">
                             {item.tillSubList.map((subItem, index) => (
                               <span
-                                key={index}
+                                key={subItem.productID}
                                 className="inline-block bg-green-300 text-green-800 text-xs font-semibold px-2 py-1 rounded-full"
                               >
                                 {subItem.productName}
@@ -402,9 +403,7 @@ export default function TillManagement() {
                   }}
                   className="flex-1 bg-transparent outline-none text-gray-900 p-1"
                 >
-                  {storeList.length === 0 ? (
-                    <option value="">No Record Found</option>
-                  ) : (
+                  {storeList.length > 0 ? (
                     <>
                       {storeList.map((item) => (
                         <option key={item.storeID} value={item.storeID}>
@@ -412,6 +411,8 @@ export default function TillManagement() {
                         </option>
                       ))}
                     </>
+                  ) : (
+                    <option value="">No Record Found</option>
                   )}
                 </select>
               </div>

@@ -29,7 +29,11 @@ import {
   ResponseCustomerGetData,
 } from "@/api/types/PosIntegration/Customer/CustomerType";
 import AddCustomer from "@/api/lib/PosIntegration/Customer/AddCustomer";
-import { Product, ProductApiResponse } from "@/api/types/product/getProduct";
+import {
+  Product,
+  ProductApiResponse,
+  ProductApiResponseSalesMan,
+} from "@/api/types/product/getProduct";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import GetProductHome from "@/api/lib/HomePage/Product/Product";
 import {
@@ -49,6 +53,9 @@ import AddSalePos from "@/api/lib/PosIntegration/Sale/SaleAdd/SaleAdd";
 import GetSalePos from "@/api/lib/PosIntegration/Sale/SaleGet/SaleGet";
 import Spinner from "@/component/spinner/page";
 import jsPDF from "jspdf";
+import GetInitalStore from "@/api/authentication/StoreGet";
+import GetProductSalesMan from "@/api/lib/PosIntegration/ProductGet/productsGetSalesMan";
+import GetTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillGet";
 interface Item {
   barcode: string;
   attributeID: string;
@@ -73,6 +80,20 @@ interface variantValues {
   barcode: string;
 }
 
+interface RespiosneGet {
+  message: string;
+  tillList: TillList[];
+}
+interface TillList {
+  tillID: string;
+  tillName: string;
+  tillSubList: TillSubList[];
+}
+interface TillSubList {
+  listID: string;
+  productID: string;
+  productName: string;
+}
 export default function SaleForm() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
@@ -82,6 +103,7 @@ export default function SaleForm() {
   const [customerName, setCustomerName] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
   const [address, setAddress] = useState("");
+  const [selectedTill, setSelectedTill] = useState("");
   const [Email, setEmail] = useState("");
   const [AddCustomerForm, setAddCustomerForm] = useState(false);
   const [Customer, setCustomer] = useState("");
@@ -119,6 +141,7 @@ export default function SaleForm() {
   const [qty, setQty] = useState(1);
   const [newSaleList, setNewSaleList] = useState<Sale[]>([]);
   const [loadRecipt, setLoadRecipt] = useState(false);
+  const [TillList, setTillList] = useState<TillList[]>([]);
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
@@ -288,6 +311,28 @@ export default function SaleForm() {
 
     if (!token) return;
 
+    const response = await GetProductSalesMan(token, ID);
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as ProductApiResponseSalesMan;
+      console.log(data);
+      const newData = data.productList.filter(
+        (item) => item.storeSale !== "OnlineStore",
+      );
+      if (newData) {
+        console.log(newData);
+        setProductList(newData || []);
+      } else {
+        setProductList([]);
+      }
+    }
+  };
+
+  const getProductall = async (ID: string) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) return;
+
     const response = await GetProduct(token, ID);
 
     if (response.status === 200 || response.status === 201) {
@@ -309,10 +354,22 @@ export default function SaleForm() {
     const response = await GetInitalStoreSalesMan(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
+      console.log(data);
       setStoreList(data.storeList);
-      getProduct(data.storeList[0].storeID);
+      getProductall(data.storeList[0].storeID);
     }
   };
+
+  // const storesget = async () => {
+  //   const token = localStorage.getItem("token");
+  //   const response = await GetInitalStore(String(token));
+  //   if (response.status === 200 || response.status === 201) {
+  //     const data = response.data as StoreApiResponse;
+  //     console.log(data);
+  //     setStoreList(data.storeList);
+  //     getProduct(data.storeList[0].storeID);
+  //   }
+  // };
 
   const fetchData = (attributeID: string) => {
     if (!attributeID) {
@@ -427,6 +484,10 @@ export default function SaleForm() {
       const response = await AddSalePos(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         saleGet();
+        getTill();
+        setProductName("");
+        setVarientsList([]);
+        setVarinetID("");
         setCustomerName("");
         setSaleDate("");
         setItems([]);
@@ -451,6 +512,31 @@ export default function SaleForm() {
       setLoading(false);
     }
   };
+
+  const getTill = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await GetTillForPos(String(token));
+
+      if (response.status === 200) {
+        const data = response.data as RespiosneGet;
+
+        if (data?.tillList?.length > 0) {
+          setTillList(data.tillList);
+
+          // Auto select first till
+          setSelectedTill(data.tillList[0].tillID);
+          getProduct(data.tillList[0].tillID);
+        } else {
+          setTillList([]);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const saleGet = async () => {
     try {
       setIsLoading(true);
@@ -523,7 +609,7 @@ export default function SaleForm() {
     setSaleDate(date);
     saleGet();
     CustomerGet();
-    storesget();
+    getTill();
   }, []);
   return (
     <div className="w-full relative">
@@ -830,46 +916,6 @@ export default function SaleForm() {
           </>
         ) : (
           <div className="flex flex-col flex-wrap md:flex-row gap-5 mt-2">
-            <div className="p-3 rounded-xl max-w-md">
-              <h2 className="text-md text-gray-800 mb-4">Customer Type</h2>
-
-              <div className="flex flex-wrap  gap-4 ">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="CustomerType"
-                    value="WalkingCustomer"
-                    checked={CustomerType === "WalkingCustomer"}
-                    onChange={(e) => {
-                      setCustomer("");
-                      setCustomerType("WalkingCustomer");
-                    }}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-gray-700 text-sm font-medium">
-                    Walking Customer
-                  </span>
-                </label>
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="CustomerType"
-                    value="RegularCustomer"
-                    checked={CustomerType === "RegularCustomer"}
-                    onChange={(e) => {
-                      setCustomer("");
-                      setCustomerType("RegularCustomer");
-                    }}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-gray-700 text-sm font-medium">
-                    Regular Customer
-                  </span>
-                </label>
-
-                {/* Option 2 */}
-              </div>
-            </div>
             {/* Sale Date */}
             <div className="w-full flex-col gap-2 md:flex-row flex">
               <div className="w-full ">
@@ -891,106 +937,117 @@ export default function SaleForm() {
                   </div>
                 </div>
               </div>
-              {CustomerType === "WalkingCustomer" ? (
-                <div className="w-full ">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Customer Name
-                  </label>
-                  <div className="flex gap-2">
-                    <div className=" w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                      <User className="text-gray-400 mr-2" size={18} />
-                      <input
-                        value={Customer}
-                        type="text"
-                        name="CustomerName"
-                        onChange={(e) => setCustomer(e.target.value)}
-                        placeholder="Enter Customer name"
-                        className="w-full bg-transparent outline-none text-gray-900"
-                      />
-                    </div>
-                    <button
-                      onClick={() => setAddCustomerForm(true)}
-                      className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
-                    >
-                      <Plus />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Customer Name
-                  </label>
 
-                  <div className="flex gap-2">
-                    <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                      <User className="text-gray-400 mr-2" size={18} />
-
-                      <select
-                        value={Customer}
-                        onChange={(e) => setCustomer(e.target.value)}
-                        className="w-full bg-transparent outline-none text-gray-900"
-                      >
-                        {CustomerList.length !== 0 ? (
-                          <>
-                            <option value="">Select Customer</option>
-
-                            {CustomerList.map((customer) => (
-                              <option
-                                key={customer.customerID}
-                                value={customer.customerID}
-                              >
-                                {customer.customerName}
-                              </option>
-                            ))}
-                          </>
-                        ) : (
-                          <option value="">No Record Found</option>
-                        )}
-                      </select>
-                    </div>
-
-                    <button
-                      onClick={() => setAddCustomerForm(true)}
-                      className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
-                    >
-                      <Plus />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="w-full flex-col gap-2 md:flex-row flex">
-              {/* Customer Name */}
               <div className="w-full">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Stores
+                  Customer Name
+                </label>
+
+                <div className="flex gap-2">
+                  <div className="w-full flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                    <User className="text-gray-400 mr-2" size={18} />
+
+                    <select
+                      value={Customer}
+                      onChange={(e) => {
+                        setDescription("");
+                        const value = e.target.value;
+                        setCustomer(e.target.value);
+                        const data = CustomerList.find(
+                          (item) => item.customerID === value,
+                        );
+                        if (data) {
+                          setCustomerName(data.customerName);
+                        }
+                      }}
+                      className="w-full bg-transparent outline-none text-gray-900"
+                    >
+                      {CustomerList.length !== 0 ? (
+                        <>
+                          <option value="">Select Customer</option>
+
+                          {CustomerList.map((customer) => (
+                            <option
+                              key={customer.customerID}
+                              value={customer.customerID}
+                            >
+                              {customer.customerName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <option value="">No Record Found</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => setAddCustomerForm(true)}
+                    className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                  >
+                    <Plus />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {customerName === "Walk in Customer" && (
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Customer Name
                 </label>
                 <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                   <Tag className="text-gray-400 mr-2" size={18} />
-                  <select
-                    value={storeID}
+                  <input
+                    type="text"
+                    value={Description}
+                    placeholder="Enter Customer Name"
                     onChange={(e) => {
-                      setStoreID(e.target.value);
-                      getProduct(e.target.value);
+                      setDescription(e.target.value);
                     }}
                     className="flex-1 bg-transparent outline-none text-gray-900 p-1"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="w-full flex-col gap-2 md:flex-row flex">
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Till <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <User className="text-gray-400 mr-2" size={18} />
+                  <select
+                    value={selectedTill}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setProductList([]);
+                      setSelectedTill(value);
+
+                      if (value === "All") {
+                        storesget(); // load ALL products
+                      } else {
+                        getProduct(value); // load till-based products
+                      }
+                    }}
+                    className="w-full bg-transparent outline-none text-gray-900 p-2"
                   >
-                    {storeList.length === 0 ? (
-                      <option value="">No Record Found</option>
+                    <option value="">Select Till</option>
+                    <option value="All">All</option>
+
+                    {TillList.length > 0 ? (
+                      TillList.map((item) => (
+                        <option key={item.tillID} value={item.tillID}>
+                          {item.tillName}
+                        </option>
+                      ))
                     ) : (
-                      <>
-                        {storeList.map((item) => (
-                          <option key={item.storeID} value={item.storeID}>
-                            {item.storeName}
-                          </option>
-                        ))}
-                      </>
+                      <option>No Record Found</option>
                     )}
                   </select>
                 </div>
               </div>
+              {/* Customer Name */}
               <div className="w-full min-w-0">
                 <label className="block text-gray-700 font-medium mb-2">
                   Product Name
@@ -1469,22 +1526,24 @@ export default function SaleForm() {
             </div>
 
             {/* Description */}
-            <div className="w-full">
-              <label className="block text-gray-700 font-medium mb-2">
-                Description
-              </label>
-              <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <Notebook className="text-gray-400 mr-2 mt-1" size={18} />
-                <textarea
-                  value={Description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  name="description"
-                  placeholder="Enter Description"
-                  className="w-full bg-transparent outline-none text-gray-900 resize-none"
-                  rows={3}
-                />
+            {customerName !== "Walk in Customer" && (
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Description
+                </label>
+                <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <Notebook className="text-gray-400 mr-2 mt-1" size={18} />
+                  <textarea
+                    value={Description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    name="description"
+                    placeholder="Enter Description"
+                    className="w-full bg-transparent outline-none text-gray-900 resize-none"
+                    rows={3}
+                  />
+                </div>
               </div>
-            </div>
+            )}
             {ResponseBack && (
               <div
                 className={`w-full text-center px-4 py-3 mb-2 rounded ${

@@ -12,7 +12,6 @@ export interface listProduct {
 }
 
 export interface AddLoign {
-  userName: string;
   email: string;
   password: string;
   tillID: string;

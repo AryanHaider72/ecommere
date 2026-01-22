@@ -363,7 +363,7 @@ export default function SaleReturnModule() {
     if (response.status === 200 || response.status === 201) {
       setSaleID(ID);
       const data = response.data as responseList;
-      console.log(data);
+
       setInvocieHistory(data.showHistory || []);
       setReturnItems(data.showHistory);
       setCustomerID(data.showHistory[0].customerID);
@@ -379,7 +379,7 @@ export default function SaleReturnModule() {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseList;
-      console.log(data);
+
       setInvocieHistory(data.showHistory || []);
     }
   };
@@ -412,7 +412,6 @@ export default function SaleReturnModule() {
       const token = localStorage.getItem("token");
       const response = await GetSalePosReturn(String(token));
       const data = response.data as GetReturnResponse;
-      console.log(data);
       setGetDataReturn(data.mainList);
     } finally {
       setIsGetData(false);
@@ -430,13 +429,14 @@ export default function SaleReturnModule() {
     const response = await GetSalePosInvoice(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseGetSale;
-      console.log(data);
-      const filterData = data.saleList.filter(
-        (item) => item.itemList.length > 0,
-      );
-      if (filterData) {
-        setSaleList(filterData);
-      }
+      console.log("New Sale Data", data);
+      setSaleList(data.saleList);
+      // const filterData = data.saleList.filter(
+      //   (item) => item.itemList.length > 0,
+      // );
+      // if (filterData) {
+      //   setSaleList(filterData);
+      // }
     }
   };
 
@@ -704,7 +704,7 @@ export default function SaleReturnModule() {
                       className="w-full rounded-lg border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                     <datalist id="productOptions">
-                      {productList.length === 0 ? (
+                      {SaleList.length === 0 ? (
                         <option value="" disabled>
                           No Invoice found
                         </option>

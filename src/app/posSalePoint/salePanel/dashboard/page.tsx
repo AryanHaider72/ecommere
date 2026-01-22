@@ -31,6 +31,8 @@ import { useRouter } from "next/navigation";
 import LogoutApi from "@/api/authentication/logout";
 import CustoemrReport from "../Reports/InventoryReports/page";
 import SellerOfflineOverview from "../MainContrent/page";
+import { BiTransfer } from "react-icons/bi";
+import ItemTransferForm from "../ItemTransfer/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
@@ -44,6 +46,7 @@ export default function CustomerPanel() {
     { id: "Code", label: "Code", icon: Plus },
     { id: "Ledger", label: "Ledger", icon: BookOpen },
     { id: "Reports", label: "Reports", icon: Notebook },
+    // { id: "ItemTransfer", label: "Item Transfer", icon: BiTransfer },
     { id: "expense", label: "Expense", icon: Coins },
     { id: "sale", label: "Sale", icon: ShoppingCart },
     { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },
@@ -325,6 +328,7 @@ export default function CustomerPanel() {
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
         {activeTab === "overview" && <SellerOfflineOverview />}
         {activeTab === "customer" && <CustomerForm />}
+        {activeTab === "ItemTransfer" && <ItemTransferForm />}
         {activeTab === "expense" && <ExpenseForm />}
         {activeTab === "sale" && <SaleForm />}
         {activeTab === "custoemrReport" && <CustoemrReport />}

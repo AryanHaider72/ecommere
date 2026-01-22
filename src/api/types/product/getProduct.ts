@@ -3,6 +3,10 @@ export interface ProductApiResponse {
   message: string;
   list: Product[];
 }
+export interface ProductApiResponseSalesMan {
+  message: string;
+  productList: Product[];
+}
 
 // A single product record
 export interface Product {

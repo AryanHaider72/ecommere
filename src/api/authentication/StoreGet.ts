@@ -8,7 +8,7 @@ export default async function GetInitalStore(token: string) {
   const response = await getRequest(
     `/api/Stores/GetInitalStore`,
     null,
-    customHeaders
+    customHeaders,
   );
   if (response.success) {
     return {
