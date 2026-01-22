@@ -56,6 +56,7 @@ import jsPDF from "jspdf";
 import GetInitalStore from "@/api/authentication/StoreGet";
 import GetProductSalesMan from "@/api/lib/PosIntegration/ProductGet/productsGetSalesMan";
 import GetTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillGet";
+import GetTillForSalesMan from "@/api/lib/MainDashbaord/TillCreate/GetTillForSpecficSaleMan";
 interface Item {
   barcode: string;
   attributeID: string;
@@ -123,6 +124,7 @@ export default function SaleForm() {
   const [barcodeInput, setBarcodeInput] = useState("");
 
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
+  const [productList2, setProductList2] = useState<Product[]>([]);
   const [productList, setProductList] = useState<Product[]>([]);
 
   const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
@@ -320,10 +322,9 @@ export default function SaleForm() {
         (item) => item.storeSale !== "OnlineStore",
       );
       if (newData) {
-        console.log(newData);
-        setProductList(newData || []);
+        setProductList2(newData || []);
       } else {
-        setProductList([]);
+        setProductList2([]);
       }
     }
   };
@@ -341,7 +342,6 @@ export default function SaleForm() {
         (item) => item.storeSale !== "OnlineStore",
       );
       if (newData) {
-        console.log(newData);
         setProductList(newData || []);
       } else {
         setProductList([]);
@@ -360,75 +360,85 @@ export default function SaleForm() {
     }
   };
 
-  // const storesget = async () => {
-  //   const token = localStorage.getItem("token");
-  //   const response = await GetInitalStore(String(token));
-  //   if (response.status === 200 || response.status === 201) {
-  //     const data = response.data as StoreApiResponse;
-  //     console.log(data);
-  //     setStoreList(data.storeList);
-  //     getProduct(data.storeList[0].storeID);
-  //   }
-  // };
-
   const fetchData = (attributeID: string) => {
     if (!attributeID) {
       alert("attributeID not found");
+      return;
     }
+
     let found = false;
 
-    const discount = productList.find((item) =>
-      item.variants.find((item2) =>
-        item2.variantValues.find((item3) => item3.attributeID === attributeID),
-      ),
-    );
-    if (discount) {
-      for (const product of productList) {
-        for (const variant of product.variants) {
-          const attribute = variant.variantValues.find(
-            (v) => v.attributeID === attributeID,
+    // 🔍 Find product & attribute from full list
+    for (const product of productList) {
+      for (const variant of product.variants) {
+        const attribute = variant.variantValues.find(
+          (v) => v.attributeID === attributeID,
+        );
+
+        if (!attribute) continue;
+
+        // 🔎 Check if product exists in productList2
+        const existsInProductList2 = productList2.some((p) =>
+          p.variants.some((v) =>
+            v.variantValues.some((vv) => vv.attributeID === attributeID),
+          ),
+        );
+
+        // ⚠️ If NOT exists in productList2 → ask confirmation
+        if (!existsInProductList2) {
+          const confirmed = window.confirm(
+            "This item is not in the Avaliable in you're Item List. Do you want to add it?",
           );
 
-          if (attribute) {
-            setQty(attribute.qty);
-            setItems((prev) => {
-              const existingIndex = prev.findIndex(
-                (item) => item.attributeID === attribute.attributeID,
-              );
-
-              // 🔁 If already exists → increase qty
-              if (existingIndex !== -1) {
-                const updated = [...prev];
-                updated[existingIndex] = {
-                  ...updated[existingIndex],
-                  qty: Number(updated[existingIndex].qty) + 1,
-                };
-                return updated;
-              }
-
-              // ➕ Else add new row
-              return [
-                ...prev,
-                {
-                  barcode: attribute.barcode,
-                  attributeID: attribute.attributeID,
-                  productName: product.productName,
-                  qty: 1,
-                  price: attribute.salePrice,
-                  varinet: attribute.varientValue,
-                  stockQty: attribute.qty,
-                  discount: discount.discount,
-                },
-              ];
-            });
-
-            found = true;
-            break;
-          }
+          if (!confirmed) return;
         }
 
-        if (found) break;
+        // 💰 Discount lookup (from productList)
+        const discountProduct = productList.find((item) =>
+          item.variants.some((item2) =>
+            item2.variantValues.some(
+              (item3) => item3.attributeID === attributeID,
+            ),
+          ),
+        );
+        console.log(attribute);
+        // ➕ Add to items state
+        setQty(attribute.qty);
+        setItems((prev) => {
+          const existingIndex = prev.findIndex(
+            (item) => item.attributeID === attribute.attributeID,
+          );
+
+          // 🔁 Already exists → increase qty
+          if (existingIndex !== -1) {
+            const updated = [...prev];
+            updated[existingIndex] = {
+              ...updated[existingIndex],
+              qty: Number(updated[existingIndex].qty) + 1,
+            };
+            return updated;
+          }
+
+          // ➕ Add new row
+          return [
+            ...prev,
+            {
+              barcode: attribute.barcode,
+              attributeID: attribute.attributeID,
+              productName: product.productName,
+              qty: 1,
+              price: attribute.salePrice,
+              varinet: attribute.varientValue,
+              stockQty: Number(attribute.qty || 0),
+              discount: discountProduct?.discount || 0,
+            },
+          ];
+        });
+
+        found = true;
+        break;
       }
+      if (found) break;
     }
 
     if (!found) {
@@ -440,6 +450,17 @@ export default function SaleForm() {
     setSearchByProduct("");
     setBarcodeInput("");
   };
+
+  // const storesget = async () => {
+  //   const token = localStorage.getItem("token");
+  //   const response = await GetInitalStore(String(token));
+  //   if (response.status === 200 || response.status === 201) {
+  //     const data = response.data as StoreApiResponse;
+  //     console.log(data);
+  //     setStoreList(data.storeList);
+  //     getProduct(data.storeList[0].storeID);
+  //   }
+  // };
 
   const fetchDataVarientList = (productID: string) => {
     for (var products of productList) {
@@ -517,7 +538,7 @@ export default function SaleForm() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await GetTillForPos(String(token));
+      const response = await GetTillForSalesMan(String(token));
 
       if (response.status === 200) {
         const data = response.data as RespiosneGet;
@@ -604,11 +625,13 @@ export default function SaleForm() {
       }
     }, 2000);
   }, [ShowMessage, RescponseBack]);
+
   useEffect(() => {
     const date = new Date().toISOString().split("T")[0];
     setSaleDate(date);
     saleGet();
     CustomerGet();
+    storesget();
     getTill();
   }, []);
   return (
@@ -1021,19 +1044,14 @@ export default function SaleForm() {
                     value={selectedTill}
                     onChange={(e) => {
                       const value = e.target.value;
-                      setProductList([]);
-                      setSelectedTill(value);
 
-                      if (value === "All") {
-                        storesget(); // load ALL products
-                      } else {
-                        getProduct(value); // load till-based products
-                      }
+                      setSelectedTill(value);
+                      // setProductList([]);
+                      setBarcodeInput("");
                     }}
                     className="w-full bg-transparent outline-none text-gray-900 p-2"
                   >
                     <option value="">Select Till</option>
-                    <option value="All">All</option>
 
                     {TillList.length > 0 ? (
                       TillList.map((item) => (
@@ -1096,7 +1114,7 @@ export default function SaleForm() {
                     />
                   )}
                   <datalist id="productList">
-                    {productList.map((item) => (
+                    {productList2.map((item) => (
                       <option key={item.productID} value={item.productName} />
                     ))}
                   </datalist>
@@ -1182,8 +1200,11 @@ export default function SaleForm() {
                     </div>
                     <button
                       onClick={() => {
+                        setProductName("");
                         fetchData(SearchByProduct);
                         setSearchByProduct("");
+                        setVarientsList([]);
+                        setAttributeList([]);
                         setSubVarinetName("");
                       }}
                       className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
