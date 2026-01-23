@@ -200,8 +200,8 @@ export default function SaleReturnModule() {
     //   amountPaid = 0;
     // }
     if (type === "credit") {
-      totalBill = 0;
-      amountPaid = -totalReturn;
+      totalBill = -totalReturn;
+      amountPaid = 0;
     }
     if (type === "exchange") {
       totalBill =

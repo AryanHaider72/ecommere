@@ -1,10 +1,12 @@
 "use client";
+import Barcode from "react-barcode";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Coins,
   CoinsIcon,
+  Download,
   Pencil,
   Plus,
   Trash,
@@ -36,6 +38,7 @@ import {
   FurtherSub,
   FurtherSubApiResponse,
 } from "@/api/types/subCategory/getSub";
+import html2canvas from "html2canvas";
 import GetUnitByID from "@/api/lib/unit/unitGetByID/unitGetByID";
 import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
 import ModifyProductBasicInfo from "@/api/lib/product/ModifyProduct/ModifyBasicInfo/ModifyBasicInfo";
@@ -62,6 +65,7 @@ import {
   SupplierData,
 } from "@/api/types/PosIntegration/Suppplier/addSupplier";
 import GetSupplier from "@/api/lib/PosIntegration/Supplier/GetSupplier";
+import jsPDF from "jspdf";
 
 interface CountryList {
   countryID: string;
@@ -160,7 +164,95 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [AmountPaid, setAmountPaid] = useState("");
   const [totalBill, setTotalBill] = useState("");
   const [Uploading, setUploading] = useState(false);
+  const [barcode,setBarcode] = useState("")
+  const [ProductNameBarcode,setProductNameBarcode] = useState("")
+  const [SalePrice,setSalePrice] = useState("")
+  const [readyToExport, setReadyToExport] = useState(false);
+  const [Export, setExport] = useState(false);
+  
+const printRef = useRef<HTMLDivElement | null>(null);
 
+
+  const exportpdf = async (printRef :any, barcode:any, ProductNameBarcode:any, salePrice:any) => {
+  console.log("Starting PDF export...");
+
+  if (!printRef?.current) {
+    console.error("Error: printRef.current is null or undefined!");
+    return;
+  }
+  console.log("printRef.current found:", printRef.current);
+
+  try {
+    setExport(true)
+    // 1. Convert the barcode container (SVG) to canvas with html2canvas
+    const canvas = await html2canvas(printRef.current, { scale: 3 });
+    console.log("Canvas successfully generated.");
+
+    // 2. Get PNG data from canvas
+    const imgData = canvas.toDataURL("image/png");
+
+    // 3. Create jsPDF sized exactly 50mm x 25mm
+    const pdf = new jsPDF({
+      orientation:"landscape",
+      unit: "mm",
+      format: [50, 25],
+    });
+
+    // 4. Add ProductName top-left (2mm from left, 6mm from top)
+    pdf.setFontSize(5);
+    pdf.text(ProductNameBarcode, 2, 6);
+
+    // 5. Add barcode image centered horizontally, at ~8mm from top
+    const barcodeWidth = 40; // mm width of barcode in PDF
+    const barcodeHeight = 15; // mm height of barcode in PDF
+    const barcodeX = (50 - barcodeWidth) ; // center horizontally
+    const barcodeY = 8; // vertical position
+    pdf.addImage(imgData, "PNG", barcodeX -5, barcodeY, barcodeWidth, barcodeHeight);
+
+    // 6. Add SalePrice bottom-right (2mm margin from right, 23mm from top)
+    pdf.text(
+      `Price: ${salePrice}`,
+      50 - 2 - pdf.getTextWidth(`Price: ${salePrice}`),
+      23
+    );
+
+    // 7. Save/download PDF
+    const fileName = `${barcode || "barcode"}-${ProductNameBarcode || "product"}.pdf`;
+    pdf.save(fileName);
+    console.log(`PDF saved as ${fileName}`);
+
+  } catch (error) {
+    console.error("Error during PDF generation:", error);
+  }
+  finally{
+    setExport(false)
+    setProductNameBarcode("")
+    printRef = null;
+    setBarcode("")
+  }
+};
+
+
+
+  const fetchDatafroProduct=(ID:string, salePrice:number, barcode:string)=>{
+    
+    const data = getVarinetList.find((item)=>item.varientAttributes.find((item2)=>item2.attributeID === ID))
+    if(data){
+      const product = productList.find((item)=>item.variants.find((item2)=>item2.varientID === data.varientID))
+      if(product){
+        setBarcode(barcode)
+        setProductNameBarcode(product.productName)
+        setSalePrice(String(salePrice))
+        setReadyToExport(true)
+      }
+    }
+  }
+  useEffect(() => {
+    if (readyToExport && barcode && ProductNameBarcode) {
+      exportpdf(printRef, barcode, ProductNameBarcode, SalePrice);
+
+    }
+  }, [readyToExport, barcode, ProductNameBarcode]);
   const getProduct = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -168,7 +260,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         return router.push("/sellerlogin");
       }
 
-      const response = await GetProduct(token, storeID);
+      const response = await GetProduct(token, String(storeID));
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ProductApiResponse;
@@ -207,7 +299,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         const data = response.data as ResponseSupplierGetData;
         setSupplierID(data.supplierList[0].supplierID);
         setSupplierList(
-          data.supplierList.filter((item) => item.supplierName !== "SYSGEN")
+          data.supplierList.filter((item) => item.supplierName !== "SYSGEN"),
         );
       } else if (response.status === 401) {
         router.push("/sellerlogin");
@@ -346,7 +438,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         total +
         variant.varientAttributes.reduce(
           (sum, attr) => sum + Number(attr.qty || 0),
-          0
+          0,
         )
       );
     }, 0);
@@ -364,7 +456,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       amountPaid: Number(AmountPaid) || 0,
       adjustments: Number(adjustment) || 0,
       totalStock: totalStock,
-      listVarient: listVarient,
+      listVarient: [],
     };
 
     try {
@@ -416,7 +508,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
     const totalQuantity = data.varientAttributes.reduce(
       (total, attr) => total + Number(attr.qty || 0),
-      0
+      0,
     );
     try {
       setUploading(true);
@@ -540,7 +632,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   // Update newAttribute inputs (for the input row)
   const handleNewAttributeChange = (
     field: keyof VarientAttribute,
-    value: string | number
+    value: string | number,
   ) => {
     setNewAttribute({ ...newAttribute, [field]: value });
   };
@@ -765,6 +857,20 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   };
   return (
     <>
+
+      <div
+        ref={printRef}
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          top: "-9999px",
+          padding: 20,
+          backgroundColor: "white",
+        }}
+      >
+        {barcode && <Barcode value={barcode} />}
+      </div>
+
       {isOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md text-center">
@@ -1143,7 +1249,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               const id = e.target.value;
                               setDisplayCountryID(id);
                               const data = listofCountry.find(
-                                (item) => item.countryID === id
+                                (item) => item.countryID === id,
                               );
                               if (data) {
                                 setDisplayCountryName(data.countryName);
@@ -1197,7 +1303,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               const id = e.target.value;
                               setHideCountryID(id);
                               const data = listofCountry.find(
-                                (item) => item.countryID === id
+                                (item) => item.countryID === id,
                               );
                               if (data) {
                                 setHideCountryName(data.countryName);
@@ -1593,7 +1699,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               onChange={(e) =>
                                 handleNewAttributeChange(
                                   "varientValue",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1607,7 +1713,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               onChange={(e) =>
                                 handleNewAttributeChange(
                                   "qty",
-                                  parseInt(e.target.value) || 0
+                                  parseInt(e.target.value) || 0,
                                 )
                               }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1622,7 +1728,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               onChange={(e) =>
                                 handleNewAttributeChange(
                                   "costPrice",
-                                  parseFloat(e.target.value) || 0
+                                  parseFloat(e.target.value) || 0,
                                 )
                               }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1637,7 +1743,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               onChange={(e) =>
                                 handleNewAttributeChange(
                                   "salePrice",
-                                  parseFloat(e.target.value) || 0
+                                  parseFloat(e.target.value) || 0,
                                 )
                               }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1812,7 +1918,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               <h3 className="text-base font-semibold text-gray-800 capitalize">
                                 {item.variantName}
                               </h3>
-                              <div className="flex gap-2">
+                              {/* <div className="flex gap-2">
                                 <button
                                   onClick={() => {
                                     setModify(!modify);
@@ -1840,7 +1946,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                 >
                                   <Trash className="w-5 h-5" />
                                 </button>
-                              </div>
+                              </div> */}
                             </div>
 
                             {/* Attributes Table */}
@@ -1851,6 +1957,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                     <th className="text-left px-4 py-2">
                                       Value
                                     </th>
+                                    <th className="text-left px-4 py-2">BarCode</th>
                                     <th className="text-left px-4 py-2">Qty</th>
                                     <th className="text-left px-4 py-2">
                                       Cost Price
@@ -1873,58 +1980,28 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                       <td className="px-4 py-2 font-medium text-gray-800">
                                         {attr.varientValue}
                                       </td>
-
                                       <td className={`px-4 py-2`}>
-                                        <input
-                                          type="text"
-                                          value={attr.qty || newAttribute.qty}
-                                          onChange={(e) =>
-                                            handleNewAttributeChange(
-                                              "qty",
-                                              e.target.value || 0
-                                            )
-                                          }
-                                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                        />
+                                        {attr.barcode}
+                                      </td>
+                                      <td className={`px-4 py-2`}>
+                                        {attr.qty}
                                       </td>
 
                                       <td className="px-4 py-2">
-                                        <input
-                                          type="text"
-                                          value={attr.costPrice || newAttribute.costPrice}
-                                          onChange={(e) =>
-                                            handleNewAttributeChange(
-                                              "costPrice",
-                                              e.target.value || 0
-                                            )
-                                          }
-                                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                        />
+                                        {attr.costPrice}
                                       </td>
 
                                       <td className="px-4 py-2">
-                                        <input
-                                          type="text"
-                                          value={attr.salePrice || newAttribute.salePrice}
-                                          onChange={(e) =>
-                                            handleNewAttributeChange(
-                                              "salePrice",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                        />
+                                        {attr.salePrice}
                                       </td>
 
+
                                       <td className="px-4 py-2">
-                                        <div className="flex gap-2">
-                                          {/* <button className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-md text-white">
-                                            <Pencil />
-                                          </button> */}
-                                          <button className="px-2 py-2 bg-red-500 hover:bg-red-600 rounded-md text-white">
-                                            <Trash />
-                                          </button>
-                                        </div>
+                                        <button
+                                          className="px-2 py-1 bg-green-600 text-white rounded"
+                                          onClick={() =>{fetchDatafroProduct(attr.attributeID, attr.salePrice, attr.barcode)}}
+                                        >{Export ? <Spinner /> : <Download />}
+                                        </button>
                                       </td>
                                     </tr>
                                   ))}
@@ -1963,7 +2040,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                                   (Number(attr.qty) || 1)
                                               );
                                             },
-                                            0
+                                            0,
                                           )}
                                           name="totalBill"
                                           placeholder="Enter Total Bill"
@@ -2258,7 +2335,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         {/* ---------- OFFLINE STORE ---------- */}
         {(() => {
           const offlineProducts = filteredProducts.filter(
-            (p) => p.storeSale === "OfflineStore"
+            (p) => p.storeSale === "OfflineStore",
           );
 
           if (offlineProducts.length > 0) {
@@ -2274,7 +2351,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     const selectedVariantValue =
                       product.variants?.[0]?.variantValues?.[selectedVarIndex];
                     const originalAmount = Number(
-                      selectedVariantValue?.salePrice || 0
+                      selectedVariantValue?.salePrice || 0,
                     );
 
                     return (
@@ -2314,13 +2391,13 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                         selectedVarIndex === idx
                                           ? "bg-blue-600 text-white"
                                           : attr.qty > 0
-                                          ? "bg-gray-900 text-white hover:bg-gray-700"
-                                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                            ? "bg-gray-900 text-white hover:bg-gray-700"
+                                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
                                       }`}
                                     >
                                       {attr.varientValue}
                                     </button>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>
@@ -2364,7 +2441,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         {/* ---------- ONLINE STORE / BOTH CARDS ---------- */}
         {(() => {
           const onlineProducts = filteredProducts.filter(
-            (p) => p.storeSale !== "OfflineStore"
+            (p) => p.storeSale !== "OfflineStore",
           );
 
           if (onlineProducts.length > 0) {
@@ -2388,7 +2465,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                         ];
 
                       const originalAmount = Number(
-                        selectedVariant?.salePrice || 0
+                        selectedVariant?.salePrice || 0,
                       );
                       const discount = Number(product.discount || 0);
 
@@ -2527,7 +2604,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                                       ...prev,
                                                       [`${product.productID}-${variantIdx}`]:
                                                         idx,
-                                                    })
+                                                    }),
                                                   )
                                                 }
                                                 disabled={v.qty <= 0}
@@ -2536,18 +2613,18 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                                                 selectedVarIndex === idx
                                                   ? "bg-blue-600 text-white"
                                                   : v.qty > 0
-                                                  ? "bg-gray-800 text-white hover:bg-gray-900"
-                                                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                    ? "bg-gray-800 text-white hover:bg-gray-900"
+                                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                               }
                                             `}
                                               >
                                                 {v.varientValue}
                                               </button>
-                                            )
+                                            ),
                                           )}
                                         </div>
                                       </div>
-                                    )
+                                    ),
                                   )}
                                 </div>
 

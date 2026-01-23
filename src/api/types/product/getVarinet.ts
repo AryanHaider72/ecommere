@@ -14,6 +14,7 @@ export type VariantList = {
 // Variant value sub-type
 export type VariantValue = {
   billingDetail: billingDetail[];
+  barcode:string;
   attributeID: string;
   varientValue: string;
   costPrice: number;

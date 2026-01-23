@@ -14,16 +14,20 @@ import {
 import { useEffect, useState } from "react";
 interface ResponseData {
   queryTotalCredit: number;
+  queryCashRecieved: number;
   queryTotalExpense: number;
   queryTotalReturn: number;
   queryTotalSale: number;
+  queryTotalProfit: number;
 }
 
 export default function SellerOfflineOverview() {
   const [TotalExpense, setTotalExpense] = useState(0);
-  const [TotalCredit, setTotalCredit] = useState(0);
+  const [CashRecieved, setCashRecieved] = useState(0);
+  const [CreditSale, setCreditSale] = useState(0);
   const [TotalReturn, setTotalReturn] = useState(0);
   const [TotalSale, setTotalSale] = useState(0);
+  const [TotlaProfit, setTotlaProfit] = useState(0);
 
   const stats = [
     {
@@ -50,21 +54,21 @@ export default function SellerOfflineOverview() {
     {
       id: 4,
       title: "Credit Sale",
-      value: `Rs. ${TotalCredit.toLocaleString()}`,
+      value: `Rs. ${CreditSale.toLocaleString()}`,
       icon: CheckCircle,
       color: "bg-green-100 text-green-600",
     },
     {
       id: 5,
       title: "Cash Recieved",
-      value: "Rs. 20,000",
+      value: `Rs. ${CashRecieved.toLocaleString()}`,
       icon: TrendingUp,
       color: "bg-pink-100 text-pink-600",
     },
     {
       id: 6,
       title: "Total Profit",
-      value: "Rs. 45,000",
+      value: `Rs. ${TotlaProfit.toLocaleString()}`,
       icon: Star,
       color: "bg-orange-100 text-orange-600",
     },
@@ -75,10 +79,12 @@ export default function SellerOfflineOverview() {
     const response = await GetSellerOfflineOnBoard(String(token));
     if (response.status === 200) {
       const data = response.data as ResponseData;
-      setTotalCredit(data.queryTotalCredit);
-      setTotalExpense(data.queryTotalExpense);
-      setTotalSale(data.queryTotalSale);
-      setTotalReturn(data.queryTotalReturn);
+      setCreditSale(data.queryTotalCredit ?? 0);
+      setCashRecieved(data.queryCashRecieved ?? 0);
+      setTotalExpense(data.queryTotalExpense ?? 0);
+      setTotalSale(data.queryTotalSale ?? 0);
+      setTotalReturn(data.queryTotalReturn ?? 0);
+      setTotlaProfit(data.queryTotalProfit ?? 0);
       console.log(response.data);
     }
   };
