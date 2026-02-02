@@ -59,10 +59,12 @@ import RateManagement from "./Shippment/ShippingRate/page";
 import CreateLogins from "./CreateLogin/page";
 import { FaCashRegister, FaMoneyBill } from "react-icons/fa";
 import TillManagement from "./TillRegister/page";
+import Salesman from "./Salesman/page";
+
 
 export default function CustomerPanel() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropDown, setDropDown] = useState(false);
   const [Till, setTill] = useState(false);
@@ -76,6 +78,7 @@ export default function CustomerPanel() {
     // { id: "Code", label: "Code", icon: Plus },
     { id: "Shippment", label: "Shippment ", icon: Truck },
     { id: "Till", label: "Cash Register ", icon: FaCashRegister },
+     { id: "Salesman", label: "Salesman", icon: User }, 
     { id: "CreateLogin", label: "Create Login", icon: UserLock },
     { id: "StoreSetting", label: "Store Setting", icon: ShoppingBagIcon },
     { id: "payment", label: "Payment", icon: Coins },
@@ -122,6 +125,7 @@ export default function CustomerPanel() {
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
+        
         <div className="flex items-center justify-between mb-8">
           <h2
             onClick={() => window.location.reload()}
@@ -298,6 +302,10 @@ export default function CustomerPanel() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+      <div className="mb-4 p-2 bg-yellow-100 text-black font-bold">
+  Active Tab: {activeTab}
+</div>
+
 
       {/* === Main Content === */}
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
@@ -314,6 +322,8 @@ export default function CustomerPanel() {
         {activeTab === "shippingRate" && <RateManagement />}
         {activeTab === "CreateLogin" && <CreateLogins />}
         {activeTab === "TillCreate" && <TillManagement />}
+        {activeTab === "Salesman" && <Salesman />}
+
 
         {/*{activeTab === "unit" && <UnitForm />}
         {activeTab === "orders" && <SellerOrders />}

@@ -21,6 +21,7 @@ import {
   List,
   X,
   Receipt,
+  ChevronDown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
@@ -57,6 +58,7 @@ import GetInitalStore from "@/api/authentication/StoreGet";
 import GetProductSalesMan from "@/api/lib/PosIntegration/ProductGet/productsGetSalesMan";
 import GetTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillGet";
 import GetTillForSalesMan from "@/api/lib/MainDashbaord/TillCreate/GetTillForSpecficSaleMan";
+import GetSalesman1 from "@/api/lib/MainDashbaord/SalemanApi/GetSalesman";
 interface Item {
   barcode: string;
   attributeID: string;
@@ -95,6 +97,16 @@ interface TillSubList {
   productID: string;
   productName: string;
 }
+
+interface Salesman {
+  salesmanID: string;
+  salesmanName: string;
+}
+interface SalesmanApiResponse {
+  salesmanList: Salesman[];
+  message?: string;
+}
+
 export default function SaleForm() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
@@ -144,6 +156,8 @@ export default function SaleForm() {
   const [newSaleList, setNewSaleList] = useState<Sale[]>([]);
   const [loadRecipt, setLoadRecipt] = useState(false);
   const [TillList, setTillList] = useState<TillList[]>([]);
+  const [salesmanList, setSalesmanList] = useState<Salesman[]>([]);
+const [selectedSalesman, setSelectedSalesman] = useState("");
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
@@ -498,6 +512,7 @@ export default function SaleForm() {
         adjustment: Discount,
         totalBill: totalSum,
         remarks: Description,
+        salesmanID: selectedSalesman,
         list: listForRequest,
       };
       const token = localStorage.getItem("token");
@@ -633,7 +648,26 @@ export default function SaleForm() {
     CustomerGet();
     storesget();
     getTill();
+    fetchSalesman();
   }, []);
+
+const fetchSalesman = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const response = await GetSalesman(String(token));
+
+    if (response.status === 200 || response.status === 201) {
+      // Cast the unknown data to your specific interface
+      const data = response.data as SalesmanApiResponse; 
+      
+      setSalesmanList(data.salesmanList || []);
+    }
+  } catch (error) {
+    console.error("Error fetching salesman list", error);
+  }
+};
   return (
     <div className="w-full relative">
       <h2 className="text-2xl font-semibold text-gray-800">Sale Management</h2>
@@ -1576,6 +1610,36 @@ export default function SaleForm() {
                 {ResponseBack}
               </div>
             )}
+
+
+
+{/* --- NEW SALESMAN DROPDOWN --- */}
+<div className="w-full mt-4">
+  <label className="block text-gray-700 font-medium mb-2">
+    Salesman <span className="text-red-500">*</span>
+  </label>
+  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+    <User className="text-gray-400 mr-2" size={18} />
+    <select
+      value={selectedSalesman}
+      onChange={(e) => setSelectedSalesman(e.target.value)}
+      className="w-full bg-transparent outline-none text-gray-900 p-2"
+    >
+      <option value="">Select Salesman</option>
+      {salesmanList.length > 0 ? (
+        salesmanList.map((sm) => (
+          <option key={sm.salesmanID} value={sm.salesmanID}>
+            {sm.salesmanName}
+          </option>
+        ))
+      ) : (
+        <option>No Record Found</option>
+      )}
+    </select>
+  </div>
+</div>
+
+{/* ---------------------------- */}
             {/* Save Button */}
             <div className="w-full flex justify-end mt-4">
               <button
