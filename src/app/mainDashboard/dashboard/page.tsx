@@ -323,7 +323,7 @@ export default function SellerOverviewDashbaord() {
                   </div>
 
                   {/* Create Store Sidebar */}
-                  <div className="flex sm:flex-col justify-center items-center sm:items-start">
+                  {/* <div className="flex sm:flex-col justify-center items-center sm:items-start">
                     <button
                       onClick={() => {
                         setaddStoreForm(true);
@@ -334,7 +334,7 @@ export default function SellerOverviewDashbaord() {
                     >
                       + Create Store
                     </button>
-                  </div>
+                  </div> */}
                 </div>
                 {storeList.length > 1 && (
                   <button
@@ -701,8 +701,8 @@ export default function SellerOverviewDashbaord() {
                         order.status === "Delivered"
                           ? "bg-green-100 text-green-700"
                           : order.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-blue-100 text-blue-700"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-blue-100 text-blue-700"
                       }`}
                     >
                       {order.status}

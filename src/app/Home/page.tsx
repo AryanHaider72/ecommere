@@ -62,6 +62,7 @@ import GetNavbar from "@/api/lib/HomePage/Navbar/Navbar";
 import CartComponent from "@/useFullComponent/CartComponent/page";
 import CheckAuth from "@/api/authentication/checkAuth";
 import { useRouter } from "next/navigation";
+import { FaWhatsapp } from "react-icons/fa";
 
 interface Varient {
   varientName: string;
@@ -83,6 +84,7 @@ type urlTypes = {
 
 export default function MainHome() {
   const router = useRouter();
+  const scrollRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [uploading, setUplaoding] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -91,10 +93,10 @@ export default function MainHome() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>(
-    []
+    [],
   );
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -208,7 +210,7 @@ export default function MainHome() {
     ) {
       console.log(
         "Filtered out by subCategoryDetailID",
-        product.subCategoryDetailID
+        product.subCategoryDetailID,
       );
       return false;
     }
@@ -243,7 +245,16 @@ export default function MainHome() {
     const freshCart = await getServerCart();
     setCartList(freshCart);
   };
+  const scroll = (index: number, direction: "left" | "right") => {
+    const container = scrollRefs.current[index];
+    if (!container) return;
 
+    const cardWidth = 300; // card + gap
+    container.scrollBy({
+      left: direction === "left" ? -cardWidth : cardWidth,
+      behavior: "smooth",
+    });
+  };
   return (
     <div className="w-full min-h-screen bg-white">
       <div className="w-full  flex justify-between text-sm p-2">
@@ -383,8 +394,8 @@ export default function MainHome() {
             </div>
             {/* Top Collection Section */}
             <div className="w-full mt-4 mb-4">
-              <div className="mx-auto max-w-7xl px-4">
-                {categories.map((category) => (
+              <div className="mx-auto max-w-full px-15">
+                {categories.map((category, index) => (
                   <div key={category.subCategoryID} className="mb-12">
                     <h2
                       className="text-4xl font-semibold mb-6"
@@ -393,20 +404,33 @@ export default function MainHome() {
                       Shop By {category.subCategoryName}
                     </h2>
 
-                    {/* Horizontal scroll cards */}
-                    <div className="flex gap-6 overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
-                      {category.subCategory.map((subItem) => (
-                        <div
-                          key={subItem.subCategoryDetailID}
-                          className="mb-10 min-w-[280px] hover:text-gray-800 hover:font-bold flex-shrink-0 flex flex-col items-center bg-white shadow-md rounded-2xl p-4 transition-transform hover:scale-105"
-                        >
-                          <Link
-                            href={{
-                              pathname: `/${category.subCategoryID}/shop`,
-                              query: { qID: subItem.subCategoryDetailID },
-                            }}
+                    <div className="relative">
+                      {/* Left Button */}
+                      <button
+                        onClick={() => scroll(index, "left")}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 "
+                      >
+                        <ChevronLeft size={22} />
+                      </button>
+
+                      {/* SCROLL CONTAINER */}
+                      <div
+                        ref={(el) => {
+                          scrollRefs.current[index] = el;
+                        }}
+                        className="flex gap-6 overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-hide px-10"
+                      >
+                        {category.subCategory.map((subItem) => (
+                          <div
+                            key={subItem.subCategoryDetailID}
+                            className="min-w-[280px] flex-shrink-0 bg-white shadow-md rounded-2xl p-4 transition-transform hover:scale-105"
                           >
-                            <div className="card">
+                            <Link
+                              href={{
+                                pathname: `/${category.subCategoryID}/shop`,
+                                query: { qID: subItem.subCategoryDetailID },
+                              }}
+                            >
                               <img
                                 src={subItem?.imagelist?.[0]?.url}
                                 alt={subItem.name}
@@ -415,10 +439,18 @@ export default function MainHome() {
                               <p className="mt-3 text-lg font-medium text-center">
                                 {subItem.name}
                               </p>
-                            </div>
-                          </Link>
-                        </div>
-                      ))}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Right Button */}
+                      <button
+                        onClick={() => scroll(index, "right")}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-2 hover:bg-gray-100 "
+                      >
+                        <ChevronRight size={22} />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -688,8 +720,9 @@ export default function MainHome() {
                  shadow-lg hover:bg-green-600 
                  hover:scale-110 transition-all duration-300"
         aria-label="Chat on WhatsApp"
+        title="Whatsapp Now"
       >
-        <MessageCircle size={28} />
+        <FaWhatsapp size={28} />
       </a>
     </div>
   );

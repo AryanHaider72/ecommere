@@ -8,7 +8,8 @@ export interface ModifyTill {
   listProduct: listProduct[];
 }
 export interface listProduct {
-  productID: string;
+  attributeID: string;
+  qty: number;
 }
 
 export interface AddLoign {

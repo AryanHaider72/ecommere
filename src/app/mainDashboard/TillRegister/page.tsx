@@ -26,8 +26,11 @@ interface citylist {
   cityName: string;
 }
 interface NewList {
-  productID: string;
+  varinetName: string;
+  subVarientName: string;
   productName: string;
+  qty: number;
+  attributeID: string;
 }
 
 interface RespiosneGet {
@@ -52,6 +55,16 @@ interface ProductTill {
 interface ProductList {
   productID: string;
   productName: string;
+  varient: varient[];
+}
+interface varient {
+  varientID: string;
+  variantName: string;
+  varientSubList: varientSubList[];
+}
+interface varientSubList {
+  attributeID: string;
+  varientValue: string;
 }
 
 export default function TillManagement() {
@@ -66,6 +79,9 @@ export default function TillManagement() {
 
   const [TillName, setTillName] = useState("");
   const [ProductName, setProductName] = useState("");
+  const [VarientName, setVarientName] = useState("");
+  const [SubVartient, setSubVartient] = useState("");
+  const [attributeID, setAttributeID] = useState("");
   const [productList, setProductList] = useState<ProductList[]>([]);
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const [newList, setNewList] = useState<NewList[]>([]);
@@ -73,6 +89,10 @@ export default function TillManagement() {
   const [ID, setID] = useState("");
   const [zonelist, setZoneList] = useState<citylist[]>([]);
   const [TillList, setTillList] = useState<TillList[]>([]);
+  const [VarientList, setVareintList] = useState<varient[]>([]);
+  const [SubVarientList, setSubVareintList] = useState<varientSubList[]>([]);
+  const [Qty, setQty] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState("");
 
   const storesget = async () => {
     const token = localStorage.getItem("token");
@@ -93,45 +113,102 @@ export default function TillManagement() {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductTill;
-      console.log(data);
       if (data.productList.length > 0) {
+        setProductName(data.productList[0].productName);
         setProductList(data.productList);
-      } else {
-        setProductList([]);
       }
     }
   };
-
-  const AddToList = (productName: string) => {
-    const existingItem = newList.find(
-      (item) => item.productName.toLowerCase() === productName.toLowerCase(),
-    );
-
-    if (existingItem) {
-      alert("Product already added!");
-      setProductName("");
-      return; // Stop adding duplicate
+  useEffect(() => {
+    if (productList.length > 0) {
+      fetchVarinet(productList[0].productID);
     }
+  }, [productList]);
 
-    // Find the product in productList to get productID
+  const fetchVarinet = (ID: string) => {
+    const data = productList.find((item) => item.productID === ID);
+    if (data) {
+      setVareintList(data.varient || []);
+      setVarientName(data.varient[0].variantName);
+    }
+  };
+
+  useEffect(() => {
+    if (VarientList.length > 0) {
+      fetchSubVarinet(VarientList[0].varientID);
+    }
+  }, [VarientList]);
+
+  const fetchSubVarinet = (ID: string) => {
+    const data = VarientList.find((item) => item.varientID === ID);
+    if (data) {
+      setSubVareintList(data.varientSubList);
+      if (data.varientSubList && data.varientSubList.length > 0) {
+        setSubVartient(data.varientSubList[0].varientValue);
+        setAttributeID(data.varientSubList[0].attributeID);
+      }
+    } else {
+      setSubVareintList([]);
+    }
+  };
+
+  const AddToList = (
+    productName: string,
+    variantName: string,
+    subVariantValue: string,
+    attributeID: string,
+    qty: number,
+  ) => {
+    const fromData = {
+      productName,
+      variantName,
+      subVariantValue,
+      attributeID,
+      qty,
+    };
+    console.log(fromData);
+    // Optional: find product in productList for validation or extra data
     const selectedProduct = productList.find(
       (item) => item.productName.toLowerCase() === productName.toLowerCase(),
     );
 
-    if (selectedProduct) {
+    const findExisting = newList.find(
+      (item) => item.productName === productName,
+    );
+    if (findExisting) {
+      alert("Record Already Exist.");
+      setProductName("");
+      setAttributeID("");
+      setVarientName("");
+      setSubVartient("");
+      setQty("");
+    } else {
+      if (!selectedProduct) {
+        // maybe show error or return early
+        console.warn("Product not found in list");
+        return;
+      }
+
       setNewList((prev) => [
         ...prev,
         {
-          productID: selectedProduct.productID,
-          productName: selectedProduct.productName,
+          productName,
+          varinetName: variantName,
+          subVarientName: subVariantValue,
+          attributeID: attributeID,
+          qty,
         },
       ]);
       setProductName("");
+      setAttributeID("");
+      setVarientName("");
+      setSubVartient("");
+      setQty("");
     }
   };
 
-  const removeItem = (ID: string) => {
-    const list = newList.filter((item) => item.productID !== ID);
+  const removeItem = (productName: string) => {
+    const list = newList.filter((item) => item.attributeID !== productName);
     if (list) {
       setNewList(list);
     }
@@ -143,21 +220,23 @@ export default function TillManagement() {
       const token = localStorage.getItem("token");
       const formData = {
         tillName: TillName,
-        listProduct: newList,
+        listProduct: newList.map((item) => ({
+          attributeID: item.attributeID,
+          qty: item.qty,
+        })),
       };
-
+      console.log(formData);
       const response = await AddTillForPos(formData, String(token));
       if (response.status === 200) {
         storesget();
         setTillName("");
         getTill();
         setNewList([]);
-        setProductName("");
         setIsTrue(false);
         setResponseBack("Record Added Successfully");
       } else if (response.status === 400) {
         setIsTrue(true);
-        setResponseBack("PLease Fill in Required Fields");
+        setResponseBack("Please Fill in Required Fields");
       } else {
         setIsTrue(true);
         setResponseBack("Something Went Wrong. Please try again later.");
@@ -174,8 +253,8 @@ export default function TillManagement() {
       const response = await GetTillForPos(String(token));
       if (response.status === 200) {
         const data = response.data as RespiosneGet;
-        console.log(data);
         if (data) {
+          console.log(data);
           setTillList(data.tillList);
         } else {
           setTillList([]);
@@ -192,7 +271,7 @@ export default function TillManagement() {
     if (data) {
       setID(data.tillID);
       setTillName(data.tillName);
-      setNewList(data.tillSubList);
+      // setNewList(data.tillSubList);
     }
   };
   const ModifyTill = async () => {
@@ -202,7 +281,10 @@ export default function TillManagement() {
       const formData = {
         TillID: ID,
         tillName: TillName,
-        listProduct: newList,
+        listProduct: newList.map((item) => ({
+          attributeID: item.attributeID,
+          qty: item.qty,
+        })),
       };
       const response = await ModifyTillForPos(formData, String(token));
       if (response.status === 200) {
@@ -335,7 +417,7 @@ export default function TillManagement() {
               </div>
             ) : (
               <>
-                {TillList.length > 0 ? (
+                {TillList.length !== 0 ? (
                   <>
                     {TillList.map((item) => (
                       <div
@@ -347,14 +429,20 @@ export default function TillManagement() {
                             {item.tillName}
                           </h3>
                           <div className="flex flex-wrap gap-2 mt-1">
-                            {item.tillSubList.map((subItem, index) => (
-                              <span
-                                key={subItem.productID}
-                                className="inline-block bg-green-300 text-green-800 text-xs font-semibold px-2 py-1 rounded-full"
-                              >
-                                {subItem.productName}
-                              </span>
-                            ))}
+                            {item.tillSubList.length !== 0 ? (
+                              <>
+                                {item.tillSubList.map((subItem, index) => (
+                                  <span
+                                    key={subItem.productID}
+                                    className="inline-block bg-green-300 text-green-800 text-xs font-semibold px-2 py-1 rounded-full"
+                                  >
+                                    {subItem.productName}
+                                  </span>
+                                ))}
+                              </>
+                            ) : (
+                              <></>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-4">
@@ -390,7 +478,7 @@ export default function TillManagement() {
         ) : (
           <div className="space-y-5 mt-2">
             {/* === Column: Sub Category === */}
-            <div>
+            {/* <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Stores
               </label>
@@ -416,7 +504,7 @@ export default function TillManagement() {
                   )}
                 </select>
               </div>
-            </div>
+            </div> */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Till Name <span className="text-red-500">*</span>
@@ -430,60 +518,196 @@ export default function TillManagement() {
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
             </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Product Name <span className="text-red-500">*</span>
-              </label>
-              <div className="flex gap-1">
-                <div className="w-full">
-                  <input
-                    list="productList"
-                    value={ProductName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    type="text"
-                    name="Zone Name"
-                    placeholder="Enter Product Name"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
-                  />
-                  <datalist id="productList">
-                    {productList.length > 0 ? (
-                      <>
-                        {productList.map((item) => (
-                          <option
-                            key={item.productID}
-                            value={item.productName}
-                          />
-                        ))}
-                      </>
-                    ) : (
-                      <option value="No Record Found" />
-                    )}
-                  </datalist>
-                </div>
-                <button
-                  onClick={() => {
-                    AddToList(ProductName);
+            <div className="flex gap-4">
+              {/* First Select */}
+              <div className="w-1/2">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Product Name <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={ProductName}
+                  onChange={(e) => {
+                    setProductName(e.target.value);
+                    const value = e.target.value;
+                    const data = productList.find(
+                      (item) => item.productName === value,
+                    );
+                    if (data) {
+                      fetchVarinet(data.productID);
+                    }
                   }}
-                  className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 >
-                  <Plus />
-                </button>
+                  <option>Select Product</option>
+                  {productList.length > 0 ? (
+                    productList.map((item) => (
+                      <option key={item.productID} value={item.productName}>
+                        {item.productName}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No Record Found</option>
+                  )}
+                </select>
+              </div>
+
+              {/* Second Select */}
+              <div className="w-1/2">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Variant Name <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={VarientName}
+                  onChange={(e) => {
+                    setVarientName(e.target.value);
+                    const value = e.target.value;
+                    const data = VarientList.find(
+                      (item) => item.variantName === value,
+                    );
+                    if (data) {
+                      fetchSubVarinet(data.varientID);
+                    }
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option>Select Varient</option>
+                  {VarientList.length > 0 ? (
+                    VarientList.map((item) => (
+                      <option key={item.varientID} value={item.variantName}>
+                        {item.variantName}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No Record Found</option>
+                  )}
+                </select>
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              {newList.map((item) => (
-                <div className="bg-green-100 text-green-400 font-bold px-1 py-2 rounded-full  text-sm">
-                  <span className="flex gap-2 p-1">
-                    {item.productName}{" "}
-                    <p
-                      onClick={() => removeItem(item.productID)}
-                      className="text-gray-500 cursor-pointer hover:text-gray-600"
-                    >
-                      X
-                    </p>
-                  </span>
+
+            <div className="flex gap-4 mt-4">
+              {/* Sub-Variant Select */}
+              <div className="w-1/2">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Sub-Variant <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={SubVartient}
+                  onChange={(e) => {
+                    setSubVartient(e.target.value);
+                    const value = e.target.value;
+                    const item = SubVarientList.find(
+                      (item) => item.varientValue === value,
+                    );
+                    if (item) {
+                      setAttributeID(item.attributeID);
+                    }
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                >
+                  <option>Select Sub-Varient</option>
+                  {SubVarientList.length > 0 ? (
+                    SubVarientList.map((item) => (
+                      <option key={item.attributeID} value={item.varientValue}>
+                        {item.varientValue}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No Record Found</option>
+                  )}
+                </select>
+              </div>
+
+              {/* Qty Input */}
+              <div className="w-1/2">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Qty <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    value={Qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    type="text"
+                    name="Zone Name"
+                    placeholder="Enter Qty"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
+                  />
+                  <button
+                    onClick={() => {
+                      AddToList(
+                        ProductName,
+                        VarientName,
+                        SubVartient,
+                        attributeID,
+                        Number(Qty),
+                      );
+                    }}
+                    className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                  >
+                    <Plus />
+                  </button>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto mt-4">
+              <table className="min-w-full border border-gray-300 rounded-md">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="py-2 px-4 border-b border-gray-300 text-left">
+                      #
+                    </th>
+                    <th className="py-2 px-4 border-b border-gray-300 text-left">
+                      Product Name
+                    </th>
+                    <th className="py-2 px-4 border-b border-gray-300 text-left">
+                      Variant Name
+                    </th>
+                    <th className="py-2 px-4 border-b border-gray-300 text-left">
+                      Sub-Variant Name
+                    </th>
+                    <th className="py-2 px-4 border-b border-gray-300 text-left">
+                      Quantity
+                    </th>
+                    <th className="py-2 px-4 border-b border-gray-300 text-left">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {newList.map((item, index) => (
+                    <tr
+                      key={item.attributeID}
+                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    >
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        {index + 1}
+                      </td>
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        {item.productName}
+                      </td>
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        {item.varinetName}
+                      </td>
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        {item.subVarientName}
+                      </td>
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        {item.qty}
+                      </td>
+                      <td className="py-2 px-4 border-b border-gray-300">
+                        <button
+                          onClick={() => {
+                            removeItem(item.attributeID);
+                          }}
+                          className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                        >
+                          <Trash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {isTrue && (

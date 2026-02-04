@@ -46,7 +46,7 @@ export default function CustomerPanel() {
     { id: "Code", label: "Code", icon: Plus },
     { id: "Ledger", label: "Ledger", icon: BookOpen },
     { id: "Reports", label: "Reports", icon: Notebook },
-    // { id: "ItemTransfer", label: "Item Transfer", icon: BiTransfer },
+    { id: "ItemTransfer", label: "Item Transfer", icon: BiTransfer },
     { id: "expense", label: "Expense", icon: Coins },
     { id: "sale", label: "Sale", icon: ShoppingCart },
     { id: "saleReturn", label: "Sale Return", icon: ShoppingBag },

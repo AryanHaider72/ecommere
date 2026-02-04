@@ -157,8 +157,8 @@ export default function SaleForm() {
   const [loadRecipt, setLoadRecipt] = useState(false);
   const [TillList, setTillList] = useState<TillList[]>([]);
   const [salesmanList, setSalesmanList] = useState<Salesman[]>([]);
-const [selectedSalesman, setSelectedSalesman] = useState("");
-const [, setSalesman] = useState("");
+  const [selectedSalesman, setSelectedSalesman] = useState("");
+  const [, setSalesman] = useState("");
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({
@@ -528,6 +528,7 @@ const [, setSalesman] = useState("");
         setCustomerName("");
         setSaleDate("");
         setItems([]);
+        setSelectedSalesman("");
         setAmountPaid(0);
         setDiscount(0);
         setDescription("");
@@ -652,23 +653,23 @@ const [, setSalesman] = useState("");
     fetchSalesman();
   }, []);
 
-const fetchSalesman = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+  const fetchSalesman = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  try {
-    const response = await GetSalesman(String(token));
+    try {
+      const response = await GetSalesman(String(token));
 
-    if (response.status === 200 || response.status === 201) {
-      // Cast the unknown data to your specific interface
-      const data = response.data as SalesmanApiResponse; 
-      
-      setSalesmanList(data.salesmanList || []);
+      if (response.status === 200 || response.status === 201) {
+        // Cast the unknown data to your specific interface
+        const data = response.data as SalesmanApiResponse;
+
+        setSalesmanList(data.salesmanList || []);
+      }
+    } catch (error) {
+      console.error("Error fetching salesman list", error);
     }
-  } catch (error) {
-    console.error("Error fetching salesman list", error);
-  }
-};
+  };
   return (
     <div className="w-full relative">
       <h2 className="text-2xl font-semibold text-gray-800">Sale Management</h2>
@@ -975,6 +976,32 @@ const fetchSalesman = async () => {
         ) : (
           <div className="flex flex-col flex-wrap md:flex-row gap-5 mt-2">
             {/* Sale Date */}
+
+            {/* --- NEW SALESMAN DROPDOWN --- */}
+            <div className="w-full mt-4">
+              <label className="block text-gray-700 font-medium mb-2">
+                Salesman <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                <User className="text-gray-400 mr-2" size={18} />
+                <select
+                  value={selectedSalesman}
+                  onChange={(e) => setSelectedSalesman(e.target.value)}
+                  className="w-full bg-transparent outline-none text-gray-900 p-2"
+                >
+                  <option value="">Select Salesman</option>
+                  {salesmanList.length > 0 ? (
+                    salesmanList.map((sm) => (
+                      <option key={sm.salesmanID} value={sm.salesmanID}>
+                        {sm.salesmanName}
+                      </option>
+                    ))
+                  ) : (
+                    <option>No Record Found</option>
+                  )}
+                </select>
+              </div>
+            </div>
             <div className="w-full flex-col gap-2 md:flex-row flex">
               <div className="w-full ">
                 <label className="block text-gray-700 font-medium mb-2">
@@ -1406,12 +1433,7 @@ const fetchSalesman = async () => {
                       <input
                         type="text"
                         value={newItem.productName || ""}
-                        onChange={(e) =>
-                          setNewItem({
-                            ...newItem,
-                            productName: e.target.value,
-                          })
-                        }
+                        readOnly
                         className="w-full bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
                         placeholder="New Product Name"
                       />
@@ -1420,12 +1442,7 @@ const fetchSalesman = async () => {
                       <input
                         type="number"
                         value={newItem.varinet || ""}
-                        onChange={(e) =>
-                          setNewItem({
-                            ...newItem,
-                            varinet: String(e.target.value),
-                          })
-                        }
+                        readOnly
                         className="w-20 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
                         placeholder="eg:- MD"
                       />
@@ -1457,6 +1474,9 @@ const fetchSalesman = async () => {
                         className="w-24 text-center bg-transparent outline-none border-b border-gray-200 focus:border-gray-400"
                         placeholder="0"
                       />
+                    </td>
+                    <td className="px-4 py-2 text-center font-medium text-gray-800">
+                      {Number(newItem.discount || 0).toFixed(2)}
                     </td>
                     <td className="px-4 py-2 text-center font-medium text-gray-800">
                       {(
@@ -1612,35 +1632,7 @@ const fetchSalesman = async () => {
               </div>
             )}
 
-
-
-{/* --- NEW SALESMAN DROPDOWN --- */}
-<div className="w-full mt-4">
-  <label className="block text-gray-700 font-medium mb-2">
-    Salesman <span className="text-red-500">*</span>
-  </label>
-  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-    <User className="text-gray-400 mr-2" size={18} />
-    <select
-      value={selectedSalesman}
-      onChange={(e) => setSelectedSalesman(e.target.value)}
-      className="w-full bg-transparent outline-none text-gray-900 p-2"
-    >
-      <option value="">Select Salesman</option>
-      {salesmanList.length > 0 ? (
-        salesmanList.map((sm) => (
-          <option key={sm.salesmanID} value={sm.salesmanID}>
-            {sm.salesmanName}
-          </option>
-        ))
-      ) : (
-        <option>No Record Found</option>
-      )}
-    </select>
-  </div>
-</div>
-
-{/* ---------------------------- */}
+            {/* ---------------------------- */}
             {/* Save Button */}
             <div className="w-full flex justify-end mt-4">
               <button

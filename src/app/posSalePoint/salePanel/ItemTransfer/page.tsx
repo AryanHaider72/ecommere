@@ -33,6 +33,8 @@ import {
   Product,
   ProductApiResponseSalesMan,
 } from "@/api/types/product/getProduct";
+import GetTillForSalesMan from "@/api/lib/MainDashbaord/TillCreate/GetTillForSpecficSaleMan";
+import AddTillTransferPosSale from "@/api/lib/PosIntegration/TillTransfer/AddTill/AddTill";
 interface RespiosneGet {
   message: string;
   tillList: TillList[];
@@ -81,10 +83,13 @@ export default function ItemTransferForm() {
   const [Update, setUpdate] = useState(false);
   const [VarinetID, setVarinetID] = useState("");
   const [SubVarinetID, setSubVarinetID] = useState("");
+  const [TillID, setTillID] = useState("");
+  const [SelectedTill, setSelectedTill] = useState("");
 
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
 
   const [TillList, setTillList] = useState<TillList[]>([]);
+  const [TillList2, setTillList2] = useState<TillList[]>([]);
   const [productList, setProductList] = useState<Product[]>([]);
   const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
   const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
@@ -99,6 +104,7 @@ export default function ItemTransferForm() {
         console.log(data);
         if (data) {
           setTillList(data.tillList);
+          getProduct(data.tillList[0].tillID);
         } else {
           setTillList([]);
         }
@@ -108,12 +114,36 @@ export default function ItemTransferForm() {
     }
   };
 
-  const getProduct = async () => {
+  const getTillSender = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await GetTillForSalesMan(String(token));
+
+      if (response.status === 200) {
+        const data = response.data as RespiosneGet;
+
+        if (data?.tillList?.length > 0) {
+          setTillList2(data.tillList);
+
+          // Auto select first till
+          setSelectedTill(data.tillList[0].tillID);
+          getProduct(data.tillList[0].tillID);
+        } else {
+          setTillList2([]);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProduct = async (ID: string) => {
     const token = localStorage.getItem("token");
 
     if (!token) return;
 
-    const response = await GetProductSalesMan(token);
+    const response = await GetProductSalesMan(token, ID);
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponseSalesMan;
@@ -148,9 +178,48 @@ export default function ItemTransferForm() {
       setAttributeList([]);
     }
   };
+  const AddTillTransfer = async () => {
+    try {
+      setLoading(true);
+      const formData = {
+        senderID: SelectedTill,
+        recieverID: TillID,
+        attributeID: SubVarinetID,
+        qty: Number(Quantity),
+      };
+      console.log(formData);
+      const token = localStorage.getItem("token");
+      const response = await AddTillTransferPosSale(formData, String(token));
+      if (response.status === 200 || response.status === 201) {
+        setTillID("");
+        setProductID("");
+        setVarinetID("");
+        setSubVarinetID("");
+        setDescription("");
+        setRersponseBack(
+          response.data.message || "Till Transferd Successfully",
+        );
+        setShowMessage(true);
+      } else if (response.status === 400) {
+        setRersponseBack(
+          response.data.message || "Please Fill in All Required Fields",
+        );
+        setShowMessage(false);
+      } else {
+        setRersponseBack(
+          response.data.message ||
+            "Something Went Wrong. Please Try Again later.",
+        );
+        setShowMessage(false);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     getTill();
-    getProduct();
+    getTillSender();
   }, []);
 
   useEffect(() => {
@@ -284,14 +353,54 @@ export default function ItemTransferForm() {
         ) : (
           <div className="">
             {/* Name */}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <div className="w-full">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Till <span className="text-red-500">*</span>
+                  Till Sender <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
                   <User className="text-gray-400 mr-2" size={18} />
                   <select
+                    value={SelectedTill}
+                    onChange={(e) => {
+                      setSelectedTill(e.target.value);
+                      const value = e.target.value;
+                      const data = TillList.find(
+                        (item) => item.tillID === value,
+                      );
+                      if (data) {
+                        getProduct(data.tillID);
+                      }
+                    }}
+                    name="name"
+                    className="w-full bg-transparent outline-none text-gray-900 p-1"
+                  >
+                    <option>Select Product</option>
+                    {TillList2.length > 0 ? (
+                      <>
+                        {TillList2.map((item) => (
+                          <option key={item.tillID} value={item.tillID}>
+                            {item.tillName}
+                          </option>
+                        ))}
+                      </>
+                    ) : (
+                      <option>No Record Found</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div className="w-full">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Till Reciever <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <User className="text-gray-400 mr-2" size={18} />
+                  <select
+                    value={TillID}
+                    onChange={(e) => {
+                      setTillID(e.target.value);
+                    }}
                     name="name"
                     className="w-full bg-transparent outline-none text-gray-900 p-1"
                   >
@@ -310,7 +419,9 @@ export default function ItemTransferForm() {
                   </select>
                 </div>
               </div>
-              <div className="w-full">
+            </div>
+            <div className="flex gap-3">
+              <div className="w-full mt-2 ">
                 <label className="block text-gray-700 font-medium mb-2">
                   Product <span className="text-red-500">*</span>
                 </label>
@@ -346,8 +457,6 @@ export default function ItemTransferForm() {
                   </select>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2">
               <div className="w-full mt-2">
                 <label className="block text-gray-700 font-medium mb-2">
                   Variant
@@ -377,9 +486,11 @@ export default function ItemTransferForm() {
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="flex gap-3">
               <div className="w-full mt-2">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Sub Variant <span className="text-gray-500">{Qty}</span>
+                  Sub-Variant
                 </label>
 
                 <div className="flex items-center gap-2 w-full">
@@ -415,25 +526,25 @@ export default function ItemTransferForm() {
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="md:col-span-2 mt-2">
-              <label className="block text-gray-700 font-medium mb-2">
-                Quantity
-              </label>
-              <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                <Notebook className="text-gray-400 mr-2 mt-1" size={18} />
-                <input
-                  type="number"
-                  name="address"
-                  value={Quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  placeholder="Enter Qunatity"
-                  className="w-full bg-transparent outline-none text-gray-900 resize-none"
-                />
+              <div className="w-full mt-2">
+                <label className="block text-gray-700 font-medium mb-2">
+                  Quantity
+                </label>
+                <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                  <Notebook className="text-gray-400 mr-2 mt-1" size={18} />
+                  <input
+                    type="number"
+                    name="address"
+                    value={Quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    placeholder="Enter Qunatity"
+                    className="w-full bg-transparent outline-none text-gray-900 resize-none"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="md:col-span-2 mt-2">
+            {/* <div className="md:col-span-2 mt-2">
               <label className="block text-gray-700 font-medium mb-2">
                 Description
               </label>
@@ -448,7 +559,7 @@ export default function ItemTransferForm() {
                   rows={3}
                 />
               </div>
-            </div>
+            </div> */}
             {RescponseBack && (
               <div
                 className={`w-full text-center px-4 py-3 mb-2 rounded ${
@@ -476,7 +587,7 @@ export default function ItemTransferForm() {
               ) : (
                 <button
                   type="button"
-                  //   onClick={addCustoemr}
+                  onClick={AddTillTransfer}
                   className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
                 >
                   {loading ? "Saving..." : "Save"}

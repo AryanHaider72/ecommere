@@ -90,3 +90,12 @@ div::-webkit-scrollbar-thumb {
 div::-webkit-scrollbar-track {
   background: #f1f1f1;
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE & Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}

@@ -3,7 +3,7 @@
 import { postRequest } from "@/api/authentication/main";
 import { AddTill } from "@/api/types/MainDashbaord/TillManagement/TillCreate";
 
-export default async function AddTillForPos(data: AddTill, token?: string) {
+export default async function AddTillForPos(data?: AddTill, token?: string) {
   try {
     const customHeader: Record<string, string> = {};
     if (token) customHeader.Authorization = `Bearer ${token}`;
