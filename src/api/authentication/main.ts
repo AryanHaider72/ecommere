@@ -30,8 +30,12 @@ async function getRequest<T>(
     };
   } catch (error: any) {
     console.error("GET request error:", error);
-
+    console.log(url);
+    console.log(params);
+    console.log(headers);
     return {
+      
+      
       success: false,
       error: error?.response?.data || error.message,
       status: error?.response?.status,

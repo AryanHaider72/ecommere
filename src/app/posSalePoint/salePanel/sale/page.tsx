@@ -58,7 +58,7 @@ import GetInitalStore from "@/api/authentication/StoreGet";
 import GetProductSalesMan from "@/api/lib/PosIntegration/ProductGet/productsGetSalesMan";
 import GetTillForPos from "@/api/lib/MainDashbaord/TillCreate/TillGet";
 import GetTillForSalesMan from "@/api/lib/MainDashbaord/TillCreate/GetTillForSpecficSaleMan";
-import GetSalesman1 from "@/api/lib/MainDashbaord/SalemanApi/GetSalesman";
+import GetSalesman from "@/api/lib/MainDashbaord/SalemanApi/GetSalesman";
 interface Item {
   barcode: string;
   attributeID: string;
@@ -158,6 +158,7 @@ export default function SaleForm() {
   const [TillList, setTillList] = useState<TillList[]>([]);
   const [salesmanList, setSalesmanList] = useState<Salesman[]>([]);
 const [selectedSalesman, setSelectedSalesman] = useState("");
+const [, setSalesman] = useState("");
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState({

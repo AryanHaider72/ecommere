@@ -302,9 +302,9 @@ export default function CustomerPanel() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      <div className="mb-4 p-2 bg-yellow-100 text-black font-bold">
+      {/* <div className="mb-4 p-2 bg-yellow-100 text-black font-bold">
   Active Tab: {activeTab}
-</div>
+</div> */}
 
 
       {/* === Main Content === */}

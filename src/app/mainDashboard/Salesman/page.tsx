@@ -4,7 +4,13 @@ import { ChevronLeft, ChevronRight, Pencil, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import AddSalesman from "@/api/lib/MainDashbaord/SalemanApi/AddSalesman";
 
-import GetSalesman from "@api/lib/MainDashbaord/SalesmanApi/getSalesman";
+import GetSalesman from "@/api/lib/MainDashbaord/SalemanApi/GetSalesman";
+/*
+Code by @Adil Dated: 2-2-26
+
+*/
+
+
 interface SalesmanList {
   salesmanID: string;
   salesmanName: string;
@@ -43,10 +49,12 @@ export default function Salesman() {
 
   const addSalesman = async () => {
   try {
+   
     setisLoading(true);
     const token = localStorage.getItem("token");
+    console.log("new: "+token);
     const response = await AddSalesman( salesmanName , String(token));
-
+    
     if (response.status === 200 || response.status === 201) {
       setResponseBack("Record Added Successfully");
       setIsTrue(true);
@@ -142,11 +150,12 @@ export default function Salesman() {
               </label>
               <input
                 value={salesmanName}
-                onChange={(e) => setSalesmanName(e.target.value)}
+                onChange={(e) => setSalesmanName(e.target.value) }
                 type="text"
                 placeholder="Enter Salesman Name"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 outline-none text-gray-900"
               />
+              
             </div>
 
             {isTrue && responseBack && (
