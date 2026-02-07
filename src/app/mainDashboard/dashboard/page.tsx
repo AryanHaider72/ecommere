@@ -1,6 +1,7 @@
 "use client";
 import GetInitalStore from "@/api/authentication/StoreGet";
 import GetCountry from "@/api/lib/country/countryList/countryListGet";
+import GetMainStoreOnBoard from "@/api/lib/MainDashbaord/MainOverview/MainOverview";
 import GetCity from "@/api/lib/Shippment/City/CityGet";
 import GetCitySeller from "@/api/lib/Shippment/City/CityGetSeller";
 import GetRegion from "@/api/lib/Shippment/Region/GetRegion";
@@ -44,6 +45,13 @@ interface zonelist {
   zoneID: string;
   zoneName: string;
 }
+interface ResponseData {
+  queryTotalProducts: number;
+  queryPendingOrders: number;
+  queryCompletedOrders: number;
+  queryTotalRevenue: number;
+  queryTopRating: number;
+}
 export default function SellerOverviewDashbaord() {
   const router = useRouter();
   const [storeShow, setStoreShow] = useState(false);
@@ -60,6 +68,11 @@ export default function SellerOverviewDashbaord() {
   const [countryID, setCountryID] = useState("");
   const [RegionList, setRegionList] = useState<regionlist[]>([]);
   const [RegionID, setRegionID] = useState("");
+  const [totalProduct, setTotalProduct] = useState(0);
+  const [pendingOrder, setPendingOrder] = useState(0);
+  const [CompleteOrder, setCompleteOrder] = useState(0);
+  const [TopRating, setTopRating] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   const [ZoneID, setZoneID] = useState("");
 
@@ -70,35 +83,35 @@ export default function SellerOverviewDashbaord() {
     {
       id: 1,
       title: "Total Products",
-      value: "128",
+      value: totalProduct,
       icon: Package,
       color: "bg-blue-100 text-blue-600",
     },
     {
       id: 2,
       title: "Pending Orders",
-      value: "12",
+      value: pendingOrder,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
     },
     {
       id: 3,
       title: "Completed Orders",
-      value: "116",
+      value: CompleteOrder,
       icon: CheckCircle,
       color: "bg-green-100 text-green-600",
     },
     {
       id: 4,
       title: "Total Revenue",
-      value: "Rs. 254,000",
+      value: totalRevenue,
       icon: Wallet,
       color: "bg-purple-100 text-purple-600",
     },
     {
       id: 5,
       title: "Top Rating",
-      value: "4.8/5",
+      value: TopRating,
       icon: Star,
       color: "bg-orange-100 text-orange-600",
     },
@@ -137,6 +150,7 @@ export default function SellerOverviewDashbaord() {
       date: "Oct 25, 2025",
     },
   ];
+
   const storesget = async () => {
     const token = localStorage.getItem("token");
     const response = await GetInitalStore(String(token));
@@ -242,8 +256,21 @@ export default function SellerOverviewDashbaord() {
       } else return setResponseBack(4);
     }
   };
-
+  const getStatData = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetMainStoreOnBoard(String(token));
+    if (response.status === 200) {
+      const data = response.data as ResponseData;
+      setTotalProduct(data.queryTotalProducts ?? 0);
+      setPendingOrder(data.queryPendingOrders ?? 0);
+      setCompleteOrder(data.queryCompletedOrders ?? 0);
+      setTopRating(data.queryTopRating ?? 0);
+      setTotalRevenue(data.queryTotalRevenue ?? 0);
+      console.log(response.data);
+    }
+  };
   useEffect(() => {
+    getStatData();
     storesget();
     getCountry();
   }, []);

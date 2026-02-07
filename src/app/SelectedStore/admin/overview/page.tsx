@@ -1,4 +1,5 @@
 "use client";
+import GetStoreOnBoard from "@/api/lib/MainDashbaord/Overview/OverView";
 import {
   ShoppingBag,
   Clock,
@@ -10,41 +11,56 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
-export default function SellerOverview() {
+interface ResponseData {
+  queryTotalProducts: number;
+  queryPendingOrders: number;
+  queryCompletedOrders: number;
+  queryTotalRevenue: number;
+  queryTopRating: number;
+}
+
+export default function SellerOverview({ storeID }: { storeID: string }) {
+  const [totalProduct, setTotalProduct] = useState(0);
+  const [pendingOrder, setPendingOrder] = useState(0);
+  const [CompleteOrder, setCompleteOrder] = useState(0);
+  const [TopRating, setTopRating] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+
   const stats = [
     {
       id: 1,
       title: "Total Products",
-      value: "128",
+      value: totalProduct,
       icon: Package,
       color: "bg-blue-100 text-blue-600",
     },
     {
       id: 2,
       title: "Pending Orders",
-      value: "12",
+      value: pendingOrder,
       icon: Clock,
       color: "bg-yellow-100 text-yellow-600",
     },
     {
       id: 3,
       title: "Completed Orders",
-      value: "116",
+      value: CompleteOrder,
       icon: CheckCircle,
       color: "bg-green-100 text-green-600",
     },
     {
       id: 4,
       title: "Total Revenue",
-      value: "Rs. 254,000",
+      value: totalRevenue,
       icon: Wallet,
       color: "bg-purple-100 text-purple-600",
     },
     {
       id: 5,
       title: "Top Rating",
-      value: "4.8/5",
+      value: TopRating,
       icon: Star,
       color: "bg-orange-100 text-orange-600",
     },
@@ -84,6 +100,22 @@ export default function SellerOverview() {
     },
   ];
 
+  const getData = async () => {
+    const token = localStorage.getItem("token");
+    const response = await GetStoreOnBoard(String(token), storeID);
+    if (response.status === 200) {
+      const data = response.data as ResponseData;
+      setTotalProduct(data.queryTotalProducts ?? 0);
+      setPendingOrder(data.queryPendingOrders ?? 0);
+      setCompleteOrder(data.queryCompletedOrders ?? 0);
+      setTopRating(data.queryTopRating ?? 0);
+      setTotalRevenue(data.queryTotalRevenue ?? 0);
+      console.log(response.data);
+    }
+  };
+  useEffect(() => {
+    getData();
+  }, []);
   return (
     <div className="w-full">
       <h1 className="text-2xl font-bold text-gray-900 mb-8">
@@ -113,7 +145,7 @@ export default function SellerOverview() {
       </div>
 
       {/* === RECENT ORDERS SECTION === */}
-      <div className="mt-10 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      {/* <div className="mt-10 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Recent Orders Received
         </h2>
@@ -146,8 +178,8 @@ export default function SellerOverview() {
                         order.status === "Delivered"
                           ? "bg-green-100 text-green-700"
                           : order.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-blue-100 text-blue-700"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-blue-100 text-blue-700"
                       }`}
                     >
                       {order.status}
@@ -160,7 +192,7 @@ export default function SellerOverview() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

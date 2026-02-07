@@ -70,7 +70,7 @@ const AutoCarousel = () => {
       >
         {categories.map((item) => (
           <div key={item.userID}>
-            <div className="relative w-full h-[90vh]">
+            <div className="relative w-full h-[80vh]">
               {item.listImg.map((slide, index) => (
                 <div
                   key={slide.imageID}

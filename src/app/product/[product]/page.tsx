@@ -49,7 +49,7 @@ export default function ProductPage() {
     ProductHomePage[]
   >([]);
   const [OtherproductList, setOtherProductList] = useState<ProductHomePage[]>(
-    []
+    [],
   );
   const [SuggestedProductList, setSuggestedProductList] = useState<
     ProductHomePage[]
@@ -134,23 +134,23 @@ export default function ProductPage() {
         const data = response.data as GetProductHomeApiResponse;
 
         const selectedProduct = data.productList.find(
-          (item) => item.productID === ID
+          (item) => item.productID === ID,
         );
-
         if (!selectedProduct) return;
 
         // Selected product
+        //const attribute = selectedProduct.find((item)=>item.)
         setProductList([selectedProduct]);
 
         const suggested = data.productList.filter(
           (item) =>
             item.subCategoryID === selectedProduct.subCategoryID &&
-            item.productID !== selectedProduct.productID
+            item.productID !== selectedProduct.productID,
         );
         setSuggestedProductList(suggested);
 
         const otherProducts = data.productList.filter(
-          (item) => item.subCategoryID !== selectedProduct.subCategoryID
+          (item) => item.subCategoryID !== selectedProduct.subCategoryID,
         );
         setOtherProductList(otherProducts);
       }
@@ -175,7 +175,7 @@ export default function ProductPage() {
       let varientValue = "";
       for (const variant of data.variants) {
         const foundAttr = variant.variantValues.find(
-          (attr) => attr.attributeID === selectedAttributeID
+          (attr) => attr.attributeID === selectedAttributeID,
         );
         if (foundAttr) {
           selectedVariantAttribute = foundAttr;
@@ -224,6 +224,21 @@ export default function ProductPage() {
   };
 
   useEffect(() => {
+    if (!productList?.length) return;
+
+    const firstProduct = productList[0];
+    const firstVariant = firstProduct.variants?.[0];
+    const firstAvailableValue = firstVariant?.variantValues?.find(
+      (v) => v.qty > 0,
+    );
+
+    if (firstAvailableValue) {
+      setSelectedAttributeID(firstAvailableValue.attributeID);
+      setAmount(String(firstAvailableValue.salePrice));
+    }
+  }, [productList]);
+
+  useEffect(() => {
     console.log(params.product);
     if (params && !Array.isArray(params.product)) {
       setProductID(params?.product || "");
@@ -236,13 +251,13 @@ export default function ProductPage() {
   useEffect(() => {
     if (!productID) return;
     const data = SuggestedProductList.filter(
-      (item) => item.productID === productID
+      (item) => item.productID === productID,
     );
     if (data && data.length > 0) {
       console.log(data);
       setSelectiveProductList(data);
       const allVariantValues = data.flatMap((product) =>
-        product.variants.flatMap((variant) => variant.variantValues)
+        product.variants.flatMap((variant) => variant.variantValues),
       );
       if (allVariantValues && allVariantValues.length > 0) {
         setSelectedAttributeID(allVariantValues[0].attributeID);
@@ -448,8 +463,8 @@ export default function ProductPage() {
                                 attr.qty === 0
                                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                   : selectedAttributeID === attr.attributeID
-                                  ? "bg-gray-800 text-white border-gray-800"
-                                  : "bg-white text-gray-800 hover:border-gray-500"
+                                    ? "bg-gray-800 text-white border-gray-800"
+                                    : "bg-white text-gray-800 hover:border-gray-500"
                               }
                             `}
                           >
@@ -518,7 +533,7 @@ export default function ProductPage() {
         </h2>
         {/* <hr className="w-1/2 mb-3 text-gray-400" /> */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           {SuggestedProductList.map((item) => (
             <div
               key={item.productID}
@@ -533,7 +548,7 @@ export default function ProductPage() {
                     src={item.images[0].url}
                     alt={item.productName}
                     fill
-                    className="object-cover bg-white group-hover:scale-105 transition-transform duration-500"
+                    className="object-contain bg-white group-hover:scale-105 transition-transform duration-500"
                   />
                 </Link>
 
@@ -542,10 +557,10 @@ export default function ProductPage() {
                   <button className="bg-white p-2 rounded-full shadow hover:bg-red-100 transition">
                     <Heart className="text-gray-700 w-4 h-4" />
                   </button>
-                  <button className="bg-white p-2 rounded-full shadow hover:bg-green-100 transition">
+                  {/* <button className="bg-white p-2 rounded-full shadow hover:bg-green-100 transition">
                     <ShoppingCart className="text-gray-700 w-4 h-4" />
-                  </button>
-                  <button
+                  </button> */}
+                  {/* <button
                     onClick={() => {
                       setProductID(item.productID);
                       setProductPage(true);
@@ -553,7 +568,7 @@ export default function ProductPage() {
                     className="bg-white p-2 rounded-full shadow hover:bg-blue-100 transition"
                   >
                     <Search className="text-gray-700 w-4 h-4" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -579,7 +594,7 @@ export default function ProductPage() {
         </h2>
         {/* <hr className="w-1/2 mb-3 text-gray-400" /> */}
 
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           {OtherproductList.map((item) => (
             <div
               key={item.productID}
@@ -594,7 +609,7 @@ export default function ProductPage() {
                     src={item.images[0].url}
                     alt={item.productName}
                     fill
-                    className="object-cover bg-white group-hover:scale-105 transition-transform duration-500"
+                    className="object-contain bg-white group-hover:scale-105 transition-transform duration-500"
                   />
                 </Link>
 
@@ -603,10 +618,10 @@ export default function ProductPage() {
                   <button className="bg-white p-2 rounded-full shadow hover:bg-red-100 transition">
                     <Heart className="text-gray-700 w-4 h-4" />
                   </button>
-                  <button className="bg-white p-2 rounded-full shadow hover:bg-green-100 transition">
+                  {/* <button className="bg-white p-2 rounded-full shadow hover:bg-green-100 transition">
                     <ShoppingCart className="text-gray-700 w-4 h-4" />
-                  </button>
-                  <button
+                  </button> */}
+                  {/* <button
                     onClick={() => {
                       setProductID(item.productID);
                       setProductPage(true);
@@ -614,7 +629,7 @@ export default function ProductPage() {
                     className="bg-white p-2 rounded-full shadow hover:bg-blue-100 transition"
                   >
                     <Search className="text-gray-700 w-4 h-4" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -864,8 +879,8 @@ export default function ProductPage() {
                                 attr.qty === 0
                                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                   : selectedAttributeID === attr.attributeID
-                                  ? "bg-gray-800 text-white border-gray-800"
-                                  : "bg-white text-gray-800 hover:border-gray-500"
+                                    ? "bg-gray-800 text-white border-gray-800"
+                                    : "bg-white text-gray-800 hover:border-gray-500"
                               }
                             `}
                           >

@@ -67,7 +67,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
       const storeExists = data.storeList.some(
-        (store) => store.storeID === storeID
+        (store) => store.storeID === storeID,
       );
       if (!storeExists) {
         router.push("/404");
@@ -234,7 +234,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
 
       {/* === Main Content === */}
       <main className="w-full h-screen flex-1 p-6 sm:p-8 lg:ml-0 transition-all overflow-hidden overflow-y-auto">
-        {activeTab === "dashboard" && <Overview />}
+        {activeTab === "dashboard" && <Overview storeID={storeID} />}
         {activeTab === "SubCategory" && (
           <FurtherSubCategory storeID={storeID} />
         )}

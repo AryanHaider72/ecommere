@@ -369,7 +369,7 @@ export default function MainHome() {
                         >
                           {/* Product Image */}
                           <Link href={`/product/${item.productID}`}>
-                            <div className="relative w-full aspect-[3/4] overflow-hidden">
+                            <div className="relative w-full aspect-[1/1] overflow-hidden">
                               <Image
                                 src={item.images[0]?.url || "/placeholder.png"}
                                 alt={item.productName}
@@ -434,7 +434,7 @@ export default function MainHome() {
                               <img
                                 src={subItem?.imagelist?.[0]?.url}
                                 alt={subItem.name}
-                                className="w-64 h-64 md:w-72 md:h-72 object-cover rounded-2xl"
+                                className="w-64 h-64 md:w-72 md:h-72 object-contain rounded-2xl rounded-md"
                               />
                               <p className="mt-3 text-lg font-medium text-center">
                                 {subItem.name}
