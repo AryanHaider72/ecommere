@@ -48,7 +48,7 @@ export default function SellerDashboardPanel({ storeID }: { storeID: string }) {
     { id: "Code", label: "Code", icon: Plus },
     { id: "orders", label: "Orders", icon: ShoppingCart },
     { id: "ledger", label: "Supplier Ledger", icon: NotepadText },
-    { id: "purchase", label: "Purchase Module", icon: Coins },
+    // { id: "purchase", label: "Purchase Module", icon: Coins },
   ];
   const checkAuth = async () => {
     const token = localStorage.getItem("token");

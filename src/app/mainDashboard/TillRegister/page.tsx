@@ -43,9 +43,11 @@ interface TillList {
   tillSubList: TillSubList[];
 }
 interface TillSubList {
-  listID: string;
-  productID: string;
+  varinetName: string;
+  subVarientName: string;
   productName: string;
+  qty: number;
+  attributeID: string;
 }
 
 interface ProductTill {
@@ -85,6 +87,7 @@ export default function TillManagement() {
   const [productList, setProductList] = useState<ProductList[]>([]);
   const [storeList, setStoreList] = useState<storeInital[]>([]);
   const [newList, setNewList] = useState<NewList[]>([]);
+  const [newList2, setNewList2] = useState<NewList[]>([]);
   const [storeID, setStoreID] = useState("");
   const [ID, setID] = useState("");
   const [zonelist, setZoneList] = useState<citylist[]>([]);
@@ -172,39 +175,26 @@ export default function TillManagement() {
       (item) => item.productName.toLowerCase() === productName.toLowerCase(),
     );
 
-    const findExisting = newList.find(
-      (item) => item.productName === productName,
-    );
-    if (findExisting) {
-      alert("Record Already Exist.");
-      setProductName("");
-      setAttributeID("");
-      setVarientName("");
-      setSubVartient("");
-      setQty("");
-    } else {
-      if (!selectedProduct) {
-        // maybe show error or return early
-        console.warn("Product not found in list");
-        return;
-      }
-
-      setNewList((prev) => [
-        ...prev,
-        {
-          productName,
-          varinetName: variantName,
-          subVarientName: subVariantValue,
-          attributeID: attributeID,
-          qty,
-        },
-      ]);
-      setProductName("");
-      setAttributeID("");
-      setVarientName("");
-      setSubVartient("");
-      setQty("");
+    if (!selectedProduct) {
+      // maybe show error or return early
+      console.warn("Product not found in list");
+      return;
     }
+    setNewList((prev) => [
+      ...prev,
+      {
+        productName,
+        varinetName: variantName,
+        subVarientName: subVariantValue,
+        attributeID: attributeID,
+        qty,
+      },
+    ]);
+    setProductName("");
+    setAttributeID("");
+    setVarientName("");
+    setSubVartient("");
+    setQty("");
   };
 
   const removeItem = (productName: string) => {
@@ -271,6 +261,7 @@ export default function TillManagement() {
     if (data) {
       setID(data.tillID);
       setTillName(data.tillName);
+      setNewList(data.tillSubList);
       // setNewList(data.tillSubList);
     }
   };
@@ -433,7 +424,7 @@ export default function TillManagement() {
                               <>
                                 {item.tillSubList.map((subItem, index) => (
                                   <span
-                                    key={subItem.productID}
+                                    key={subItem.attributeID}
                                     className="inline-block bg-green-300 text-green-800 text-xs font-semibold px-2 py-1 rounded-full"
                                   >
                                     {subItem.productName}

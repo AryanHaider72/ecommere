@@ -13,6 +13,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+
 import DeleteProductApi from "@/api/lib/product/DeleteProduct/DeleteProduct";
 import GetProduct from "@/api/lib/product/GetProduct/GetProduct";
 import { useRouter } from "next/navigation";
@@ -66,6 +67,7 @@ import {
 } from "@/api/types/PosIntegration/Suppplier/addSupplier";
 import GetSupplier from "@/api/lib/PosIntegration/Supplier/GetSupplier";
 import jsPDF from "jspdf";
+import JsBarcode from "jsbarcode";
 
 interface CountryList {
   countryID: string;
@@ -164,95 +166,95 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [AmountPaid, setAmountPaid] = useState("");
   const [totalBill, setTotalBill] = useState("");
   const [Uploading, setUploading] = useState(false);
-  const [barcode,setBarcode] = useState("")
-  const [ProductNameBarcode,setProductNameBarcode] = useState("")
-  const [SalePrice,setSalePrice] = useState("")
+  const [barcode, setBarcode] = useState("");
+  const [ProductNameBarcode, setProductNameBarcode] = useState("");
+  const [SalePrice, setSalePrice] = useState("");
   const [readyToExport, setReadyToExport] = useState(false);
   const [Export, setExport] = useState(false);
-  
-const printRef = useRef<HTMLDivElement | null>(null);
 
+  const printRef = useRef<HTMLDivElement | null>(null);
 
-  const exportpdf = async (printRef :any, barcode:any, ProductNameBarcode:any, salePrice:any) => {
-  console.log("Starting PDF export...");
+  const exportpdf = async (
+    barcode: string,
+    productCode: string,
+    salePrice: number,
+  ) => {
+    try {
+      setExport(true);
 
-  if (!printRef?.current) {
-    console.error("Error: printRef.current is null or undefined!");
-    return;
-  }
-  console.log("printRef.current found:", printRef.current);
+      // Label size: 50mm x 25mm
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: [50, 25],
+      });
 
-  try {
-    setExport(true)
-    // 1. Convert the barcode container (SVG) to canvas with html2canvas
-    const canvas = await html2canvas(printRef.current, { scale: 3 });
-    console.log("Canvas successfully generated.");
+      /* ---------------- PRODUCT NAME (CENTERED) ---------------- */
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(6);
+      pdf.text(productCode, 25, 4, { align: "center" });
 
-    // 2. Get PNG data from canvas
-    const imgData = canvas.toDataURL("image/png");
+      /* ---------------- PRICE (UNDER NAME, CENTERED) ---------------- */
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(6);
+      pdf.text(`Rs ${salePrice.toLocaleString()}`, 25, 7, { align: "center" });
 
-    // 3. Create jsPDF sized exactly 50mm x 25mm
-    const pdf = new jsPDF({
-      orientation:"landscape",
-      unit: "mm",
-      format: [50, 25],
-    });
+      /* ---------------- BARCODE GENERATION ---------------- */
+      const barcodeCanvas = document.createElement("canvas");
 
-    // 4. Add ProductName top-left (2mm from left, 6mm from top)
-    pdf.setFontSize(5);
-    pdf.text(ProductNameBarcode, 2, 6);
+      JsBarcode(barcodeCanvas, barcode, {
+        format: "CODE128",
+        width: 1.1, // thinner bars (more realistic)
+        height: 32, // better proportion
+        displayValue: false,
+        margin: 0,
+      });
 
-    // 5. Add barcode image centered horizontally, at ~8mm from top
-    const barcodeWidth = 40; // mm width of barcode in PDF
-    const barcodeHeight = 15; // mm height of barcode in PDF
-    const barcodeX = (50 - barcodeWidth) ; // center horizontally
-    const barcodeY = 8; // vertical position
-    pdf.addImage(imgData, "PNG", barcodeX -5, barcodeY, barcodeWidth, barcodeHeight);
+      const barcodeImage = barcodeCanvas.toDataURL("image/png");
 
-    // 6. Add SalePrice bottom-right (2mm margin from right, 23mm from top)
-    pdf.text(
-      `Price: ${salePrice}`,
-      50 - 2 - pdf.getTextWidth(`Price: ${salePrice}`),
-      23
+      /* ---------------- BARCODE (CENTERED) ---------------- */
+      pdf.addImage(barcodeImage, "PNG", 2, 9, 46, 11);
+
+      /* ---------------- BARCODE NUMBER (CENTERED) ---------------- */
+      pdf.setFontSize(5);
+      pdf.text(barcode, 25, 22, { align: "center" });
+
+      /* ---------------- SAVE ---------------- */
+      const fileName = `${barcode}-${productCode}.pdf`;
+      pdf.save(fileName);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setExport(false);
+    }
+  };
+
+  const fetchDatafroProduct = (
+    ID: string,
+    salePrice: number,
+    barcode: string,
+  ) => {
+    const data = getVarinetList.find((item) =>
+      item.varientAttributes.find((item2) => item2.attributeID === ID),
     );
-
-    // 7. Save/download PDF
-    const fileName = `${barcode || "barcode"}-${ProductNameBarcode || "product"}.pdf`;
-    pdf.save(fileName);
-    console.log(`PDF saved as ${fileName}`);
-
-  } catch (error) {
-    console.error("Error during PDF generation:", error);
-  }
-  finally{
-    setExport(false)
-    setProductNameBarcode("")
-    printRef = null;
-    setBarcode("")
-  }
-};
-
-
-
-  const fetchDatafroProduct=(ID:string, salePrice:number, barcode:string)=>{
-    
-    const data = getVarinetList.find((item)=>item.varientAttributes.find((item2)=>item2.attributeID === ID))
-    if(data){
-      const product = productList.find((item)=>item.variants.find((item2)=>item2.varientID === data.varientID))
-      if(product){
-        setBarcode(barcode)
-        setProductNameBarcode(product.productName)
-        setSalePrice(String(salePrice))
-        setReadyToExport(true)
+    if (data) {
+      const product = productList.find((item) =>
+        item.variants.find((item2) => item2.varientID === data.varientID),
+      );
+      if (product) {
+        setBarcode(barcode);
+        setProductNameBarcode(product.productName);
+        setSalePrice(String(salePrice));
+        setReadyToExport(true);
       }
     }
-  }
+  };
   useEffect(() => {
     if (readyToExport && barcode && ProductNameBarcode) {
-      exportpdf(printRef, barcode, ProductNameBarcode, SalePrice);
-
+      exportpdf(barcode, ProductNameBarcode, Number(SalePrice));
     }
   }, [readyToExport, barcode, ProductNameBarcode]);
+
   const getProduct = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -857,7 +859,6 @@ const printRef = useRef<HTMLDivElement | null>(null);
   };
   return (
     <>
-
       <div
         ref={printRef}
         style={{
@@ -1957,7 +1958,9 @@ const printRef = useRef<HTMLDivElement | null>(null);
                                     <th className="text-left px-4 py-2">
                                       Value
                                     </th>
-                                    <th className="text-left px-4 py-2">BarCode</th>
+                                    <th className="text-left px-4 py-2">
+                                      BarCode
+                                    </th>
                                     <th className="text-left px-4 py-2">Qty</th>
                                     <th className="text-left px-4 py-2">
                                       Cost Price
@@ -1995,12 +1998,18 @@ const printRef = useRef<HTMLDivElement | null>(null);
                                         {attr.salePrice}
                                       </td>
 
-
                                       <td className="px-4 py-2">
                                         <button
                                           className="px-2 py-1 bg-green-600 text-white rounded"
-                                          onClick={() =>{fetchDatafroProduct(attr.attributeID, attr.salePrice, attr.barcode)}}
-                                        >{Export ? <Spinner /> : <Download />}
+                                          onClick={() => {
+                                            fetchDatafroProduct(
+                                              attr.attributeID,
+                                              attr.salePrice,
+                                              attr.barcode,
+                                            );
+                                          }}
+                                        >
+                                          {Export ? <Spinner /> : <Download />}
                                         </button>
                                       </td>
                                     </tr>
@@ -2368,7 +2377,7 @@ const printRef = useRef<HTMLDivElement | null>(null);
                             Discount: {product.discount}%
                           </p>
                           <p className="text-gray-600">
-                            Price: ${originalAmount}
+                            Price: {originalAmount}-/
                           </p>
                           {product.variants?.[0] && (
                             <div className="mt-3">
@@ -2444,234 +2453,226 @@ const printRef = useRef<HTMLDivElement | null>(null);
             (p) => p.storeSale !== "OfflineStore",
           );
 
-          if (onlineProducts.length > 0) {
+          if (onlineProducts.length === 0) {
             return (
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-                  Online Store / Both
-                </h2>
+              <p className="text-gray-500 text-center mt-4">No records found</p>
+            );
+          }
 
-                {onlineProducts.length === 0 ? (
-                  <p className="text-center text-gray-500">No records found</p>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {onlineProducts.map((product) => {
-                      const selectedVarIndex =
-                        selectedVariantIndex[product.productID] ?? 0;
+          return (
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
+                Online Store / Both
+              </h2>
 
-                      const selectedVariant =
-                        product.variants?.[0]?.variantValues?.[
-                          selectedVarIndex
-                        ];
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                {onlineProducts.map((product) => {
+                  /* ---------------- PRICE CALCULATION ---------------- */
 
-                      const originalAmount = Number(
-                        selectedVariant?.salePrice || 0,
-                      );
-                      const discount = Number(product.discount || 0);
+                  let originalAmount = 0;
 
-                      const finalPrice =
-                        originalAmount - (originalAmount * discount) / 100;
+                  product.variants?.forEach((variant, variantIdx) => {
+                    const key = `${product.productID}-${variantIdx}`;
+                    const selectedIdx = selectedVariantIndex[key] ?? 0;
+                    const selectedValue = variant.variantValues?.[selectedIdx];
 
-                      const mainImageIndex =
-                        selectedProductImageIndex[product.productID] ?? 0;
+                    originalAmount += Number(selectedValue?.salePrice ?? 0);
+                  });
 
-                      const mainImageUrl =
-                        product.images?.[mainImageIndex]?.url ||
-                        "/placeholder-image.jpg";
+                  const discount = Number(product.discount ?? 0);
+                  const finalPrice =
+                    originalAmount - (originalAmount * discount) / 100;
 
-                      return (
-                        <div
-                          key={product.productID}
-                          className="bg-white rounded-xl shadow hover:shadow-lg transition"
+                  /* ---------------- IMAGE ---------------- */
+
+                  const mainImageIndex =
+                    selectedProductImageIndex[product.productID] ?? 0;
+
+                  const mainImageUrl =
+                    product.images?.[mainImageIndex]?.url ||
+                    "/placeholder-image.jpg";
+
+                  return (
+                    <div
+                      key={product.productID}
+                      className="bg-white rounded-xl shadow hover:shadow-lg transition"
+                    >
+                      {/* IMAGE */}
+                      <div className="relative w-full h-64 bg-gray-50 rounded-t-xl overflow-hidden">
+                        <div className="w-full h-full flex items-center justify-center">
+                          <img
+                            src={mainImageUrl}
+                            alt={product.productName}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setImageAbout(true);
+                            getImage(product.productID);
+                            setID(product.productID);
+                          }}
+                          className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white p-2 rounded-full transition"
                         >
-                          {/* IMAGE */}
-                          {/* IMAGE CONTAINER */}
-                          {/* IMAGE CONTAINER */}
-                          <div className="relative w-full h-64 bg-gray-50 rounded-t-xl overflow-hidden">
-                            {/* IMAGE */}
-                            <div className="w-full h-full flex items-center justify-center">
+                          <Camera size={18} />
+                        </button>
+                      </div>
+
+                      {/* THUMBNAILS */}
+                      {product.images && product.images.length > 1 && (
+                        <div className="flex gap-2 p-2 justify-center">
+                          {product.images.map((img, idx) => (
+                            <button
+                              key={img.urlID}
+                              onClick={() =>
+                                setSelectedProductImageIndex((prev) => ({
+                                  ...prev,
+                                  [product.productID]: idx,
+                                }))
+                              }
+                              className={`border rounded-md p-1 ${
+                                (selectedProductImageIndex[product.productID] ??
+                                  0) === idx
+                                  ? "border-blue-600"
+                                  : "border-gray-300"
+                              }`}
+                            >
                               <img
-                                src={mainImageUrl}
-                                alt={product.productName}
-                                className="max-w-full max-h-full object-contain"
+                                src={img.url}
+                                alt="thumbnail"
+                                className="w-12 h-12 object-contain"
                               />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CONTENT */}
+                      <div className="p-2">
+                        <fieldset className="p-2 border border-gray-300 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-800">
+                                {product.productName}
+                              </h3>
+                              <p className="text-gray-600 mt-1 text-sm">
+                                {product.description}
+                              </p>
+
+                              {/* PRICE */}
+                              <div className="mt-1 flex gap-2">
+                                {discount > 0 && (
+                                  <p className="text-sm text-gray-400 line-through">
+                                    {originalAmount.toFixed(2)}-/
+                                  </p>
+                                )}
+                                <p className="text-green-600 font-bold text-lg">
+                                  {finalPrice.toFixed(2)}-/
+                                </p>
+                              </div>
                             </div>
 
-                            {/* CAMERA BUTTON */}
                             <button
+                              className="bg-yellow-500 p-2 rounded text-white hover:bg-yellow-600 transition"
+                              title="Edit Product"
                               onClick={() => {
-                                setImageAbout(true);
-                                getImage(product.productID);
-                                setID(product.productID);
+                                setProductAbout(true);
+                                fetchData(product.productID);
+                                getCountry();
+                                getCategroyMain();
                               }}
-                              className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white p-2 rounded-full transition"
                             >
-                              <Camera size={18} />
+                              <Pencil size={16} />
                             </button>
                           </div>
+                        </fieldset>
 
-                          {/* THUMBNAILS */}
-                          {product.images && product.images.length > 1 && (
-                            <div className="flex gap-2 p-2 justify-center">
-                              {product.images.map((img, idx) => (
-                                <button
-                                  key={img.urlID}
-                                  onClick={() =>
-                                    setSelectedProductImageIndex((prev) => ({
-                                      ...prev,
-                                      [product.productID]: idx,
-                                    }))
-                                  }
-                                  className={`border rounded-md p-1 ${
-                                    (selectedProductImageIndex[
-                                      product.productID
-                                    ] ?? 0) === idx
-                                      ? "border-blue-600"
-                                      : "border-gray-300"
-                                  }`}
-                                >
-                                  <img
-                                    src={img.url}
-                                    alt="thumbnail"
-                                    className="w-12 h-12 object-contain"
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                        {/* VARIANTS */}
+                        <fieldset className="mt-3 border border-gray-300 rounded-lg p-4 bg-white">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-4">
+                              {product.variants?.map((variant, variantIdx) => {
+                                const key = `${product.productID}-${variantIdx}`;
+                                const selectedIdx =
+                                  selectedVariantIndex[key] ?? 0;
 
-                          {/* CONTENT */}
-                          <div className="p-2">
-                            <fieldset className="p-2 border border-gray-300 rounded-lg">
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <h3 className="text-lg font-semibold text-gray-800">
-                                    {product.productName}
-                                  </h3>
-                                  <p className="text-gray-600 mt-1 text-sm">
-                                    {product.description}
-                                  </p>
-                                  {/* PRICE */}
-                                  <div className="mt-1 flex gap-2">
-                                    {discount > 0 && (
-                                      <p className="text-sm text-gray-400 line-through">
-                                        ${originalAmount}
-                                      </p>
-                                    )}
-                                    <p className="text-green-600 font-bold text-lg">
-                                      ${finalPrice.toFixed(2)}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div>
-                                  <button
-                                    className="bg-yellow-500 p-2 rounded text-white hover:bg-yellow-600 transition"
-                                    title="Edit Product"
-                                    onClick={() => {
-                                      setProductAbout(true);
-                                      fetchData(product.productID);
-                                      getCountry();
-                                      getCategroyMain();
-                                    }}
+                                return (
+                                  <div
+                                    key={variant.varientID}
+                                    className="p-3 border border-gray-200 rounded-md bg-gray-50"
                                   >
-                                    <Pencil size={16} />
-                                  </button>
-                                </div>
-                              </div>
-                            </fieldset>
-                            <fieldset className="mt-3 border border-gray-300 rounded-lg p-4 bg-white">
-                              <div className="flex justify-between items-start">
-                                {/* VARIANTS */}
-                                <div className="space-y-4">
-                                  {product.variants?.map(
-                                    (variant, variantIdx) => (
-                                      <div
-                                        key={variant.varientID}
-                                        className="p-3 border border-gray-200 rounded-md bg-gray-50"
-                                      >
-                                        <p className="text-sm font-semibold text-gray-700 mb-2">
-                                          {variant.variantName}
-                                        </p>
+                                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                                      {variant.variantName}
+                                    </p>
 
-                                        <div className="flex flex-wrap gap-2">
-                                          {variant.variantValues.map(
-                                            (v, idx) => (
-                                              <button
-                                                key={v.attributeID}
-                                                onClick={() =>
-                                                  setSelectedVariantIndex(
-                                                    (prev) => ({
-                                                      ...prev,
-                                                      [`${product.productID}-${variantIdx}`]:
-                                                        idx,
-                                                    }),
-                                                  )
-                                                }
-                                                disabled={v.qty <= 0}
-                                                className={`px-3 py-1.5 text-xs font-medium rounded-full transition
-                                              ${
-                                                selectedVarIndex === idx
-                                                  ? "bg-blue-600 text-white"
-                                                  : v.qty > 0
-                                                    ? "bg-gray-800 text-white hover:bg-gray-900"
-                                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                              }
-                                            `}
-                                              >
-                                                {v.varientValue}
-                                              </button>
-                                            ),
-                                          )}
-                                        </div>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
-
-                                {/* EDIT BUTTON */}
-                                <button
-                                  onClick={() => {
-                                    setVarinetAbout(true);
-                                    fetchData(product.productID);
-                                    setID(product.productID);
-                                    setShowList(false);
-                                    getVarient(product.productID);
-                                  }}
-                                  className="ml-4 h-fit bg-yellow-500 p-2 rounded-md text-white hover:bg-yellow-600 transition"
-                                  title="Edit Variant"
-                                >
-                                  {GettingVarinet ? (
-                                    <Spinner />
-                                  ) : (
-                                    <Pencil size={16} />
-                                  )}
-                                </button>
-                              </div>
-                            </fieldset>
-
-                            {/* ACTIONS */}
-                            <div className="flex justify-end gap-3 mt-4">
-                              <button
-                                onClick={() => {
-                                  setID(product.productID);
-                                  setIsOpen(true);
-                                }}
-                                className="bg-red-500 p-2 rounded text-white"
-                              >
-                                <Trash size={16} />
-                              </button>
+                                    <div className="flex flex-wrap gap-2">
+                                      {variant.variantValues.map((v, idx) => (
+                                        <button
+                                          key={v.attributeID}
+                                          onClick={() =>
+                                            setSelectedVariantIndex((prev) => ({
+                                              ...prev,
+                                              [key]: idx,
+                                            }))
+                                          }
+                                          disabled={v.qty <= 0}
+                                          className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
+                                            selectedIdx === idx
+                                              ? "bg-blue-600 text-white"
+                                              : v.qty > 0
+                                                ? "bg-gray-800 text-white hover:bg-gray-900"
+                                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                          }`}
+                                        >
+                                          {v.varientValue}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
+
+                            <button
+                              onClick={() => {
+                                setVarinetAbout(true);
+                                fetchData(product.productID);
+                                setID(product.productID);
+                                setShowList(false);
+                                getVarient(product.productID);
+                              }}
+                              className="ml-4 h-fit bg-yellow-500 p-2 rounded-md text-white hover:bg-yellow-600 transition"
+                              title="Edit Variant"
+                            >
+                              {GettingVarinet ? (
+                                <Spinner />
+                              ) : (
+                                <Pencil size={16} />
+                              )}
+                            </button>
                           </div>
+                        </fieldset>
+
+                        {/* ACTIONS */}
+                        <div className="flex justify-end gap-3 mt-4">
+                          <button
+                            onClick={() => {
+                              setID(product.productID);
+                              setIsOpen(true);
+                            }}
+                            className="bg-red-500 p-2 rounded text-white"
+                          >
+                            <Trash size={16} />
+                          </button>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          } else {
-            <p className="text-gray-500 text-center mt-4">No records found</p>;
-          }
+            </div>
+          );
         })()}
       </div>
     </>

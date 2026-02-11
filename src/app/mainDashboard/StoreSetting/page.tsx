@@ -65,7 +65,7 @@ export default function HomePageSetting() {
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
       const findData = data.storeList.find(
-        (item) => item.defaultStore === true
+        (item) => item.defaultStore === true,
       );
       if (findData) {
         setDefaultStore(findData.storeName);
@@ -105,7 +105,7 @@ export default function HomePageSetting() {
               } else {
                 alert(`Upload failed for image ${fileItem.file.name}`);
               }
-            })
+            }),
           );
           console.log("Banner Images:", uploadedUrls);
         }
@@ -122,7 +122,7 @@ export default function HomePageSetting() {
         const response = await StoreHomePageSetting(
           payload,
           DefaultStoreID,
-          token
+          token,
         );
 
         if (response.status === 200 || response.status === 201) {
@@ -238,7 +238,7 @@ export default function HomePageSetting() {
               } else {
                 alert(`Upload failed for image ${fileItem.file.name}`);
               }
-            })
+            }),
           );
           console.log("Banner Images:", uploadedUrls);
         }
@@ -249,7 +249,7 @@ export default function HomePageSetting() {
         const response = await StoreHomePageUpdateSettingImage(
           payload,
           ID,
-          token
+          token,
         );
 
         if (response.status === 200 || response.status === 201) {
@@ -286,7 +286,7 @@ export default function HomePageSetting() {
       setID("");
       setIsOpen(false);
       setDefaultStoreProductList((item) =>
-        item.filter((emp) => emp.userID !== productID)
+        item.filter((emp) => emp.userID !== productID),
       );
       await storesget();
     } else if (response.status === 401) {
@@ -309,8 +309,8 @@ export default function HomePageSetting() {
       setIsOpenImage(false);
       setDefaultStoreProductList((item) =>
         item.filter((emp) =>
-          emp.imagelist.filter((img) => img.imageID !== productID)
-        )
+          emp.imagelist.filter((img) => img.imageID !== productID),
+        ),
       );
       await storesget();
     } else if (response.status === 401) {
@@ -538,7 +538,7 @@ export default function HomePageSetting() {
                         <img
                           src={logoPreview}
                           alt="Store Logo Preview"
-                          className="max-w-full max-h-full object-contain"
+                          className="max-w-full max-h-full object-contain pointer-events-none"
                         />
                       </div>
                     </div>
@@ -685,7 +685,7 @@ export default function HomePageSetting() {
                       <img
                         src={item.logoUrl}
                         alt="logo"
-                        className="w-14 h-14 object-contain rounded"
+                        className="w-14 h-14 object-contain rounded pointer-events-none"
                       />
 
                       <div className="flex-1 min-w-0">
@@ -700,16 +700,32 @@ export default function HomePageSetting() {
 
                     {/* IMAGES */}
                     {item.imagelist?.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-2 flex-wrap ">
                         {item.imagelist.map((img) => (
-                          <div key={img.imageID} className="relative w-28 h-28">
+                          <div
+                            key={img.imageID}
+                            className="relative w-28 h-28 "
+                          >
                             {/* Image */}
                             <img
                               src={img.imageUrl}
                               alt="banner"
-                              className="w-full h-full object-cover rounded-md"
+                              className="w-full h-full object-cover rounded-md pointer-events-none"
                             />
                             <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setID(img.imageID);
+                                setIsOpenImage(true);
+                              }}
+                              className="pointer-events-auto absolute -top-1 -right-1 bg-red-600 text-white 
+  w-6 h-6 rounded-full flex items-center justify-center 
+  text-xs hover:bg-red-700 shadow-md"
+                            >
+                              <X size={15} />
+                            </button>
+                            {/* <button
                               type="button"
                               onClick={() => {
                                 setID(img.imageID);
@@ -720,7 +736,7 @@ export default function HomePageSetting() {
                               text-xs hover:bg-red-700 shadow-md"
                             >
                               <X size={15} />
-                            </button>
+                            </button> */}
                           </div>
                         ))}
                       </div>
@@ -876,7 +892,7 @@ export default function HomePageSetting() {
                         <img
                           src={logoPreview}
                           alt="Store Logo Preview"
-                          className="max-w-full max-h-full object-contain"
+                          className="max-w-full max-h-full object-contain pointer-events-none"
                         />
                       </div>
                     </div>

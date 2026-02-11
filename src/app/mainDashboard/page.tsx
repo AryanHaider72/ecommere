@@ -79,7 +79,7 @@ export default function CustomerPanel() {
     { id: "Till", label: "Cash Register ", icon: FaCashRegister },
     { id: "Salesman", label: "Salesman", icon: User },
     { id: "CreateLogin", label: "Create Login", icon: UserLock },
-    { id: "StoreSetting", label: "Store Setting", icon: ShoppingBagIcon },
+    // { id: "StoreSetting", label: "Store Setting", icon: ShoppingBagIcon },
     { id: "payment", label: "Payment", icon: Coins },
     { id: "password", label: "Change Password", icon: Key },
   ];

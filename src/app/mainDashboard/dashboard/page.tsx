@@ -211,7 +211,7 @@ export default function SellerOverviewDashbaord() {
       setCountries(data.countryList);
       setCountryID(data.countryList[0].countryID);
       getRegion(data.countryList[0].countryID);
-    } else if (response.status === 401) return router.push("/sellerogin");
+    } else if (response.status === 401) return router.push("/sellerlogin");
   };
   const DefaultStore = async (ID: string) => {
     const token = localStorage.getItem("token");
@@ -331,38 +331,68 @@ export default function SellerOverviewDashbaord() {
                         key={item.storeID}
                         onClick={() => {
                           sessionStorage.setItem("storeID", item.storeID);
-                          router.push(`/SelectedStore`);
+                          router.push("/SelectedStore");
                         }}
                         className="relative bg-gray-50 shadow-md border border-gray-200 p-5 rounded-2xl 
-                        hover:shadow-lg hover:-translate-y-1 hover:bg-white transition-all cursor-pointer text-center flex flex-col justify-center items-center"
+                             hover:shadow-lg hover:-translate-y-1 hover:bg-white transition-all 
+                             cursor-pointer text-center flex flex-col justify-center items-center"
                       >
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        {/* Store Image */}
+                        {/* {item.imagelist?.length > 0 && (
+                          <img
+                            src={item.imagelist[0].imageUrl}
+                            alt={item.storeName}
+                            className="w-full h-32 object-cover rounded-md mb-3 pointer-events-none"
+                          />
+                        )} */}
+
+                        {/* Store Name */}
+                        <h3 className="text-lg font-semibold text-gray-900 pointer-events-none">
                           {item.storeName}
                         </h3>
+
+                        {/* Badge (won’t block clicks) */}
                         <span
                           className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold 
-                              w-5 h-5 flex items-center justify-center rounded-full shadow"
+                               w-5 h-5 flex items-center justify-center rounded-full shadow 
+                               pointer-events-none"
                         >
                           2
                         </span>
+
+                        {/* Delete Button */}
+                        {/* <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent navigating
+                            console.log("Delete store:", item.storeID);
+                            // Add your delete logic here
+                          }}
+                          className="absolute bottom-2 right-2 bg-red-600 text-white text-xs font-bold
+                               w-6 h-6 flex items-center justify-center rounded-full shadow 
+                               hover:bg-red-700"
+                        >
+                          ×
+                        </button> */}
                       </div>
                     ))}
                   </div>
 
-                  {/* Create Store Sidebar */}
+                  {/* Optional Create Store Sidebar (hidden for now) */}
                   {/* <div className="flex sm:flex-col justify-center items-center sm:items-start">
-                    <button
-                      onClick={() => {
-                        setaddStoreForm(true);
-                        setStoreShow(false);
-                        getData();
-                      }}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition-all text-lg font-medium"
-                    >
-                      + Create Store
-                    </button>
-                  </div> */}
+              <button
+                onClick={() => {
+                  setaddStoreForm(true);
+                  setStoreShow(false);
+                  getData();
+                }}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition-all text-lg font-medium"
+              >
+                + Create Store
+              </button>
+            </div> */}
                 </div>
+
                 {storeList.length > 1 && (
                   <button
                     onClick={() => {
@@ -376,7 +406,6 @@ export default function SellerOverviewDashbaord() {
                 )}
               </>
             ) : (
-              // No stores: center the button
               <div className="flex justify-center items-center h-40">
                 <button
                   onClick={() => {
@@ -393,6 +422,7 @@ export default function SellerOverviewDashbaord() {
           </div>
         </div>
       )}
+
       {addStoreForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div
@@ -606,33 +636,55 @@ export default function SellerOverviewDashbaord() {
                   const isSelected = selectedStore === item.storeID;
 
                   return (
-                    <label
-                      key={item.storeID}
-                      className={`
-                relative cursor-pointer rounded-2xl border p-5 text-center
-                transition-all flex flex-col items-center justify-center
-                ${
-                  isSelected
-                    ? "border-blue-600 ring-2 ring-blue-200 bg-white shadow-lg"
-                    : "border-gray-200 bg-gray-50 shadow-md hover:shadow-lg hover:-translate-y-1"
-                }
-              `}
+                    <div
+                      onClick={() => setSelectedStore(item.storeID)}
+                      className={`relative cursor-pointer rounded-2xl border p-5 text-center
+    transition-all flex flex-col items-center justify-center
+    ${
+      selectedStore === item.storeID
+        ? "border-blue-600 ring-2 ring-blue-200 bg-white shadow-lg"
+        : "border-gray-200 bg-gray-50 shadow-md hover:shadow-lg hover:-translate-y-1"
+    }
+  `}
                     >
-                      {/* Hidden Radio */}
                       <input
                         type="radio"
-                        name="store"
-                        value={item.storeID}
-                        checked={isSelected}
-                        onChange={() => setSelectedStore(item.storeID)}
+                        checked={selectedStore === item.storeID}
+                        readOnly
                         className="hidden"
                       />
 
-                      {/* Store Name */}
-                      <h3 className="text-lg font-semibold text-gray-900 px-3 ">
+                      <h3 className="text-lg font-semibold text-gray-900 px-3">
                         {item.storeName}
                       </h3>
-                    </label>
+                    </div>
+                    //       <label
+                    //         key={item.storeID}
+                    //         className={`
+                    //   relative cursor-pointer rounded-2xl border p-5 text-center
+                    //   transition-all flex flex-col items-center justify-center
+                    //   ${
+                    //     isSelected
+                    //       ? "border-blue-600 ring-2 ring-blue-200 bg-white shadow-lg"
+                    //       : "border-gray-200 bg-gray-50 shadow-md hover:shadow-lg hover:-translate-y-1"
+                    //   }
+                    // `}
+                    //       >
+                    //         {/* Hidden Radio */}
+                    //         <input
+                    //           type="radio"
+                    //           name="store"
+                    //           value={item.storeID}
+                    //           checked={isSelected}
+                    //           onChange={() => setSelectedStore(item.storeID)}
+                    //           className="hidden"
+                    //         />
+
+                    //         {/* Store Name */}
+                    //         <h3 className="text-lg font-semibold text-gray-900 px-3 ">
+                    //           {item.storeName}
+                    //         </h3>
+                    //       </label>
                   );
                 })}
               </div>

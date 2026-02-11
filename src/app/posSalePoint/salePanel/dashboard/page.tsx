@@ -21,7 +21,6 @@ import {
 
 import CustomerForm from "../codes/customer/page";
 
-import SaleForm from "../sale/page";
 import SaleReturnModule from "../saleReturn/page";
 
 import CustomerledgerForm from "../ledger/customerledger/page";
@@ -33,6 +32,7 @@ import CustoemrReport from "../Reports/InventoryReports/page";
 import SellerOfflineOverview from "../MainContrent/page";
 import { BiTransfer } from "react-icons/bi";
 import ItemTransferForm from "../ItemTransfer/page";
+import SaleForm from "../sale/page";
 
 export default function CustomerPanel() {
   const router = useRouter();
