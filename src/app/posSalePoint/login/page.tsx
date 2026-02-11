@@ -26,7 +26,7 @@ export default function SellerPosLogin() {
         setShowMessage(true);
         setResponseBack("Login Successfully");
         const token = response.data?.token;
-        localStorage.setItem("token", token as string);
+        localStorage.setItem("tokenPosSale", token as string);
         if (response.status === 200) {
           router.push("/posSalePoint/salePanel/dashboard/");
         } else {

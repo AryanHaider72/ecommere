@@ -75,7 +75,7 @@ export default function SellerOfflineOverview() {
   ];
 
   const getData = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetSellerOfflineOnBoard(String(token));
     if (response.status === 200) {
       const data = response.data as ResponseData;

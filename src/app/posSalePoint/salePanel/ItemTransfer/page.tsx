@@ -97,7 +97,7 @@ export default function ItemTransferForm() {
   const getTill = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetTillForPos(String(token));
       if (response.status === 200) {
         const data = response.data as RespiosneGet;
@@ -117,7 +117,7 @@ export default function ItemTransferForm() {
   const getTillSender = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetTillForSalesMan(String(token));
 
       if (response.status === 200) {
@@ -139,7 +139,7 @@ export default function ItemTransferForm() {
   };
 
   const getProduct = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -188,7 +188,7 @@ export default function ItemTransferForm() {
         qty: Number(Quantity),
       };
       console.log(formData);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await AddTillTransferPosSale(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         setTillID("");

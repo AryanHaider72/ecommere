@@ -61,7 +61,7 @@ export default function ExpenseForm() {
   const [ExpenseTypeList, setExpenseTypeList] = useState<expenseTypeList[]>([]);
 
   const addExpense = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     if (!token) return router.push("/posSalePoint/login");
     try {
       setLoading(true);
@@ -85,13 +85,13 @@ export default function ExpenseForm() {
         setShowMessage(true);
       } else if (response.status === 400) {
         setResponseBack(
-          response.data.message || "PLease Fill in All Required Fields"
+          response.data.message || "PLease Fill in All Required Fields",
         );
         setShowMessage(false);
       } else {
         setResponseBack(
           response.data.message ||
-            "Something Went Wrong. Please Try Again later."
+            "Something Went Wrong. Please Try Again later.",
         );
         setShowMessage(false);
       }
@@ -103,7 +103,7 @@ export default function ExpenseForm() {
   const ExpenseGet = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetExpense(String(token));
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ResponseExpenseGetData;
@@ -119,7 +119,7 @@ export default function ExpenseForm() {
   };
   const ExpenseListGet = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetExpenseList(String(token));
       if (response.status === 200 || response.status === 201) {
         const data = response.data as expenseResponse;
@@ -152,7 +152,7 @@ export default function ExpenseForm() {
   const ExpenseDelete = async () => {
     try {
       setIsDelete(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await DeleteExpense(ID, String(token));
       if (response.status === 200 || response.status === 201) {
         setExpenseList((item) => item.filter((emp) => emp.expenseID !== ID));
@@ -170,7 +170,7 @@ export default function ExpenseForm() {
   const ExpenseModify = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const formData = {
         expenseID: ID,
         expenseName: ExpenseName,
@@ -189,18 +189,18 @@ export default function ExpenseForm() {
         setExpenseName("");
         setExpenseAmount("");
         setResponseBack(
-          response.data.message || "Expense Modified Successfully"
+          response.data.message || "Expense Modified Successfully",
         );
         setShowMessage(true);
       } else if (response.status === 400) {
         setResponseBack(
-          response.data.message || "PLease Fill in All Required Fields"
+          response.data.message || "PLease Fill in All Required Fields",
         );
         setShowMessage(false);
       } else {
         setResponseBack(
           response.data.message ||
-            "Something Went Wrong. Please Try Again later."
+            "Something Went Wrong. Please Try Again later.",
         );
         setShowMessage(false);
       }

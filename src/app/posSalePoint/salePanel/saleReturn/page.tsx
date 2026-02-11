@@ -175,7 +175,7 @@ export default function SaleReturnModule() {
   }
 
   const CustomerGet = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetCustomer(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ResponseCustomerGetData;
@@ -231,7 +231,7 @@ export default function SaleReturnModule() {
             listExcahnge: [],
           }),
     };
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     console.log(formData);
     try {
       setLoading(true);
@@ -305,7 +305,7 @@ export default function SaleReturnModule() {
     setBarcodeInput("");
   };
   const addCustoemr = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     if (!token) return router.push("/posSalePoint/login");
     try {
       setLoading(true);
@@ -334,7 +334,7 @@ export default function SaleReturnModule() {
     }
   };
   const storesget = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetInitalStoreSalesMan(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
@@ -343,7 +343,7 @@ export default function SaleReturnModule() {
     }
   };
   const getProduct = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -355,7 +355,7 @@ export default function SaleReturnModule() {
     }
   };
   const getInvoiceHistory = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -371,7 +371,7 @@ export default function SaleReturnModule() {
     }
   };
   const getProductHistory = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -409,7 +409,7 @@ export default function SaleReturnModule() {
   const getSaleReturn = async () => {
     try {
       setIsGetData(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetSalePosReturn(String(token));
       const data = response.data as GetReturnResponse;
       setGetDataReturn(data.mainList);
@@ -425,7 +425,7 @@ export default function SaleReturnModule() {
     }
   };
   const saleGet = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetSalePosInvoice(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseGetSale;

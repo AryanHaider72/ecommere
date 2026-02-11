@@ -4,7 +4,7 @@ import { getRequest, postRequest } from "@/api/authentication/main";
 
 export default async function SearchByProduct(
   token: string,
-  productID: string
+  productID: string,
 ) {
   const customHeader: Record<string, string> = {};
   if (token) customHeader.Authorization = `Bearer ${token}`;
@@ -13,7 +13,7 @@ export default async function SearchByProduct(
     const response = await getRequest(
       `/api/sale/seller/posIntegration/GetProductInfo/${productID}`,
       null,
-      customHeader
+      customHeader,
     );
 
     // Success case

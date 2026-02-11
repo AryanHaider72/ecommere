@@ -100,7 +100,7 @@ interface historyData {
   varientValue: string;
   barcode: string;
   qty: number;
-  rate: number;
+  salePrice: number;
   maxQty: number;
 }
 export default function SaleForm() {
@@ -139,7 +139,7 @@ export default function SaleForm() {
   const [SaleList, setSaleList] = useState<Sale[]>([]);
 
   const CustomerGet = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetCustomer(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ResponseCustomerGetData;
@@ -150,7 +150,7 @@ export default function SaleForm() {
     }
   };
   const addCustoemr = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     if (!token) return router.push("/posSalePoint/login");
     try {
       setLoading1(true);
@@ -181,7 +181,7 @@ export default function SaleForm() {
     }
   };
   const fetchSalesman = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     if (!token) return;
 
     try {
@@ -198,7 +198,7 @@ export default function SaleForm() {
     }
   };
   const saleGet = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetSalePosInvoice(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseGetSale;
@@ -207,7 +207,7 @@ export default function SaleForm() {
     }
   };
   const getProductHistory = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -215,12 +215,12 @@ export default function SaleForm() {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as responseList;
-
+      console.log(data.showHistory);
       setInvocieHistory(data.showHistory || []);
     }
   };
   const getInvoiceHistory = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -235,7 +235,7 @@ export default function SaleForm() {
   const getTill = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetTillForSalesMan(String(token));
 
       if (response.status === 200) {
@@ -254,7 +254,7 @@ export default function SaleForm() {
     }
   };
   const getProduct = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -274,7 +274,7 @@ export default function SaleForm() {
     }
   };
   const storesget = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetInitalStoreSalesMan(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as StoreApiResponse;
@@ -283,8 +283,54 @@ export default function SaleForm() {
       getProductall(data.storeList[0].storeID);
     }
   };
+  const addItemForReturnListFromInvoice = (ID: string) => {
+    // Find the product containing the attributeID
+    const product = productList.find((item) =>
+      item.variants.some((v) =>
+        v.variantValues.some((val) => val.attributeID === ID),
+      ),
+    );
+
+    if (!product) return; // No product found
+
+    const variantValue = product.variants
+      .flatMap((v) => v.variantValues)
+      .find((val) => val.attributeID === ID);
+
+    if (!variantValue) return; // No variant found
+
+    setNewItem((prev) => {
+      // **Make sure we only have one entry per attributeID**
+      const existingItem = prev.find(
+        (item) => item.attributeID === variantValue.attributeID,
+      );
+
+      if (existingItem) {
+        // Item exists → increment qty by 1
+        return prev.map((item) =>
+          item.attributeID === variantValue.attributeID
+            ? { ...item, qty: item.qty + 1 }
+            : item,
+        );
+      }
+
+      // Item does not exist → add new entry
+      const newEntry: newItem = {
+        attributeID: variantValue.attributeID,
+        productName: product.productName,
+        qty: -1,
+        varientValue: variantValue.varientValue,
+        price: variantValue.salePrice,
+        barcode: variantValue.barcode,
+        stockQty: -variantValue.qty,
+        discount: 0,
+      };
+
+      return [...prev, newEntry];
+    });
+  };
   const getProductall = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
@@ -458,7 +504,7 @@ export default function SaleForm() {
         salesmanID: selectedSalesman,
         list: listForRequest,
       };
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       console.log(formData);
       const response = await AddSalePos(formData, String(token));
       if (response.status === 200 || response.status === 201) {
@@ -707,7 +753,11 @@ export default function SaleForm() {
                     name="inline-radio"
                     value="inovice"
                     checked={selectedOption === "inovice"}
-                    onChange={(e) => setSelectedOption(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedOption(e.target.value);
+                      setProductID("");
+                      setInvocieHistory([]);
+                    }}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -721,7 +771,11 @@ export default function SaleForm() {
                     name="inline-radio"
                     value="product"
                     checked={selectedOption === "product"}
-                    onChange={(e) => setSelectedOption(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedOption(e.target.value);
+                      setInvoiceNo("");
+                      setInvocieHistory([]);
+                    }}
                     className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-gray-700 text-sm font-medium">
@@ -891,18 +945,20 @@ export default function SaleForm() {
                         </td>
                         {/* Editable Original Price */}
                         <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                          {item.rate}
+                          {item.salePrice}
                         </td>
 
                         {/* Total Bill */}
                         <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                          {item.rate * item.qty}
+                          {item.salePrice * item.qty}
                         </td>
 
                         {/* Action */}
                         <td className="px-4 py-2 text-center text-gray-700 font-medium">
                           <button
-                            onClick={() => DeletFromTableList(item.attributeID)}
+                            onClick={() =>
+                              addItemForReturnListFromInvoice(item.attributeID)
+                            }
                             className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
                           >
                             <Plus />

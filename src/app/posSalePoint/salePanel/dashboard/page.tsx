@@ -53,7 +53,7 @@ export default function CustomerPanel() {
   ];
 
   const verfiy = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     if (!token) {
       router.push("/posSalePoint/login");
     }

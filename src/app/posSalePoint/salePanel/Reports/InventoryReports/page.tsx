@@ -19,7 +19,7 @@ export default function CustoemrReport() {
   const [listData, setListData] = useState<ledgerList[]>([]);
 
   const fetchData = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await CustomerReport(String(token));
     if (response.status === 200) {
       const data = response.data as responseData;

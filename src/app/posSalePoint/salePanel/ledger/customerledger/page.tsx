@@ -114,7 +114,7 @@ export default function CustomerledgerForm() {
   };
 
   const FetchArrear = async (ID: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await LedgerGetArrear(String(token), ID);
     if (response.status === 200) {
       const data = response.data as any;
@@ -124,7 +124,7 @@ export default function CustomerledgerForm() {
     }
   };
   const CustomerGet = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     const response = await GetCustomer(String(token));
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ResponseCustomerGetData;
@@ -139,7 +139,7 @@ export default function CustomerledgerForm() {
   const addLedger = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const formData = {
         customerID: customerID,
         postingDate: postingDate,
@@ -175,7 +175,7 @@ export default function CustomerledgerForm() {
   const getLedger = async () => {
     try {
       setledgerLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const formData = {
         dateFrom: dateFrom,
         dateTo: dateTo,

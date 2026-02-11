@@ -49,7 +49,7 @@ export default function CustomerForm() {
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
 
   const addCustoemr = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("tokenPosSale");
     if (!token) return router.push("/posSalePoint/login");
     try {
       setLoading(true);
@@ -71,18 +71,18 @@ export default function CustomerForm() {
         setCustomerName("");
         setPhoneNo("");
         setRersponseBack(
-          response.data.message || "Customer Added Successfully"
+          response.data.message || "Customer Added Successfully",
         );
         setShowMessage(true);
       } else if (response.status === 400) {
         setRersponseBack(
-          response.data.message || "PLease Fill in All Required Fields"
+          response.data.message || "PLease Fill in All Required Fields",
         );
         setShowMessage(false);
       } else {
         setRersponseBack(
           response.data.message ||
-            "Something Went Wrong. Please Try Again later."
+            "Something Went Wrong. Please Try Again later.",
         );
         setShowMessage(false);
       }
@@ -94,7 +94,7 @@ export default function CustomerForm() {
   const SupplierGet = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await GetCustomer(String(token));
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ResponseCustomerGetData;
@@ -111,7 +111,7 @@ export default function CustomerForm() {
   const CustomerDelete = async () => {
     setIsDelete(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const response = await DeleteCustomer({ customerID: ID }, String(token));
       if (response.status === 200 || response.status === 201) {
         setIsOpen(false);
@@ -143,7 +143,7 @@ export default function CustomerForm() {
   const CustomerModify = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("tokenPosSale");
       const payload = {
         customerID: ID,
         customerName: customerName,
@@ -158,7 +158,7 @@ export default function CustomerForm() {
         SupplierGet();
         setShowMessage(true);
         setRersponseBack(
-          response.data.message || "Customer Modified successfully"
+          response.data.message || "Customer Modified successfully",
         );
         setShowList(true);
         setCustomerName("");
@@ -172,7 +172,7 @@ export default function CustomerForm() {
         setShowMessage(false);
         setRersponseBack(
           response.data.message ||
-            "SomeThing went Wrong. Please try Again later."
+            "SomeThing went Wrong. Please try Again later.",
         );
       }
     } catch (err) {
