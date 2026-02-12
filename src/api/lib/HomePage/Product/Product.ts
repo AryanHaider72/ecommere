@@ -8,7 +8,7 @@ export default async function GetProductHome(token: string) {
   const response = await getRequest(
     `/api/Product/Customer/GetProduct`,
     null,
-    customHeaders
+    customHeaders,
   );
   if (response.success) {
     return {

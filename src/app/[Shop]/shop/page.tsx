@@ -79,10 +79,10 @@ export default function Shop() {
   const [loading1, setLoading1] = useState(false);
   const [selectedAttributeID, setSelectedAttributeID] = useState("");
   const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>(
-    []
+    [],
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null
+    null,
   );
 
   const toggleAccordion = (index: number) => {
@@ -170,7 +170,7 @@ export default function Shop() {
 
   const handleSubCategoryChange = (id: string) => {
     setSelectedSubCategories((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
   const handleShowCategories = async () => {
@@ -196,7 +196,7 @@ export default function Shop() {
       console.log(data);
       setProduct(data);
       const allVariantValues = data.flatMap((product) =>
-        product.variants.flatMap((variant) => variant.variantValues)
+        product.variants.flatMap((variant) => variant.variantValues),
       );
       if (allVariantValues) {
         setSelectedAttributeID(allVariantValues[0].attributeID);
@@ -257,7 +257,7 @@ export default function Shop() {
       let varientValue = "";
       for (const variant of data.variants) {
         const foundAttr = variant.variantValues.find(
-          (attr) => attr.attributeID === selectedAttributeID
+          (attr) => attr.attributeID === selectedAttributeID,
         );
         if (foundAttr) {
           selectedVariantAttribute = foundAttr;
@@ -488,7 +488,7 @@ export default function Shop() {
                           Rs.{" "}
                           {Number(item.variants[0].variantValues[0].salePrice) -
                             (Number(
-                              item.variants[0].variantValues[0].salePrice
+                              item.variants[0].variantValues[0].salePrice,
                             ) *
                               Number(item.discount)) /
                               100}
@@ -634,8 +634,8 @@ export default function Shop() {
                                 attr.qty === 0
                                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                   : selectedAttributeID === attr.attributeID
-                                  ? "bg-gray-800 text-white border-gray-800"
-                                  : "bg-white text-gray-800 hover:border-gray-500"
+                                    ? "bg-gray-800 text-white border-gray-800"
+                                    : "bg-white text-gray-800 hover:border-gray-500"
                               }
                             `}
                             >
@@ -780,7 +780,7 @@ export default function Shop() {
                     {selectedCategoryId &&
                       (() => {
                         const selectedCategory = categories.find(
-                          (cat) => cat.subCategoryID === selectedCategoryId
+                          (cat) => cat.subCategoryID === selectedCategoryId,
                         );
 
                         if (
@@ -814,11 +814,11 @@ export default function Shop() {
                                     <input
                                       type="checkbox"
                                       checked={selectedSubCategories.includes(
-                                        sub.subCategoryDetailID
+                                        sub.subCategoryDetailID,
                                       )}
                                       onChange={() =>
                                         handleSubCategoryChange(
-                                          sub.subCategoryDetailID
+                                          sub.subCategoryDetailID,
                                         )
                                       }
                                       className="w-5 h-5 rounded accent-gray-900"

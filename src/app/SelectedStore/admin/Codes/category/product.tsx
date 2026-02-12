@@ -2556,10 +2556,13 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               <h3 className="text-lg font-semibold text-gray-800">
                                 {product.productName}
                               </h3>
-                              <p className="text-gray-600 mt-1 text-sm">
-                                {product.description}
-                              </p>
-
+                              <div
+                                className="text-gray-600 mt-1 text-sm prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{
+                                  __html: product.description,
+                                }}
+                              />
+                              {/* <p>{product.description}</p> */}
                               {/* PRICE */}
                               <div className="mt-1 flex gap-2">
                                 {discount > 0 && (

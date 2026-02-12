@@ -1,6 +1,7 @@
 // Main API response interface
 export interface ProductApiResponse {
   message: string;
+  totalCount: number;
   list: Product[];
 }
 export interface ProductApiResponseSalesMan {
