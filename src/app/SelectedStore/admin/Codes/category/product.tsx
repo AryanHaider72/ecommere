@@ -9,6 +9,7 @@ import {
   Download,
   Pencil,
   Plus,
+  Ticket,
   Trash,
   Upload,
   X,
@@ -44,7 +45,7 @@ import GetUnitByID from "@/api/lib/unit/unitGetByID/unitGetByID";
 import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
 import ModifyProductBasicInfo from "@/api/lib/product/ModifyProduct/ModifyBasicInfo/ModifyBasicInfo";
 import ModifyProductVarinet from "@/api/lib/product/ModifyProduct/ModifyVarient/ModifyVarinet";
-import { addVarinetPayload } from "@/api/types/product/AddVarient";
+import { addVarinetPayload, modifyVarinetPayload } from "@/api/types/product/AddVarient";
 import GetVarinet from "@/api/lib/product/ModifyProduct/ModifyVarient/GetVarient";
 import {
   VariantList,
@@ -68,6 +69,7 @@ import {
 import GetSupplier from "@/api/lib/PosIntegration/Supplier/GetSupplier";
 import jsPDF from "jspdf";
 import JsBarcode from "jsbarcode";
+import ModifyProductVarinetAttribute from "@/api/lib/product/ModifyProduct/ModifyVarient/ModifyVarientModify";
 
 interface CountryList {
   countryID: string;
@@ -80,6 +82,7 @@ interface Varient {
 interface VarientAttribute {
   varientValue: string;
   qty: number;
+  barcode:string;
   costPrice: number;
   salePrice: number;
 }
@@ -139,11 +142,12 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [newAttribute, setNewAttribute] = useState<VarientAttribute>({
     varientValue: "",
     qty: 0,
+    barcode:"",
     costPrice: 0,
     salePrice: 0,
   });
 
-  const [images, setImages] = useState<(File | null)[]>([null, null, null]);
+  const [images, setImages] = useState<File[]>([]);
 
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -289,19 +293,19 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   };
 
   const getCategroyMain = async () => {
-    const token = localStorage.getItem("token");
-    const response = await GetCategoryMain(String(token));
+  const token = localStorage.getItem("token");
+  const response = await GetCategoryMain(String(token));
 
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as CategoryMainApiResponse;
-      setCatgeoryMainList(data.categoryList);
-      getCategorySub(data.categoryList[0].categoryID);
-      setCategoryMainID(data.categoryList[0].categoryID);
-    }
-    if (response.status === 401) {
-      router.push("/sellerlogin");
-    }
-  };
+  if (response.status === 200 || response.status === 201) {
+    const data = response.data as CategoryMainApiResponse;
+    setCatgeoryMainList(data.categoryList);
+    getCategorySub(data.categoryList[0].categoryID); // now safe
+    setCategoryMainID(data.categoryList[0].categoryID);
+  }
+  if (response.status === 401) {
+    router.push("/sellerlogin");
+  }
+};
   const SupplierGet = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -343,7 +347,9 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
     setDeleting(false); // stop spinner
   };
-
+  const handleDeleteImage = (indexToDelete: number) => {
+    setImages((prev) => prev.filter((_, index) => index !== indexToDelete));
+  };
   const fetchData = (ID: String) => {
     const data = productList.find((item) => item.productID === ID);
     if (data) {
@@ -419,7 +425,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         // Reset logic...
         setProductAbout(false);
         setCurrentStep(1);
-        getProduct(1);
+        getProduct(currentPage);
         setProductName("");
         setDiscount("");
         setThreshold("");
@@ -467,13 +473,13 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       amountPaid: Number(AmountPaid) || 0,
       adjustments: Number(adjustment) || 0,
       totalStock: totalStock,
-      listVarient: [],
+      listVarient: listVarient,
     };
 
     try {
       setUploading(true);
       const token = localStorage.getItem("token");
-
+      console.log(payload);
       const response = await ModifyProductVarinet(payload, ID, String(token));
       if (response.status === 200 || response.status === 201) {
         getProduct(1);
@@ -492,6 +498,58 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       setUploading(false);
     }
   };
+  const ModifyVarient = async (NewID:string,barcode:string,costPrice:number, salePrice:number,qty:number,varientValue:string) => {
+    const payload: modifyVarinetPayload = {
+          varientValue :varientValue,
+        qty :qty,
+        costPrice :costPrice ,
+        salePrice :salePrice ,
+        barcode :barcode
+          };
+
+    try {
+      setUploading(true);
+      const token = localStorage.getItem("token");
+      console.log(payload);
+      const response = await ModifyProductVarinetAttribute(payload, NewID, String(token));
+      if (response.status === 200 || response.status === 201) {
+        getProduct(1);
+        getVarient(ID);
+        setListVarient([]);
+        setAmountPaid("");
+        setAdjustment("");
+        setShowList(false);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (error) {
+      setUploading(false);
+      console.log("Error in basicInfo:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+  // TypeScript version
+const handleVariantChange = (
+  variantIndex: number,        // index of the variant in getVarinetList
+  attrIndex: number,           // index of the attribute inside varientAttributes
+  field: keyof VarientAttribute, // field to update: 'varientValue', 'barcode', 'qty', etc.
+  value: string | number
+) => {
+  setGetVarinetList((prev) => {
+    // Make a shallow copy of the list
+    const updated = [...prev];
+
+    // Update the specific attribute of the specific variant
+    updated[variantIndex].varientAttributes[attrIndex] = {
+      ...updated[variantIndex].varientAttributes[attrIndex],
+      [field]: value,
+    };
+
+    return updated;
+  });
+};
+
   const getVarient = async (ID: string) => {
     try {
       setGettingVarinet(true);
@@ -637,7 +695,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       return;
     }
     setCurrentAttributes([...currentAttributes, newAttribute]);
-    setNewAttribute({ varientValue: "", qty: 0, costPrice: 0, salePrice: 0 });
+    setNewAttribute({ varientValue: "", qty: 0, costPrice: 0, barcode:"",salePrice: 0 });
   };
 
   // Update newAttribute inputs (for the input row)
@@ -656,19 +714,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   //IMages Funtion
 
   const handleImageChange = (files: FileList | null) => {
-    if (files) {
-      const fileArray = Array.from(files);
-      const newImages = [...images];
-      let idx = 0;
-      for (let file of fileArray) {
-        while (idx < 3 && newImages[idx] !== null) idx++;
-        if (idx < 3) {
-          newImages[idx] = file;
-          idx++;
-        }
-      }
-      setImages(newImages);
-    }
+    if (!files) return;
+    setImages((prev) => [...prev, ...Array.from(files)]);
   };
 
   const reorderImages = (from: number, to: number) => {
@@ -678,45 +725,27 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     setImages(updated);
   };
   const handleUploadAll = async () => {
-    try {
-      setLoading(true);
+    // Filter out null images
+    const filesToUpload = images.filter((img): img is File => img !== null);
 
-      // Filter out null images
-      const filesToUpload = images.filter((img): img is File => img !== null);
-
-      if (filesToUpload.length === 0) {
-        alert("No images to upload");
-        return [];
-      }
-
-      // Upload files to Cloudinary (or your upload API)
-      const uploadedUrls = await sendMultipleImages(filesToUpload);
-
-      if (uploadedUrls && uploadedUrls.length > 0) {
-        // Update local state to show uploaded images
-        setImageList((prevState) => [
-          ...prevState,
-          ...uploadedUrls.map((url) => ({
-            urlID: crypto.randomUUID(),
-            url,
-          })),
-        ]);
-
-        // Prepare payload for your API
-        const payload: ImageApiRequest = {
-          imgList: uploadedUrls.map((url) => ({ url })),
-        };
-
-        // Send to your backend
-        await addImages(payload);
-      }
-
-      return uploadedUrls || [];
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setLoading(false);
+    if (filesToUpload.length === 0) {
+      alert("No images to upload");
+      return []; // Return empty array if no files
     }
+
+    // Use the previously suggested function for uploading multiple images
+    const uploadedUrls = await sendMultipleImages(filesToUpload);
+    console.log("Uploaded URLs before setState:", uploadedUrls);
+    // if (uploadedUrls && uploadedUrls.length > 0) {
+    //   setListImages((prevState) => ({
+    //     listImage: [
+    //       ...prevState.listImage,
+    //       ...uploadedUrls.map((url) => ({ url })),
+    //     ],
+    //   }));
+    // }
+
+    return uploadedUrls || []; // Return the URLs directly (or empty array on failure)
   };
 
   const addImages = async (payload: ImageApiRequest) => {
@@ -1674,6 +1703,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                           <th className="px-4 py-2">Qty</th>
                           <th className="px-4 py-2">CP</th>
                           <th className="px-4 py-2">SP</th>
+                          <th className="px-4 py-2">Barcode</th>
                           <th className="px-4 py-2">Action</th>
                         </tr>
                       </thead>
@@ -1688,6 +1718,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                             <td className="px-4 py-2">{attr.qty}</td>
                             <td className="px-4 py-2">{attr.costPrice}</td>
                             <td className="px-4 py-2">{attr.salePrice}</td>
+                            <td className="px-4 py-2">{attr.barcode}</td>
                             <td className="px-4 py-2">
                               <button
                                 className="px-2 py-1 bg-red-600 text-white rounded"
@@ -1760,6 +1791,17 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                             />
                           </td>
                           <td className="px-4 py-2">
+                            <input
+                            type="text"
+                            value={newAttribute.barcode}
+                            onChange={(e) =>
+                              handleNewAttributeChange("barcode", e.target.value)
+                            }
+                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+
+                          </td>
+                          <td className="px-4 py-2">
                             <button
                               onClick={handleAddAttribute}
                               className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center"
@@ -1774,6 +1816,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     </table>
                   </div>
                 </fieldset>
+                {selectedOption3 === "Yes" && (
                 <fieldset className="p-4 border border-gray-300 rounded-lg">
                   <legend className="text-lg font-semibold text-gray-800 px-2">
                     Billing Information
@@ -1901,6 +1944,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     </div>{" "}
                   </div>
                 </fieldset>
+                )}
                 <button
                   onClick={addVarient}
                   className="px-2 py-2 w-full bg-green-600 hover:bg-green-700 rounded-md text-white mt-4"
@@ -1916,267 +1960,154 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                   </>
                 ) : (
                   <>
-                    {getVarinetList.length > 0 ? (
-                      <div className="space-y-4 mt-3">
-                        {getVarinetList.map((item) => (
-                          <div
-                            key={item.varientID}
-                            className="border border-gray-200 rounded-lg shadow-sm bg-white"
-                          >
-                            {/* Header */}
-                            <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-lg">
-                              <h3 className="text-base font-semibold text-gray-800 capitalize">
-                                {item.variantName}
-                              </h3>
-                              {/* <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    setModify(!modify);
-                                  }}
-                                  className={`${
-                                    !modify
-                                      ? `text-yellow-600 border border-yellow-500 hover:text-yellow-700`
-                                      : `text-red-600 border border-red-500 hover:text-red-700`
-                                  } p-1 rounded-md  transition`}
-                                  title="Modify Variant"
-                                >
-                                  {modify ? (
-                                    <X className="w-5 h-5" />
-                                  ) : (
-                                    <Pencil className="w-5 h-5" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setIsOpenVarinet(true);
-                                    setID(item.varientID);
-                                  }}
-                                  className="text-red-600 border border-red-500 p-1 rounded-md  hover:text-red-700 transition"
-                                  title="Delete Variant"
-                                >
-                                  <Trash className="w-5 h-5" />
-                                </button>
-                              </div> */}
-                            </div>
+  {getVarinetList.length > 0 ? (
+    <div className="space-y-4 mt-3">
+      {getVarinetList.map((item, itemIndex) => (
+        <div
+          key={item.varientID}
+          className="border border-gray-200 rounded-lg shadow-sm bg-white"
+        >
+          {/* Header */}
+          <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-lg">
+            <h3 className="text-base font-semibold text-gray-800 capitalize">
+              {item.variantName}
+            </h3>
+          </div>
 
-                            {/* Attributes Table */}
-                            <div className="px-4 py-3 overflow-x-auto">
-                              <table className="w-full border-collapse">
-                                <thead>
-                                  <tr className="text-xs font-semibold text-gray-600 border-b">
-                                    <th className="text-left px-4 py-2">
-                                      Value
-                                    </th>
-                                    <th className="text-left px-4 py-2">
-                                      BarCode
-                                    </th>
-                                    <th className="text-left px-4 py-2">Qty</th>
-                                    <th className="text-left px-4 py-2">
-                                      Cost Price
-                                    </th>
-                                    <th className="text-left px-4 py-2">
-                                      Sale Price
-                                    </th>
-                                    <th className="text-left px-4 py-2">
-                                      Action
-                                    </th>
-                                  </tr>
-                                </thead>
+          {/* Editable Attributes Table */}
+          <div className="px-4 py-3 overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-xs font-semibold text-gray-600 border-b">
+                  <th className="text-left px-4 py-2">Value</th>
+                  <th className="text-left px-4 py-2">BarCode</th>
+                  <th className="text-left px-4 py-2">Qty</th>
+                  <th className="text-left px-4 py-2">Cost Price</th>
+                  <th className="text-left px-4 py-2">Sale Price</th>
+                  <th className="text-left px-4 py-2">Action</th>
+                </tr>
+              </thead>
 
-                                <tbody>
-                                  {item.varientAttributes.map((attr) => (
-                                    <tr
-                                      key={attr.attributeID}
-                                      className="text-sm border-b last:border-b-0"
-                                    >
-                                      <td className="px-4 py-2 font-medium text-gray-800">
-                                        {attr.varientValue}
-                                      </td>
-                                      <td className={`px-4 py-2`}>
-                                        {attr.barcode}
-                                      </td>
-                                      <td className={`px-4 py-2`}>
-                                        {attr.qty}
-                                      </td>
+              <tbody>
+                {item.varientAttributes.map((attr, attrIndex) => (
+                  <tr
+                    key={attr.attributeID}
+                    className="text-sm border-b last:border-b-0"
+                  >
+                    {/* Variant Value */}
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        value={attr.varientValue}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            itemIndex,
+                            attrIndex,
+                            "varientValue",
+                            e.target.value
+                          )
+                        }
+                        className="w-full border rounded px-2 py-1"
+                      />
+                    </td>
 
-                                      <td className="px-4 py-2">
-                                        {attr.costPrice}
-                                      </td>
+                    {/* Barcode */}
+                    <td className="px-4 py-2">
+                      <input
+                        type="text"
+                        value={attr.barcode}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            itemIndex,
+                            attrIndex,
+                            "barcode",
+                            e.target.value
+                          )
+                        }
+                        className="w-full border rounded px-2 py-1"
+                      />
+                    </td>
 
-                                      <td className="px-4 py-2">
-                                        {attr.salePrice}
-                                      </td>
+                    {/* Qty */}
+                    <td className="px-4 py-2">
+                      <input
+                        type="number"
+                        value={attr.qty}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            itemIndex,
+                            attrIndex,
+                            "qty",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full border rounded px-2 py-1"
+                      />
+                    </td>
 
-                                      <td className="px-4 py-2">
-                                        <button
-                                          className="px-2 py-1 bg-green-600 text-white rounded"
-                                          onClick={() => {
-                                            fetchDatafroProduct(
-                                              attr.attributeID,
-                                              attr.salePrice,
-                                              attr.barcode,
-                                            );
-                                          }}
-                                        >
-                                          {Export ? <Spinner /> : <Download />}
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                            {modify && (
-                              <fieldset className="p-4 border border-gray-300 rounded-lg">
-                                <legend className="text-lg font-semibold text-gray-800 px-2">
-                                  Billing Information
-                                </legend>
-                                <div className="md:col-span-2">
-                                  {" "}
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                                    {" "}
-                                    {/* Total Bill */}{" "}
-                                    <div>
-                                      {" "}
-                                      <label className="block text-gray-700 font-medium mb-2">
-                                        {" "}
-                                        Total Bill{" "}
-                                      </label>{" "}
-                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                                        {" "}
-                                        <Coins
-                                          className="text-gray-400 mr-2"
-                                          size={18}
-                                        />{" "}
-                                        <input
-                                          type="number"
-                                          value={item.varientAttributes.reduce(
-                                            (total, attr) => {
-                                              return (
-                                                total +
-                                                (Number(attr.costPrice) || 0) *
-                                                  (Number(attr.qty) || 1)
-                                              );
-                                            },
-                                            0,
-                                          )}
-                                          name="totalBill"
-                                          placeholder="Enter Total Bill"
-                                          className="w-full bg-transparent outline-none text-gray-900"
-                                        />{" "}
-                                      </div>{" "}
-                                    </div>{" "}
-                                    {/* Adjustment */}{" "}
-                                    <div>
-                                      {" "}
-                                      <label className="block text-gray-700 font-medium mb-2">
-                                        {" "}
-                                        Adjustment{" "}
-                                      </label>{" "}
-                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                                        {" "}
-                                        <Coins
-                                          className="text-gray-400 mr-2"
-                                          size={18}
-                                        />{" "}
-                                        <input
-                                          value={adjustment}
-                                          type="number"
-                                          onChange={(e) =>
-                                            setAdjustment(e.target.value)
-                                          }
-                                          name="adjustment"
-                                          placeholder="Enter Adjustment"
-                                          className="w-full bg-transparent outline-none text-gray-900"
-                                        />{" "}
-                                      </div>{" "}
-                                    </div>{" "}
-                                    {/* Amount Paid */}{" "}
-                                    <div>
-                                      {" "}
-                                      <label className="block text-gray-700 font-medium mb-2">
-                                        {" "}
-                                        Amount Paid{" "}
-                                      </label>{" "}
-                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                                        {" "}
-                                        <Coins
-                                          className="text-gray-400 mr-2"
-                                          size={18}
-                                        />{" "}
-                                        <input
-                                          value={AmountPaid}
-                                          type="number"
-                                          onChange={(e) =>
-                                            setAmountPaid(e.target.value)
-                                          }
-                                          name="amountPaid"
-                                          placeholder="Enter Amount Paid"
-                                          className="w-full bg-transparent outline-none text-gray-900"
-                                        />{" "}
-                                      </div>{" "}
-                                    </div>{" "}
-                                    {/* Remaining Balance */}{" "}
-                                    <div>
-                                      {" "}
-                                      <label className="block text-gray-700 font-medium mb-2">
-                                        {" "}
-                                        Remaining Balance{" "}
-                                      </label>{" "}
-                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                                        {" "}
-                                        <CoinsIcon
-                                          className="text-gray-400 mr-2"
-                                          size={18}
-                                        />{" "}
-                                        <input
-                                          type="number"
-                                          value={
-                                            Number(costPrice) -
-                                              Number(AmountPaid) -
-                                              Number(adjustment) || 0
-                                          }
-                                          name="remainingBalance"
-                                          placeholder="Auto Calculated"
-                                          readOnly
-                                          className="w-full bg-transparent outline-none text-gray-900"
-                                        />{" "}
-                                      </div>{" "}
-                                    </div>{" "}
-                                    {/* Total Payable */}{" "}
-                                    <div className=" ">
-                                      {" "}
-                                      <label className="block text-gray-700 font-medium mb-2">
-                                        {" "}
-                                        Total Payable{" "}
-                                      </label>{" "}
-                                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                                        {" "}
-                                        <Coins
-                                          className="text-gray-400 mr-2"
-                                          size={18}
-                                        />{" "}
-                                        <input
-                                          type="number"
-                                          name="totalPayable"
-                                          placeholder="Enter Total Payable"
-                                          className="w-full bg-transparent outline-none text-gray-900"
-                                        />{" "}
-                                      </div>{" "}
-                                    </div>{" "}
-                                  </div>{" "}
-                                </div>
-                              </fieldset>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-gray-500 mt-4">
-                        No Record Found
-                      </p>
-                    )}
-                  </>
+                    {/* Cost Price */}
+                    <td className="px-4 py-2">
+                      <input
+                        type="number"
+                        value={attr.costPrice}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            itemIndex,
+                            attrIndex,
+                            "costPrice",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full border rounded px-2 py-1"
+                      />
+                    </td>
+
+                    {/* Sale Price */}
+                    <td className="px-4 py-2">
+                      <input
+                        type="number"
+                        value={attr.salePrice}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            itemIndex,
+                            attrIndex,
+                            "salePrice",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full border rounded px-2 py-1"
+                      />
+                    </td>
+
+                    {/* Action Button */}
+                    <td className=" flex gap-2 px-4 py-2">
+                    <button onClick={()=>ModifyVarient(attr.attributeID, attr.barcode, attr.costPrice, attr.salePrice, attr.qty, attr.varientValue)} className="px-2 py-1 bg-yellow-600 text-white rounded"><Pencil/></button>
+                      <button
+                        className="px-2 py-1 bg-green-600 text-white rounded"
+                        onClick={() =>
+                          fetchDatafroProduct(
+                            attr.attributeID,
+                            attr.salePrice,
+                            attr.barcode
+                          )
+                        }
+                      >
+                        {Export ? <Spinner /> : <Download />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="text-center text-gray-500 mt-4">No Record Found</p>
+  )}
+</>
+
                 )}
               </>
             )}
@@ -2188,7 +2119,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <div className="flex justify-end mb-4">
-              <button onClick={() => setImageAbout(false)}>
+              <button onClick={() => { setImageAbout(false);setImageList([]);}}>
                 <X className="w-6 h-6 hover:text-red-600 transition" />
               </button>
             </div>
@@ -2252,7 +2183,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                   </legend>
                   <div className="mb-4">
                     <label className="block text-gray-700 font-medium mb-1">
-                      Product Images (Max 3)
+                      Product Images
                     </label>
                     <div
                       onClick={handleClick}
@@ -2262,51 +2193,61 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                         setIsDragOver(true);
                       }}
                       onDragLeave={() => setIsDragOver(false)}
-                      className={`w-full p-4 border-2 flex justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
+                      className={`w-full p-4 border-2 flex  justify-center gap-5 border-dashed rounded-md cursor-pointer text-center ${
                         isDragOver
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-300"
                       }`}
                     >
-                      {images.map((img, i) => (
-                        <div
-                          key={i}
-                          draggable={!!img}
-                          onDragStart={() => setDragIndex(i)}
-                          onDragEnter={() => img && setHoverIndex(i)}
-                          onDragEnd={() => {
-                            if (
-                              dragIndex !== null &&
-                              hoverIndex !== null &&
-                              dragIndex !== hoverIndex
-                            ) {
-                              reorderImages(dragIndex, hoverIndex);
-                            }
-                            setDragIndex(null);
-                            setHoverIndex(null);
-                          }}
-                          className={`relative w-20 h-20 rounded-md flex items-center justify-center ${
-                            hoverIndex === i
-                              ? "ring-2 ring-blue-500 scale-105"
-                              : ""
-                          } transition-all duration-150`}
-                        >
-                          {img ? (
+                      <div className="flex flex-wrap gap-4">
+                        {images.map((img, i) => (
+                          <div
+                            key={i}
+                            draggable
+                            onDragStart={() => setDragIndex(i)}
+                            onDragEnter={() => setHoverIndex(i)}
+                            onDragEnd={() => {
+                              if (
+                                dragIndex !== null &&
+                                hoverIndex !== null &&
+                                dragIndex !== hoverIndex
+                              ) {
+                                reorderImages(dragIndex, hoverIndex);
+                              }
+                              setDragIndex(null);
+                              setHoverIndex(null);
+                            }}
+                            className={`relative w-20 h-20 rounded-md 
+      ${hoverIndex === i ? "ring-2 ring-blue-500 scale-105" : ""}
+      transition-all duration-150`}
+                          >
+                            {/* ❌ Delete Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(i);
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white 
+                 rounded-full w-5 h-5 flex items-center 
+                 justify-center text-xs hover:bg-red-600 
+                 shadow-md"
+                            >
+                              ✕
+                            </button>
+
                             <img
                               src={URL.createObjectURL(img)}
-                              alt={`Img ${i}`}
-                              className="w-full h-full object-cover rounded-md pointer-events-none"
+                              className="w-full h-full object-cover rounded-md"
+                              alt={`Product ${i + 1}`}
                             />
-                          ) : (
-                            <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
-                              Empty
-                            </div>
-                          )}
-                          <span className="absolute -bottom-5 text-xs text-gray-600">
-                            {i === 0 ? "Header Image" : `Image ${i + 1}`}
-                          </span>
-                        </div>
-                      ))}
+
+                            <span className="absolute -bottom-5 text-xs text-gray-600">
+                              {i === 0 ? "Header Image" : `Image ${i + 1}`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <input
                       ref={fileInputRef}

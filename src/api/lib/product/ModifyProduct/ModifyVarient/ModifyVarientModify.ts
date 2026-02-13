@@ -7,7 +7,7 @@ import {
   ResponseModifyProductData,
 } from "@/api/types/product/modifyBasicInfo";
 
-export default async function ModifyProductVarinet(
+export default async function ModifyProductVarinetAttribute(
   data: modifyVarinetPayload,
   productID: string,
   token?: string

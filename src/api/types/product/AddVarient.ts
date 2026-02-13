@@ -9,24 +9,20 @@ export interface addVarinetPayload {
   listVarient: Varient[];
 }
 export interface modifyVarinetPayload {
-  invoiceNo: string;
-  purchaseID: string;
-  varientID: string;
-  supplierID: string;
-  purchaseDate: string;
-  totalBill: number;
-  amountPaid: number;
-  adjustments: number;
-  listVarient: Varient[];
+   varientValue :string
+   qty :number 
+   costPrice :number 
+   salePrice :number 
+   barcode :string
 }
 export interface Varient {
   varientName: string;
   varientAttributes: VarientAttribute[];
 }
 export interface VarientAttribute {
-  attributeID: string;
   varientValue: string;
   qty: number;
+  barcode:string;
   costPrice: number;
   salePrice: number;
 }
