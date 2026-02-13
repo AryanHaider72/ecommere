@@ -105,6 +105,7 @@ interface historyData {
 }
 export default function SaleForm() {
   const router = useRouter();
+  const [TillID, setTillID] = useState("")
   const [Loading1, setLoading1] = useState(false);
   const [loading, setLoading] = useState(false);
   const [invoiceNo, setInvoiceNo] = useState("");
@@ -243,8 +244,7 @@ export default function SaleForm() {
 
         if (data?.tillList?.length > 0) {
           setTillList(data.tillList);
-
-          getProduct(data.tillList[0].tillID);
+          setTillID(data.tillList[0].tillID)
         } else {
           setTillList([]);
         }
@@ -253,16 +253,26 @@ export default function SaleForm() {
       setLoading(false);
     }
   };
-  const getProduct = async (ID: string) => {
+   useEffect(() => {
+    if (!productName || productName.trim().length === 0) return;
+
+    const delayDebounce = setTimeout(() => {
+      getProduct();
+    }, 500); // ⏱ 500ms debounce
+
+    return () => clearTimeout(delayDebounce); // cleanup
+  }, [productName]);
+
+  const getProduct = async () => {
     const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
-    const response = await GetProductSalesMan(token, ID);
+    const response = await GetProductSalesMan(token, TillID,productName);
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponseSalesMan;
-      console.log(data);
+
       const newData = data.productList.filter(
         (item) => item.storeSale !== "OnlineStore",
       );
@@ -348,10 +358,10 @@ export default function SaleForm() {
       }
     }
   };
-  const fetchDataVarientList = (ID: string) => {
-    const data = productList.find((item) => item.productID === ID);
+  const fetchDataVarientList = (ID:string) => {
+    const data = productList2.find((item) => item.productID === ID);
     if (data) {
-      console.log(data);
+      console.log(data)
       setVarintListInPopUp(data.variants);
     }
   };
@@ -361,7 +371,7 @@ export default function SaleForm() {
   };
   const FetchAttribuetToAddInATable = (ID: string) => {
     // Find the product containing the attributeID
-    const product = productList.find((item) =>
+    const product = productList2.find((item) =>
       item.variants.some((v) =>
         v.variantValues.some((val) => val.attributeID === ID),
       ),
@@ -406,7 +416,7 @@ export default function SaleForm() {
     });
   };
   const findDataUsingBarcode = () => {
-    for (const product of productList) {
+    for (const product of productList2) {
       for (const variant of product.variants) {
         const attribute = variant.variantValues.find(
           (v) => v.barcode === Barcode,
@@ -1125,30 +1135,7 @@ export default function SaleForm() {
                 <label className="block text-gray-700 font-medium mb-2">
                   Product Name
                 </label>
-                {productList2.length === 0 ? (
-                  <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                    <Tag className="text-gray-400 mr-2" size={18} />
-                    <input
-                      type="text"
-                      list="productList"
-                      value={productName}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setProductName(value);
-                        const data = productList.find(
-                          (item) => item.productName === value,
-                        );
-                        if (data) {
-                          setProductID(data.productID);
-                          fetchDataVarientList(data.productID);
-                        }
-                      }}
-                      disabled
-                      placeholder="No Product Found"
-                      className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
-                    />
-                  </div>
-                ) : (
+                
                   <div className="flex  gap-1">
                     <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                       <Tag className="text-gray-400 mr-2" size={18} />
@@ -1159,7 +1146,7 @@ export default function SaleForm() {
                         onChange={(e) => {
                           const value = e.target.value;
                           setProductName(value);
-                          const data = productList.find(
+                          const data = productList2.find(
                             (item) => item.productName === value,
                           );
                           if (data) {
@@ -1180,13 +1167,12 @@ export default function SaleForm() {
                       </datalist>
                     </div>
                     <button
-                      onClick={() => setVarintShowList(true)}
+                      onClick={() => {setProductName("");setVarintShowList(true)}}
                       className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
                     >
                       <Notebook />
                     </button>
                   </div>
-                )}
               </div>
             </div>
             <div className="w-full overflow-x-auto">

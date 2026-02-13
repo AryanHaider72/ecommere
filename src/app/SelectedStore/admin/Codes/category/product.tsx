@@ -724,29 +724,31 @@ const handleVariantChange = (
     updated.splice(to, 0, moved);
     setImages(updated);
   };
-  const handleUploadAll = async () => {
-    // Filter out null images
-    const filesToUpload = images.filter((img): img is File => img !== null);
+ const handleUploadAll = async () => {
+  const filesToUpload = images.filter((img): img is File => img !== null);
 
-    if (filesToUpload.length === 0) {
-      alert("No images to upload");
-      return []; // Return empty array if no files
-    }
+  if (filesToUpload.length === 0) {
+    alert("No images to upload");
+    return [];
+  }
 
-    // Use the previously suggested function for uploading multiple images
-    const uploadedUrls = await sendMultipleImages(filesToUpload);
-    console.log("Uploaded URLs before setState:", uploadedUrls);
-    // if (uploadedUrls && uploadedUrls.length > 0) {
-    //   setListImages((prevState) => ({
-    //     listImage: [
-    //       ...prevState.listImage,
-    //       ...uploadedUrls.map((url) => ({ url })),
-    //     ],
-    //   }));
-    // }
+  const uploadedUrls = await sendMultipleImages(filesToUpload);
 
-    return uploadedUrls || []; // Return the URLs directly (or empty array on failure)
+  if (!uploadedUrls || uploadedUrls.length === 0) {
+    return [];
+  }
+
+  // Convert URLs to ImageApiRequest format
+  const payload: ImageApiRequest = {
+    imgList: uploadedUrls.map((url) => ({ url })),
   };
+
+  // Call API to add images to product
+  await addImages(payload);
+
+  return uploadedUrls;
+};
+
 
   const addImages = async (payload: ImageApiRequest) => {
     // AddImageProduct
@@ -2119,7 +2121,12 @@ const handleVariantChange = (
           <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setImageAbout(false);setImageList([]);}}>
+              <button
+                  onClick={() => {
+                    setImages([]);       // clear only new images
+                    setImageAbout(false);
+                  }}
+                >
                 <X className="w-6 h-6 hover:text-red-600 transition" />
               </button>
             </div>

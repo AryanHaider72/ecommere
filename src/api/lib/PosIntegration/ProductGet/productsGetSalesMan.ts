@@ -2,11 +2,11 @@
 
 import { getRequest, postRequest } from "@/api/authentication/main";
 
-export default async function GetProductSalesMan(token: string, data: string) {
+export default async function GetProductSalesMan(token: string, data: string,word:string) {
   const customHeaders: Record<string, string> = {};
   if (token) customHeaders.Authorization = `Bearer ${token}`;
   const response = await getRequest(
-    `/api/TillManagement/SalesMan/ProductList/${data}`,
+    `/api/TillManagement/SalesMan/ProductList/${data}?word=${word}`,
     null,
     customHeaders,
   );
