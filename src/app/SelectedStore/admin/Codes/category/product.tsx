@@ -94,6 +94,8 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [isOpenImage, setIsOpenImage] = useState(false);
   const [imageAbout, setImageAbout] = useState(false);
   const [modify, setModify] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   const [ID, setID] = useState("");
   const [productName, setProductName] = useState("");
@@ -255,19 +257,25 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     }
   }, [readyToExport, barcode, ProductNameBarcode]);
 
-  const getProduct = async () => {
+  const getProduct = async (page: number) => {
     try {
+      setLoading(true);
+
       const token = localStorage.getItem("token");
       if (!token) {
         return router.push("/sellerlogin");
       }
 
-      const response = await GetProduct(token, String(storeID));
+      const response = await GetProduct(token, String(storeID), page);
 
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ProductApiResponse;
+
         console.log("Parsed data.list:", data.list);
+
         setProductList(data.list);
+        setCurrentPage(data.currentPage);
+        setTotalPages(data.totalPages);
       } else if (response.status === 401) {
         router.push("/sellerlogin");
       } else {
@@ -279,6 +287,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       setLoading(false);
     }
   };
+
   const getCategroyMain = async () => {
     const token = localStorage.getItem("token");
     const response = await GetCategoryMain(String(token));
@@ -312,7 +321,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   };
   useEffect(() => {
     SupplierGet();
-    getProduct();
+    getProduct(1);
     getCategroyMain();
   }, []);
 
@@ -327,7 +336,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     if (response.status === 200 || response.status === 201) {
       setID(""); // reset selected ID
       setIsOpen(false);
-      await getProduct(); // refresh list
+      await getProduct(1); // refresh list
     } else if (response.status === 401) {
       router.push("/sellerlogin");
     }
@@ -410,7 +419,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         // Reset logic...
         setProductAbout(false);
         setCurrentStep(1);
-        getProduct();
+        getProduct(1);
         setProductName("");
         setDiscount("");
         setThreshold("");
@@ -467,7 +476,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
       const response = await ModifyProductVarinet(payload, ID, String(token));
       if (response.status === 200 || response.status === 201) {
-        getProduct();
+        getProduct(1);
         getVarient(ID);
         setListVarient([]);
         setAmountPaid("");
@@ -526,7 +535,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       if (response.status === 200 || response.status === 201) {
         console.log(response);
         setShowList(false);
-        getProduct();
+        getProduct(1);
         setID("");
         setPurchaseID("");
         setIsOpenVarinet(false);
@@ -717,7 +726,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
 
       const response = await AddImageProduct(payload, String(token), ID);
       if (response.status === 200 || response.status === 201) {
-        getProduct();
+        getProduct(1);
         setID("");
         setIsOpenImage(false);
         setShowList(false);
@@ -849,7 +858,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     const response = await DeleteImageApi(ID, String(token));
     if (response.status === 200 || response.status === 201) {
       setID("");
-      getProduct();
+      getProduct(1);
       setIsOpenImage(false);
       setImageList((item) => item.filter((emp) => emp.urlID !== ID));
     }
@@ -2420,7 +2429,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                               fetchData(product.productID);
                               setProductAbout(true);
                               getCountry();
-                              getProduct();
+                              getProduct(1);
                             }}
                             className="bg-yellow-500 text-white px-3 py-2 rounded-md hover:bg-yellow-600 transition"
                           >
@@ -2448,6 +2457,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         })()}
 
         {/* ---------- ONLINE STORE / BOTH CARDS ---------- */}
+
         {(() => {
           const onlineProducts = filteredProducts.filter(
             (p) => p.storeSale !== "OfflineStore",
@@ -2673,6 +2683,27 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
                     </div>
                   );
                 })}
+              </div>
+              <div className="w-full flex justify-center items-center gap-4 mt-4">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => getProduct(currentPage - 1)}
+                  className="px-4 py-1 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  Previous
+                </button>
+
+                <span className="font-medium">
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => getProduct(currentPage + 1)}
+                  className="px-4 py-1 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
               </div>
             </div>
           );

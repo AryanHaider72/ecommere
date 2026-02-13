@@ -1,8 +1,11 @@
 // Main API response interface
 export interface ProductApiResponse {
   message: string;
-  totalCount: number;
   list: Product[];
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 export interface ProductApiResponseSalesMan {
   message: string;

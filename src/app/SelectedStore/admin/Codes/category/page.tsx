@@ -258,7 +258,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
   // Update newAttribute inputs (for the input row)
   const handleNewAttributeChange = (
     field: keyof VarientAttribute,
-    value: string | number
+    value: string | number,
   ) => {
     setNewAttribute({ ...newAttribute, [field]: value });
   };
@@ -395,6 +395,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as CategoryMainApiResponse;
+      console.log(data.categoryList);
       setCatgeoryMainList(data.categoryList);
       getCategorySub(data.categoryList[0].categoryID);
       setCategoryMainID(data.categoryList[0].categoryID);
@@ -475,7 +476,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
         const data = response.data as ResponseSupplierGetData;
         setSupplierID(data.supplierList[0].supplierID);
         setSupplierList(
-          data.supplierList.filter((item) => item.supplierName !== "SYSGEN")
+          data.supplierList.filter((item) => item.supplierName !== "SYSGEN"),
         );
       } else if (response.status === 401) {
         router.push("/sellerlogin");
@@ -601,6 +602,9 @@ export default function ProductControll({ storeID }: { storeID: string }) {
     } finally {
       setLoading(false);
     }
+  };
+  const handleDeleteImage = (indexToDelete: number) => {
+    setImages((prev) => prev.filter((_, index) => index !== indexToDelete));
   };
 
   const costPrice = listVarient.reduce((total, variant) => {
@@ -989,7 +993,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             const id = e.target.value;
                             setDisplayCountryID(id);
                             const data = listofCountry.find(
-                              (item) => item.countryID === id
+                              (item) => item.countryID === id,
                             );
                             if (data) {
                               setDisplayCountryName(data.countryName);
@@ -1040,7 +1044,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             const id = e.target.value;
                             setHideCountryID(id);
                             const data = listofCountry.find(
-                              (item) => item.countryID === id
+                              (item) => item.countryID === id,
                             );
                             if (data) {
                               setHideCountryName(data.countryName);
@@ -1291,7 +1295,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             onChange={(e) =>
                               handleNewAttributeChange(
                                 "varientValue",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1305,7 +1309,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             onChange={(e) =>
                               handleNewAttributeChange(
                                 "qty",
-                                parseInt(e.target.value) || 0
+                                parseInt(e.target.value) || 0,
                               )
                             }
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1320,7 +1324,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             onChange={(e) =>
                               handleNewAttributeChange(
                                 "costPrice",
-                                parseFloat(e.target.value) || 0
+                                parseFloat(e.target.value) || 0,
                               )
                             }
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1336,7 +1340,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             onChange={(e) =>
                               handleNewAttributeChange(
                                 "salePrice",
-                                parseFloat(e.target.value) || 0
+                                parseFloat(e.target.value) || 0,
                               )
                             }
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1350,7 +1354,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                             onChange={(e) =>
                               handleNewAttributeChange(
                                 "barCode",
-                                e.target.value
+                                e.target.value,
                               )
                             }
                             className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
@@ -1415,16 +1419,28 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                               setHoverIndex(null);
                             }}
                             className={`relative w-20 h-20 rounded-md 
-                            ${
-                              hoverIndex === i
-                                ? "ring-2 ring-blue-500 scale-105"
-                                : ""
-                            }
-                            transition-all duration-150`}
+      ${hoverIndex === i ? "ring-2 ring-blue-500 scale-105" : ""}
+      transition-all duration-150`}
                           >
+                            {/* ❌ Delete Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(i);
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white 
+                 rounded-full w-5 h-5 flex items-center 
+                 justify-center text-xs hover:bg-red-600 
+                 shadow-md"
+                            >
+                              ✕
+                            </button>
+
                             <img
                               src={URL.createObjectURL(img)}
                               className="w-full h-full object-cover rounded-md"
+                              alt={`Product ${i + 1}`}
                             />
 
                             <span className="absolute -bottom-5 text-xs text-gray-600">
@@ -1634,7 +1650,7 @@ export default function ProductControll({ storeID }: { storeID: string }) {
                       key={i}
                       className="w-12 h-12 bg-gray-200 rounded-md"
                     ></div>
-                  )
+                  ),
                 )}
               </div>
 
