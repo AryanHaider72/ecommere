@@ -53,6 +53,18 @@ export type Variant = {
   variantValues: VariantValue[];
 };
 
+export interface varinetMessage {
+  message: string;
+  variants: VariantbyProductID[];
+}
+export type VariantbyProductID = {
+  varientID: string;
+  productName: string;
+  discount: number;
+  variantName: string;
+  variantValues: VariantValue[];
+};
+
 // Variant value sub-type
 export type VariantValue = {
   attributeID: string;

@@ -2,6 +2,8 @@ import GetSalesman from "@/api/lib/MainDashbaord/SalemanApi/GetSalesman";
 import GetTillForSalesMan from "@/api/lib/MainDashbaord/TillCreate/GetTillForSpecficSaleMan";
 import AddCustomer from "@/api/lib/PosIntegration/Customer/AddCustomer";
 import GetCustomer from "@/api/lib/PosIntegration/Customer/GetCustomer";
+import GetProductVarient from "@/api/lib/PosIntegration/ProductGet/FecthProductVareint/FetchProductVareint";
+import GetProductBarcode from "@/api/lib/PosIntegration/ProductGet/GetByBarcode/getByBarcode";
 import GetProductSalesMan from "@/api/lib/PosIntegration/ProductGet/productsGetSalesMan";
 import SearchByInvoice from "@/api/lib/PosIntegration/Return/SearchHistory/SearchByInvoice/SearchByInvoice";
 import SearchByProduct from "@/api/lib/PosIntegration/Return/SearchHistory/SearchByProduct/SearchByProduct";
@@ -22,6 +24,8 @@ import {
   Product,
   ProductApiResponse,
   ProductApiResponseSalesMan,
+  VariantbyProductID,
+  varinetMessage,
 } from "@/api/types/product/getProduct";
 import { StoreApiResponse, storeInital } from "@/api/types/storeGet";
 import {
@@ -63,8 +67,10 @@ interface TillSubList {
 }
 
 interface VarintList {
+  productName: string;
   varientID: string;
   variantName: string;
+  discount: number;
   variantValues: variantValues[];
 }
 interface variantValues {
@@ -103,9 +109,23 @@ interface historyData {
   salePrice: number;
   maxQty: number;
 }
+interface ProductApiResponseBarcode {
+  messaga: string;
+  productList: BarcodeResposne[];
+}
+type BarcodeResposne = {
+  productID: string;
+  barcode: string;
+  productName: string;
+  attributeID: string;
+  varientValue: string;
+  costPrice: number;
+  salePrice: number;
+  qty: number;
+};
 export default function SaleForm() {
   const router = useRouter();
-  const [TillID, setTillID] = useState("")
+  const [TillID, setTillID] = useState("");
   const [Loading1, setLoading1] = useState(false);
   const [loading, setLoading] = useState(false);
   const [invoiceNo, setInvoiceNo] = useState("");
@@ -117,9 +137,10 @@ export default function SaleForm() {
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
   const [salesmanList, setSalesmanList] = useState<Salesman[]>([]);
   const [productList2, setProductList2] = useState<Product[]>([]);
+  const [productList3, setProductList3] = useState<BarcodeResposne[]>([]);
   const [productList, setProductList] = useState<Product[]>([]);
   const [TillList, setTillList] = useState<TillList[]>([]);
-  const [storeList, setStoreList] = useState<storeInital[]>([]);
+  const [vareintList, setvareintList] = useState<VariantbyProductID[]>([]);
   const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
   const [selectedSalesman, setSelectedSalesman] = useState("");
   const [Customer, setCustomer] = useState("");
@@ -207,17 +228,19 @@ export default function SaleForm() {
       setSaleList(data.saleList);
     }
   };
-  const getProductHistory = async (ID: string) => {
+  const getProductHistory = async (name: string) => {
     const token = localStorage.getItem("tokenPosSale");
-
     if (!token) return;
 
-    const response = await SearchByProduct(token, ID);
+    const data = productList2.find((item) => item.productName === name);
+    if (data) {
+      const response = await SearchByProduct(token, data.productID);
 
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as responseList;
-      console.log(data.showHistory);
-      setInvocieHistory(data.showHistory || []);
+      if (response.status === 200 || response.status === 201) {
+        const data = response.data as responseList;
+        console.log(data.showHistory);
+        setInvocieHistory(data.showHistory || []);
+      }
     }
   };
   const getInvoiceHistory = async (ID: string) => {
@@ -244,7 +267,7 @@ export default function SaleForm() {
 
         if (data?.tillList?.length > 0) {
           setTillList(data.tillList);
-          setTillID(data.tillList[0].tillID)
+          setTillID(data.tillList[0].tillID);
         } else {
           setTillList([]);
         }
@@ -253,26 +276,75 @@ export default function SaleForm() {
       setLoading(false);
     }
   };
-   useEffect(() => {
+  useEffect(() => {
     if (!productName || productName.trim().length === 0) return;
 
     const delayDebounce = setTimeout(() => {
       getProduct();
-    }, 500); // ⏱ 500ms debounce
+    }, 50); // ⏱ 500ms debounce
 
     return () => clearTimeout(delayDebounce); // cleanup
   }, [productName]);
+
+  const getProductBarcode = async (barcode: string) => {
+    const token = localStorage.getItem("tokenPosSale");
+
+    if (!token) return;
+
+    const response = await GetProductBarcode(token, barcode);
+
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as ProductApiResponseBarcode;
+      setProductList3(data.productList || []);
+    }
+  };
+
+  const addInTheList = (barcode: string) => {
+    const data = productList3.find((item) => item.barcode === barcode);
+    if (data) {
+      setNewItem((prev) => {
+        // **Make sure we only have one entry per attributeID**
+        const existingItem = prev.find(
+          (item) => item.attributeID === data.attributeID,
+        );
+
+        if (existingItem) {
+          setBarcode("");
+          // Item exists → increment qty by 1
+          return prev.map((item) =>
+            item.attributeID === data.attributeID
+              ? { ...item, qty: item.qty + 1 }
+              : item,
+          );
+        }
+
+        // Item does not exist → add new entry
+        const newEntry: newItem = {
+          attributeID: data.attributeID,
+          productName: data.productName,
+          qty: 1,
+          varientValue: data.varientValue,
+          price: data.salePrice,
+          barcode: data.barcode,
+          stockQty: data.qty,
+          discount: 0,
+        };
+        setBarcode("");
+        return [...prev, newEntry];
+      });
+    }
+  };
 
   const getProduct = async () => {
     const token = localStorage.getItem("tokenPosSale");
 
     if (!token) return;
 
-    const response = await GetProductSalesMan(token, TillID,productName);
+    const response = await GetProductSalesMan(token, TillID, productName);
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponseSalesMan;
-
+      console.log(data);
       const newData = data.productList.filter(
         (item) => item.storeSale !== "OnlineStore",
       );
@@ -283,14 +355,13 @@ export default function SaleForm() {
       }
     }
   };
-  const storesget = async () => {
+  const varinetList = async (ID: string) => {
     const token = localStorage.getItem("tokenPosSale");
-    const response = await GetInitalStoreSalesMan(String(token));
+    const response = await GetProductVarient(String(token), ID);
     if (response.status === 200 || response.status === 201) {
-      const data = response.data as StoreApiResponse;
+      const data = response.data as varinetMessage;
       console.log(data);
-      setStoreList(data.storeList);
-      getProductall(data.storeList[0].storeID);
+      setVarintListInPopUp(data.variants);
     }
   };
   const addItemForReturnListFromInvoice = (ID: string) => {
@@ -339,140 +410,51 @@ export default function SaleForm() {
       return [...prev, newEntry];
     });
   };
-  const getProductall = async (ID: string) => {
-    const token = localStorage.getItem("tokenPosSale");
 
-    if (!token) return;
-
-    const response = await GetProduct(token, ID);
-
-    if (response.status === 200 || response.status === 201) {
-      const data = response.data as ProductApiResponse;
-      const newData = data.list.filter(
-        (item) => item.storeSale !== "OnlineStore",
-      );
-      if (newData) {
-        setProductList(newData || []);
-      } else {
-        setProductList([]);
-      }
-    }
-  };
-  const fetchDataVarientList = (ID:string) => {
-    const data = productList2.find((item) => item.productID === ID);
-    if (data) {
-      console.log(data)
-      setVarintListInPopUp(data.variants);
-    }
-  };
   const DeletFromTableList = (ID: string) => {
     const data = newItem.filter((item) => item.attributeID !== ID);
     setNewItem(data);
   };
   const FetchAttribuetToAddInATable = (ID: string) => {
-    // Find the product containing the attributeID
-    const product = productList2.find((item) =>
-      item.variants.some((v) =>
-        v.variantValues.some((val) => val.attributeID === ID),
-      ),
-    );
+    // keep productName with each variantValue
+    const variantValueWithProduct = VarintListInPopUp.flatMap((item) =>
+      item.variantValues.map((variant) => ({
+        ...variant,
+        productName: item.productName,
+        discount: item.discount,
+      })),
+    ).find((v) => v.attributeID === ID);
 
-    if (!product) return; // No product found
-
-    const variantValue = product.variants
-      .flatMap((v) => v.variantValues)
-      .find((val) => val.attributeID === ID);
-
-    if (!variantValue) return; // No variant found
+    if (!variantValueWithProduct) return;
 
     setNewItem((prev) => {
-      // **Make sure we only have one entry per attributeID**
       const existingItem = prev.find(
-        (item) => item.attributeID === variantValue.attributeID,
+        (item) => item.attributeID === variantValueWithProduct.attributeID,
       );
 
       if (existingItem) {
-        // Item exists → increment qty by 1
         return prev.map((item) =>
-          item.attributeID === variantValue.attributeID
+          item.attributeID === variantValueWithProduct.attributeID
             ? { ...item, qty: item.qty + 1 }
             : item,
         );
       }
 
-      // Item does not exist → add new entry
       const newEntry: newItem = {
-        attributeID: variantValue.attributeID,
-        productName: product.productName,
+        attributeID: variantValueWithProduct.attributeID,
+        productName: variantValueWithProduct.productName,
         qty: 1,
-        varientValue: variantValue.varientValue,
-        price: variantValue.salePrice,
-        barcode: variantValue.barcode,
-        stockQty: variantValue.qty,
-        discount: product.discount,
+        varientValue: variantValueWithProduct.varientValue,
+        price: variantValueWithProduct.salePrice,
+        barcode: variantValueWithProduct.barcode,
+        stockQty: variantValueWithProduct.qty,
+        discount: variantValueWithProduct.discount,
       };
 
       return [...prev, newEntry];
     });
   };
-  const findDataUsingBarcode = () => {
-    for (const product of productList2) {
-      for (const variant of product.variants) {
-        const attribute = variant.variantValues.find(
-          (v) => v.barcode === Barcode,
-        );
 
-        if (!attribute) continue; // Skip if barcode not found
-
-        // ✅ Check if the barcode exists in productList2
-        const existsInTill = productList2.some((p) =>
-          p.variants.some((v) =>
-            v.variantValues.some((val) => val.barcode === Barcode),
-          ),
-        );
-
-        // Show confirm box if not in productList2
-        if (!existsInTill) {
-          const confirmAdd = window.confirm(
-            "This product does not exist in your till. Do you want to add it?",
-          );
-          if (!confirmAdd) {
-            return; // User cancelled → do not add
-          }
-        }
-
-        // Prepare new item
-        const newEntry: newItem = {
-          attributeID: attribute.attributeID,
-          productName: product.productName,
-          qty: 1,
-          varientValue: attribute.varientValue,
-          price: attribute.salePrice,
-          barcode: attribute.barcode,
-          stockQty: attribute.qty,
-          discount: product.discount,
-        };
-
-        // Add or increment qty
-        setNewItem((prev) => {
-          const existing = prev.find(
-            (item) => item.attributeID === newEntry.attributeID,
-          );
-          if (existing) {
-            return prev.map((item) =>
-              item.attributeID === newEntry.attributeID
-                ? { ...item, qty: item.qty + 1 }
-                : item,
-            );
-          }
-          return [...prev, newEntry];
-        });
-
-        setBarcode(""); // Clear input
-        return; // Stop after first match
-      }
-    }
-  };
   const getItemTotal = (item: any) => {
     const totalWithoutDiscount = item.qty * item.price;
     const discountAmount = (item.price * item.discount) / 100; // discount only once
@@ -551,7 +533,6 @@ export default function SaleForm() {
     const date = new Date().toISOString().split("T")[0];
     setSaleDate(date);
     saleGet();
-    storesget();
     fetchSalesman();
     CustomerGet();
     getTill();
@@ -804,27 +785,21 @@ export default function SaleForm() {
                     <div className="flex gap-2">
                       <input
                         list="productOptions"
-                        value={ProductID}
-                        onChange={(e) => {
-                          setProductID(e.target.value);
-                          const value = e.target.value;
-                          const data = productList.find(
-                            (item) => item.productName === value,
-                          );
-                          if (data) {
-                            getProductHistory(data.productID);
-                          }
+                        value={productName}
+                        onChange={(e: any) => {
+                          setProductName(e.target.value);
+                          getProductHistory(e.target.value);
                         }}
                         placeholder="Select or type product"
                         className="w-full rounded-lg border border-gray-300 p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
                       />
                       <datalist id="productOptions">
-                        {productList.length === 0 ? (
+                        {productList2.length === 0 ? (
                           <option value="" disabled>
                             No products found
                           </option>
                         ) : (
-                          productList.map((item) => (
+                          productList2.map((item) => (
                             <option
                               key={item.productID}
                               value={item.productName}
@@ -1120,11 +1095,11 @@ export default function SaleForm() {
                     placeholder="Enter Barcode"
                     onChange={(e) => {
                       setBarcode(e.target.value);
+                      getProductBarcode(e.target.value);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        findDataUsingBarcode();
-                        setBarcode("");
+                        addInTheList(Barcode);
                       }
                     }}
                     className="flex-1 bg-transparent outline-none text-gray-900 p-1"
@@ -1135,44 +1110,44 @@ export default function SaleForm() {
                 <label className="block text-gray-700 font-medium mb-2">
                   Product Name
                 </label>
-                
-                  <div className="flex  gap-1">
-                    <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                      <Tag className="text-gray-400 mr-2" size={18} />
-                      <input
-                        type="text"
-                        list="productList"
-                        value={productName}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setProductName(value);
-                          const data = productList2.find(
-                            (item) => item.productName === value,
-                          );
-                          if (data) {
-                            setProductID(data.productID);
-                            fetchDataVarientList(data.productID);
-                          }
-                        }}
-                        placeholder="Select Product"
-                        className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
-                      />
-                      <datalist id="productList">
-                        {productList2.map((item) => (
-                          <option
-                            key={item.productID}
-                            value={item.productName}
-                          />
-                        ))}
-                      </datalist>
-                    </div>
-                    <button
-                      onClick={() => {setProductName("");setVarintShowList(true)}}
-                      className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
-                    >
-                      <Notebook />
-                    </button>
+
+                <div className="flex  gap-1">
+                  <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                    <Tag className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="text"
+                      list="productList"
+                      value={productName}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProductName(value);
+                        const data = productList2.find(
+                          (item) => item.productName === value,
+                        );
+                        if (data) {
+                          setProductID(data.productID);
+                          varinetList(data.productID);
+                        }
+                      }}
+                      placeholder="Select Product"
+                      className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                    />
+                    <datalist id="productList">
+                      {productList2.map((item) => (
+                        <option key={item.productID} value={item.productName} />
+                      ))}
+                    </datalist>
                   </div>
+                  <button
+                    onClick={() => {
+                      setProductName("");
+                      setVarintShowList(true);
+                    }}
+                    className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                  >
+                    <Notebook />
+                  </button>
+                </div>
               </div>
             </div>
             <div className="w-full overflow-x-auto">
