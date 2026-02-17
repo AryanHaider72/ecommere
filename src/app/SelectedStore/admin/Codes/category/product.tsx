@@ -45,7 +45,10 @@ import GetUnitByID from "@/api/lib/unit/unitGetByID/unitGetByID";
 import { UnitIDApiResponse, UnitListID } from "@/api/types/unit/unitsGetByID";
 import ModifyProductBasicInfo from "@/api/lib/product/ModifyProduct/ModifyBasicInfo/ModifyBasicInfo";
 import ModifyProductVarinet from "@/api/lib/product/ModifyProduct/ModifyVarient/ModifyVarinet";
-import { addVarinetPayload, modifyVarinetPayload } from "@/api/types/product/AddVarient";
+import {
+  addVarinetPayload,
+  modifyVarinetPayload,
+} from "@/api/types/product/AddVarient";
 import GetVarinet from "@/api/lib/product/ModifyProduct/ModifyVarient/GetVarient";
 import {
   VariantList,
@@ -82,7 +85,7 @@ interface Varient {
 interface VarientAttribute {
   varientValue: string;
   qty: number;
-  barcode:string;
+  barcode: string;
   costPrice: number;
   salePrice: number;
 }
@@ -142,7 +145,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [newAttribute, setNewAttribute] = useState<VarientAttribute>({
     varientValue: "",
     qty: 0,
-    barcode:"",
+    barcode: "",
     costPrice: 0,
     salePrice: 0,
   });
@@ -156,6 +159,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const [productList, setProductList] = useState<Product[]>([]);
+
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<
     Record<string, number>
   >({});
@@ -188,6 +192,7 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     try {
       setExport(true);
 
+      // ---------------- PDF SETUP ----------------
       // Label size: 50mm x 25mm
       const pdf = new jsPDF({
         orientation: "landscape",
@@ -195,37 +200,42 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
         format: [50, 25],
       });
 
-      /* ---------------- PRODUCT NAME (CENTERED) ---------------- */
+      // ---------------- PRODUCT NAME (CENTERED) ----------------
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(6);
       pdf.text(productCode, 25, 4, { align: "center" });
 
-      /* ---------------- PRICE (UNDER NAME, CENTERED) ---------------- */
+      // ---------------- PRICE (UNDER NAME, CENTERED) ----------------
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(6);
       pdf.text(`Rs ${salePrice.toLocaleString()}`, 25, 7, { align: "center" });
 
-      /* ---------------- BARCODE GENERATION ---------------- */
+      // ---------------- HIGH-RES BARCODE GENERATION ----------------
       const barcodeCanvas = document.createElement("canvas");
+      const scale = 3; // Increase for higher resolution
+      const widthMM = 46;
+      const heightMM = 11;
+      barcodeCanvas.width = widthMM * scale;
+      barcodeCanvas.height = heightMM * scale;
 
       JsBarcode(barcodeCanvas, barcode, {
         format: "CODE128",
-        width: 1.1, // thinner bars (more realistic)
-        height: 32, // better proportion
+        width: 1.1 * scale, // scale bar thickness
+        height: 32 * scale, // scale barcode height
         displayValue: false,
         margin: 0,
       });
 
       const barcodeImage = barcodeCanvas.toDataURL("image/png");
 
-      /* ---------------- BARCODE (CENTERED) ---------------- */
-      pdf.addImage(barcodeImage, "PNG", 2, 9, 46, 11);
+      // ---------------- ADD BARCODE TO PDF (CENTERED) ----------------
+      pdf.addImage(barcodeImage, "PNG", 2, 9, widthMM, heightMM);
 
-      /* ---------------- BARCODE NUMBER (CENTERED) ---------------- */
+      // ---------------- BARCODE NUMBER (CENTERED) ----------------
       pdf.setFontSize(5);
       pdf.text(barcode, 25, 22, { align: "center" });
 
-      /* ---------------- SAVE ---------------- */
+      // ---------------- SAVE PDF ----------------
       const fileName = `${barcode}-${productCode}.pdf`;
       pdf.save(fileName);
     } catch (err) {
@@ -264,19 +274,14 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const getProduct = async (page: number) => {
     try {
       setLoading(true);
-
       const token = localStorage.getItem("token");
       if (!token) {
         return router.push("/sellerlogin");
       }
-
       const response = await GetProduct(token, String(storeID), page);
-
       if (response.status === 200 || response.status === 201) {
         const data = response.data as ProductApiResponse;
-
         console.log("Parsed data.list:", data.list);
-
         setProductList(data.list);
         setCurrentPage(data.currentPage);
         setTotalPages(data.totalPages);
@@ -293,19 +298,19 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   };
 
   const getCategroyMain = async () => {
-  const token = localStorage.getItem("token");
-  const response = await GetCategoryMain(String(token));
+    const token = localStorage.getItem("token");
+    const response = await GetCategoryMain(String(token));
 
-  if (response.status === 200 || response.status === 201) {
-    const data = response.data as CategoryMainApiResponse;
-    setCatgeoryMainList(data.categoryList);
-    getCategorySub(data.categoryList[0].categoryID); // now safe
-    setCategoryMainID(data.categoryList[0].categoryID);
-  }
-  if (response.status === 401) {
-    router.push("/sellerlogin");
-  }
-};
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as CategoryMainApiResponse;
+      setCatgeoryMainList(data.categoryList);
+      //getCategorySub(data.categoryList[0].categoryID); // now safe
+      //setCategoryMainID(data.categoryList[0].categoryID);
+    }
+    if (response.status === 401) {
+      router.push("/sellerlogin");
+    }
+  };
   const SupplierGet = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -350,37 +355,52 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const handleDeleteImage = (indexToDelete: number) => {
     setImages((prev) => prev.filter((_, index) => index !== indexToDelete));
   };
-  const fetchData = (ID: String) => {
-    const data = productList.find((item) => item.productID === ID);
-    if (data) {
-      getCategorySub(data.categoryID);
-      getFurtherSub(data.subCategoryID);
-      setCategoryMainID(data.categoryID);
-      setCategorySubID(data.subCategoryID);
-      setFurtherCategorySubID(data.subCategoryDetailID);
-      setFeaturedProduct(data.feturedProduct ? "Yes" : "No");
-      setUnitID(data.unitID);
-      setID(ID as string);
-      setProductName(data.productName);
-      setDescription(data.description);
-      setWidth(String(data.width) || "");
-      setHeight(String(data.height) || "");
-      setDepth(String(data.depth) || "");
-      setWeight(String(data.weight) || "");
-      setTotalQuantity(String(data.currentStock) || "");
-      setThreshold(String(data.threshold) || "");
-      setDiscount(String(data.discount) || "");
-      if (data.showinCountry) {
-        setSelectedOption("ShowinSomeCountry");
-        setCountryShowList(data.countryList);
-      } else if (data.notShowinCountry) {
-        setSelectedOption("HideinSomeCountry");
-        setCountryHideList(data.countryList);
-      } else {
-        setSelectedOption("ShowinAllCountry");
-      }
-    }
-  };
+const fetchData = async (ID: string) => {
+  const data = productList.find((item) => item.productID === ID);
+  if (!data) return;
+
+  // ✅ Set basic form info first
+  setID(ID);
+  setProductName(data.productName);
+  setDescription(data.description);
+  setFeaturedProduct(data.feturedProduct ? "Yes" : "No");
+  setUnitID(data.unitID);
+  setWidth(String(data.width) || "");
+  setHeight(String(data.height) || "");
+  setDepth(String(data.depth) || "");
+  setWeight(String(data.weight) || "");
+  setTotalQuantity(String(data.currentStock) || "");
+  setThreshold(String(data.threshold) || "");
+  setDiscount(String(data.discount) || "");
+
+  if (data.showinCountry) {
+    setSelectedOption("ShowinSomeCountry");
+    setCountryShowList(data.countryList);
+  } else if (data.notShowinCountry) {
+    setSelectedOption("HideinSomeCountry");
+    setCountryHideList(data.countryList);
+  } else {
+    setSelectedOption("ShowinAllCountry");
+  }
+
+  // ✅ Fetch categories and use returned arrays, not state
+  const mainCategories = await getCategroyMain(); // return list
+  setCategoryMainID(data.categoryID);
+
+  if (catgeoryMainList.length > 0) {
+    const subCategories = await getCategorySub(data.categoryID);
+setCategorySubID(data.subCategoryID);
+
+const furtherSubCategories = await getFurtherSub(data.subCategoryID);
+setFurtherCategorySubID(data.subCategoryDetailID);
+
+const units = await getUnits(data.subCategoryDetailID);
+setUnitID(data.unitID);
+
+  }
+};
+
+
 
   const basicInfo = async () => {
     try {
@@ -423,9 +443,12 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       const response = await ModifyProductBasicInfo(formData, String(token));
       if (response.status === 200 || response.status === 201) {
         // Reset logic...
+        //setProductList([])
+        setLoading(true);
+        await getProduct(1);
+        setLoading(false)
         setProductAbout(false);
         setCurrentStep(1);
-        getProduct(currentPage);
         setProductName("");
         setDiscount("");
         setThreshold("");
@@ -498,20 +521,31 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
       setUploading(false);
     }
   };
-  const ModifyVarient = async (NewID:string,barcode:string,costPrice:number, salePrice:number,qty:number,varientValue:string) => {
+  const ModifyVarient = async (
+    NewID: string,
+    barcode: string,
+    costPrice: number,
+    salePrice: number,
+    qty: number,
+    varientValue: string,
+  ) => {
     const payload: modifyVarinetPayload = {
-          varientValue :varientValue,
-        qty :qty,
-        costPrice :costPrice ,
-        salePrice :salePrice ,
-        barcode :barcode
-          };
+      varientValue: varientValue,
+      qty: qty,
+      costPrice: costPrice,
+      salePrice: salePrice,
+      barcode: barcode,
+    };
 
     try {
       setUploading(true);
       const token = localStorage.getItem("token");
       console.log(payload);
-      const response = await ModifyProductVarinetAttribute(payload, NewID, String(token));
+      const response = await ModifyProductVarinetAttribute(
+        payload,
+        NewID,
+        String(token),
+      );
       if (response.status === 200 || response.status === 201) {
         getProduct(1);
         getVarient(ID);
@@ -530,25 +564,25 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
     }
   };
   // TypeScript version
-const handleVariantChange = (
-  variantIndex: number,        // index of the variant in getVarinetList
-  attrIndex: number,           // index of the attribute inside varientAttributes
-  field: keyof VarientAttribute, // field to update: 'varientValue', 'barcode', 'qty', etc.
-  value: string | number
-) => {
-  setGetVarinetList((prev) => {
-    // Make a shallow copy of the list
-    const updated = [...prev];
+  const handleVariantChange = (
+    variantIndex: number, // index of the variant in getVarinetList
+    attrIndex: number, // index of the attribute inside varientAttributes
+    field: keyof VarientAttribute, // field to update: 'varientValue', 'barcode', 'qty', etc.
+    value: string | number,
+  ) => {
+    setGetVarinetList((prev) => {
+      // Make a shallow copy of the list
+      const updated = [...prev];
 
-    // Update the specific attribute of the specific variant
-    updated[variantIndex].varientAttributes[attrIndex] = {
-      ...updated[variantIndex].varientAttributes[attrIndex],
-      [field]: value,
-    };
+      // Update the specific attribute of the specific variant
+      updated[variantIndex].varientAttributes[attrIndex] = {
+        ...updated[variantIndex].varientAttributes[attrIndex],
+        [field]: value,
+      };
 
-    return updated;
-  });
-};
+      return updated;
+    });
+  };
 
   const getVarient = async (ID: string) => {
     try {
@@ -695,7 +729,13 @@ const handleVariantChange = (
       return;
     }
     setCurrentAttributes([...currentAttributes, newAttribute]);
-    setNewAttribute({ varientValue: "", qty: 0, costPrice: 0, barcode:"",salePrice: 0 });
+    setNewAttribute({
+      varientValue: "",
+      qty: 0,
+      costPrice: 0,
+      barcode: "",
+      salePrice: 0,
+    });
   };
 
   // Update newAttribute inputs (for the input row)
@@ -724,48 +764,34 @@ const handleVariantChange = (
     updated.splice(to, 0, moved);
     setImages(updated);
   };
- const handleUploadAll = async () => {
-  const filesToUpload = images.filter((img): img is File => img !== null);
-
-  if (filesToUpload.length === 0) {
-    alert("No images to upload");
-    return [];
-  }
-
-  const uploadedUrls = await sendMultipleImages(filesToUpload);
-
-  if (!uploadedUrls || uploadedUrls.length === 0) {
-    return [];
-  }
-
-  // Convert URLs to ImageApiRequest format
-  const payload: ImageApiRequest = {
-    imgList: uploadedUrls.map((url) => ({ url })),
-  };
-
-  // Call API to add images to product
-  await addImages(payload);
-
-  return uploadedUrls;
-};
-
-
-  const addImages = async (payload: ImageApiRequest) => {
-    // AddImageProduct
+  const handleUploadAll = async () => {
     try {
-      const token = localStorage.getItem("token");
+      setLoading(true);
 
-      const response = await AddImageProduct(payload, String(token), ID);
-      if (response.status === 200 || response.status === 201) {
-        getProduct(1);
-        setID("");
-        setIsOpenImage(false);
-        setShowList(false);
-      } else if (response.status === 401) {
-        router.push("/sellerlogin");
+      const filesToUpload = images.filter((img): img is File => img !== null);
+
+      if (filesToUpload.length === 0) {
+        alert("No images to upload");
+        return [];
       }
-    } catch (error) {
-      console.log("Error in basicInfo:", error);
+
+      const uploadedUrls = await sendMultipleImages(filesToUpload);
+
+      if (!uploadedUrls || uploadedUrls.length === 0) {
+        return [];
+      }
+
+      // Convert URLs to ImageApiRequest format
+      const payload: ImageApiRequest = {
+        imgList: uploadedUrls.map((url) => ({ url })),
+      };
+
+      // Call API to add images to product
+      await addImages(payload);
+
+      return uploadedUrls;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -801,6 +827,28 @@ const handleVariantChange = (
     // Do something with URLs (e.g. set state or return)
     return uploadedUrls;
   };
+  const addImages = async (payload: ImageApiRequest) => {
+    // AddImageProduct
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+
+      const response = await AddImageProduct(payload, String(token), ID);
+      if (response.status === 200 || response.status === 201) {
+        getProduct(1);
+        getImage(ID);
+        setID("");
+        setIsOpenImage(false);
+        setShowList(true);
+      } else if (response.status === 401) {
+        router.push("/sellerlogin");
+      }
+    } catch (error) {
+      setLoading(false);
+      console.log("Error in basicInfo:", error);
+    }
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -830,8 +878,9 @@ const handleVariantChange = (
     if (response.status === 200 || response.status === 201) {
       const data = response.data as CategorySubApiResponse;
       setCatgeorySubList(data.categoryList);
-      setCategorySubID(data.categoryList[0].subCategoryID);
-      getFurtherSub(data.categoryList[0].subCategoryID);
+      //setCategorySubID(data.categoryList[0].subCategoryID);
+      //getFurtherSub(data.categoryList[0].subCategoryID);
+      return data.categoryList; 
     } else if (response.status === 401) {
       router.push("/sellerlogin");
     }
@@ -852,8 +901,8 @@ const handleVariantChange = (
         units: Array.isArray(item.unit) ? item.unit : [],
       }));
       setFurtherSubList(safeList);
-      setFurtherCategorySubID(data.categoryList[0].subCategoryDetailID);
-      getUnits(data.categoryList[0].subCategoryDetailID);
+      //setFurtherCategorySubID(data.categoryList[0].subCategoryDetailID);
+      //getUnits(data.categoryList[0].subCategoryDetailID);
     } else if (response.status === 401) {
       router.push("/sellerlogin");
     }
@@ -904,12 +953,24 @@ const handleVariantChange = (
         style={{
           position: "absolute",
           left: "-9999px",
-          top: "-9999px",
+          top: 0,
           padding: 20,
           backgroundColor: "white",
         }}
       >
-        {barcode && <Barcode value={barcode} />}
+        {barcode && (
+          <Barcode
+            value={barcode}
+            renderer="svg" // 🔥 MOST IMPORTANT
+            width={2} // bar thickness
+            height={80} // barcode height
+            margin={10}
+            displayValue={true}
+            fontSize={14}
+            lineColor="#000"
+            background="#fff"
+          />
+        )}
       </div>
 
       {isOpen && (
@@ -1794,14 +1855,16 @@ const handleVariantChange = (
                           </td>
                           <td className="px-4 py-2">
                             <input
-                            type="text"
-                            value={newAttribute.barcode}
-                            onChange={(e) =>
-                              handleNewAttributeChange("barcode", e.target.value)
-                            }
-                            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          />
-
+                              type="text"
+                              value={newAttribute.barcode}
+                              onChange={(e) =>
+                                handleNewAttributeChange(
+                                  "barcode",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                            />
                           </td>
                           <td className="px-4 py-2">
                             <button
@@ -1819,133 +1882,133 @@ const handleVariantChange = (
                   </div>
                 </fieldset>
                 {selectedOption3 === "Yes" && (
-                <fieldset className="p-4 border border-gray-300 rounded-lg">
-                  <legend className="text-lg font-semibold text-gray-800 px-2">
-                    Billing Information
-                  </legend>
-                  <div className="md:col-span-2">
-                    {" "}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                  <fieldset className="p-4 border border-gray-300 rounded-lg">
+                    <legend className="text-lg font-semibold text-gray-800 px-2">
+                      Billing Information
+                    </legend>
+                    <div className="md:col-span-2">
                       {" "}
-                      {/* Total Bill */}{" "}
-                      <div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                         {" "}
-                        <label className="block text-gray-700 font-medium mb-2">
+                        {/* Total Bill */}{" "}
+                        <div>
                           {" "}
-                          Total Bill{" "}
-                        </label>{" "}
-                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          <label className="block text-gray-700 font-medium mb-2">
+                            {" "}
+                            Total Bill{" "}
+                          </label>{" "}
+                          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                            {" "}
+                            <Coins
+                              className="text-gray-400 mr-2"
+                              size={18}
+                            />{" "}
+                            <input
+                              type="number"
+                              value={costPrice}
+                              name="totalBill"
+                              placeholder="Enter Total Bill"
+                              className="w-full bg-transparent outline-none text-gray-900"
+                            />{" "}
+                          </div>{" "}
+                        </div>{" "}
+                        {/* Adjustment */}{" "}
+                        <div>
                           {" "}
-                          <Coins
-                            className="text-gray-400 mr-2"
-                            size={18}
-                          />{" "}
-                          <input
-                            type="number"
-                            value={costPrice}
-                            name="totalBill"
-                            placeholder="Enter Total Bill"
-                            className="w-full bg-transparent outline-none text-gray-900"
-                          />{" "}
+                          <label className="block text-gray-700 font-medium mb-2">
+                            {" "}
+                            Adjustment{" "}
+                          </label>{" "}
+                          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                            {" "}
+                            <Coins
+                              className="text-gray-400 mr-2"
+                              size={18}
+                            />{" "}
+                            <input
+                              value={adjustment}
+                              type="number"
+                              onChange={(e) => setAdjustment(e.target.value)}
+                              name="adjustment"
+                              placeholder="Enter Adjustment"
+                              className="w-full bg-transparent outline-none text-gray-900"
+                            />{" "}
+                          </div>{" "}
+                        </div>{" "}
+                        {/* Amount Paid */}{" "}
+                        <div>
+                          {" "}
+                          <label className="block text-gray-700 font-medium mb-2">
+                            {" "}
+                            Amount Paid{" "}
+                          </label>{" "}
+                          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                            {" "}
+                            <Coins
+                              className="text-gray-400 mr-2"
+                              size={18}
+                            />{" "}
+                            <input
+                              value={AmountPaid}
+                              type="number"
+                              onChange={(e) => setAmountPaid(e.target.value)}
+                              name="amountPaid"
+                              placeholder="Enter Amount Paid"
+                              className="w-full bg-transparent outline-none text-gray-900"
+                            />{" "}
+                          </div>{" "}
+                        </div>{" "}
+                        {/* Remaining Balance */}{" "}
+                        <div>
+                          {" "}
+                          <label className="block text-gray-700 font-medium mb-2">
+                            {" "}
+                            Remaining Balance{" "}
+                          </label>{" "}
+                          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                            {" "}
+                            <CoinsIcon
+                              className="text-gray-400 mr-2"
+                              size={18}
+                            />{" "}
+                            <input
+                              type="number"
+                              value={
+                                Number(costPrice) -
+                                  Number(AmountPaid) -
+                                  Number(adjustment) || 0
+                              }
+                              name="remainingBalance"
+                              placeholder="Auto Calculated"
+                              readOnly
+                              className="w-full bg-transparent outline-none text-gray-900"
+                            />{" "}
+                          </div>{" "}
+                        </div>{" "}
+                        {/* Total Payable */}{" "}
+                        <div className=" ">
+                          {" "}
+                          <label className="block text-gray-700 font-medium mb-2">
+                            {" "}
+                            Total Payable{" "}
+                          </label>{" "}
+                          <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                            {" "}
+                            <Coins
+                              className="text-gray-400 mr-2"
+                              size={18}
+                            />{" "}
+                            <input
+                              type="number"
+                              name="totalPayable"
+                              placeholder="Enter Total Payable"
+                              className="w-full bg-transparent outline-none text-gray-900"
+                            />{" "}
+                          </div>{" "}
                         </div>{" "}
                       </div>{" "}
-                      {/* Adjustment */}{" "}
-                      <div>
-                        {" "}
-                        <label className="block text-gray-700 font-medium mb-2">
-                          {" "}
-                          Adjustment{" "}
-                        </label>{" "}
-                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                          {" "}
-                          <Coins
-                            className="text-gray-400 mr-2"
-                            size={18}
-                          />{" "}
-                          <input
-                            value={adjustment}
-                            type="number"
-                            onChange={(e) => setAdjustment(e.target.value)}
-                            name="adjustment"
-                            placeholder="Enter Adjustment"
-                            className="w-full bg-transparent outline-none text-gray-900"
-                          />{" "}
-                        </div>{" "}
-                      </div>{" "}
-                      {/* Amount Paid */}{" "}
-                      <div>
-                        {" "}
-                        <label className="block text-gray-700 font-medium mb-2">
-                          {" "}
-                          Amount Paid{" "}
-                        </label>{" "}
-                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                          {" "}
-                          <Coins
-                            className="text-gray-400 mr-2"
-                            size={18}
-                          />{" "}
-                          <input
-                            value={AmountPaid}
-                            type="number"
-                            onChange={(e) => setAmountPaid(e.target.value)}
-                            name="amountPaid"
-                            placeholder="Enter Amount Paid"
-                            className="w-full bg-transparent outline-none text-gray-900"
-                          />{" "}
-                        </div>{" "}
-                      </div>{" "}
-                      {/* Remaining Balance */}{" "}
-                      <div>
-                        {" "}
-                        <label className="block text-gray-700 font-medium mb-2">
-                          {" "}
-                          Remaining Balance{" "}
-                        </label>{" "}
-                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                          {" "}
-                          <CoinsIcon
-                            className="text-gray-400 mr-2"
-                            size={18}
-                          />{" "}
-                          <input
-                            type="number"
-                            value={
-                              Number(costPrice) -
-                                Number(AmountPaid) -
-                                Number(adjustment) || 0
-                            }
-                            name="remainingBalance"
-                            placeholder="Auto Calculated"
-                            readOnly
-                            className="w-full bg-transparent outline-none text-gray-900"
-                          />{" "}
-                        </div>{" "}
-                      </div>{" "}
-                      {/* Total Payable */}{" "}
-                      <div className=" ">
-                        {" "}
-                        <label className="block text-gray-700 font-medium mb-2">
-                          {" "}
-                          Total Payable{" "}
-                        </label>{" "}
-                        <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                          {" "}
-                          <Coins
-                            className="text-gray-400 mr-2"
-                            size={18}
-                          />{" "}
-                          <input
-                            type="number"
-                            name="totalPayable"
-                            placeholder="Enter Total Payable"
-                            className="w-full bg-transparent outline-none text-gray-900"
-                          />{" "}
-                        </div>{" "}
-                      </div>{" "}
-                    </div>{" "}
-                  </div>
-                </fieldset>
+                    </div>
+                  </fieldset>
                 )}
                 <button
                   onClick={addVarient}
@@ -1962,154 +2025,185 @@ const handleVariantChange = (
                   </>
                 ) : (
                   <>
-  {getVarinetList.length > 0 ? (
-    <div className="space-y-4 mt-3">
-      {getVarinetList.map((item, itemIndex) => (
-        <div
-          key={item.varientID}
-          className="border border-gray-200 rounded-lg shadow-sm bg-white"
-        >
-          {/* Header */}
-          <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-lg">
-            <h3 className="text-base font-semibold text-gray-800 capitalize">
-              {item.variantName}
-            </h3>
-          </div>
+                    {getVarinetList.length > 0 ? (
+                      <div className="space-y-4 mt-3">
+                        {getVarinetList.map((item, itemIndex) => (
+                          <div
+                            key={item.varientID}
+                            className="border border-gray-200 rounded-lg shadow-sm bg-white"
+                          >
+                            {/* Header */}
+                            <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50 rounded-t-lg">
+                              <h3 className="text-base font-semibold text-gray-800 capitalize">
+                                {item.variantName}
+                              </h3>
+                            </div>
 
-          {/* Editable Attributes Table */}
-          <div className="px-4 py-3 overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-xs font-semibold text-gray-600 border-b">
-                  <th className="text-left px-4 py-2">Value</th>
-                  <th className="text-left px-4 py-2">BarCode</th>
-                  <th className="text-left px-4 py-2">Qty</th>
-                  <th className="text-left px-4 py-2">Cost Price</th>
-                  <th className="text-left px-4 py-2">Sale Price</th>
-                  <th className="text-left px-4 py-2">Action</th>
-                </tr>
-              </thead>
+                            {/* Editable Attributes Table */}
+                            <div className="px-4 py-3 overflow-x-auto">
+                              <table className="w-full border-collapse">
+                                <thead>
+                                  <tr className="text-xs font-semibold text-gray-600 border-b">
+                                    <th className="text-left px-4 py-2">
+                                      Value
+                                    </th>
+                                    <th className="text-left px-4 py-2">
+                                      BarCode
+                                    </th>
+                                    <th className="text-left px-4 py-2">Qty</th>
+                                    <th className="text-left px-4 py-2">
+                                      Cost Price
+                                    </th>
+                                    <th className="text-left px-4 py-2">
+                                      Sale Price
+                                    </th>
+                                    <th className="text-left px-4 py-2">
+                                      Action
+                                    </th>
+                                  </tr>
+                                </thead>
 
-              <tbody>
-                {item.varientAttributes.map((attr, attrIndex) => (
-                  <tr
-                    key={attr.attributeID}
-                    className="text-sm border-b last:border-b-0"
-                  >
-                    {/* Variant Value */}
-                    <td className="px-4 py-2">
-                      <input
-                        type="text"
-                        value={attr.varientValue}
-                        onChange={(e) =>
-                          handleVariantChange(
-                            itemIndex,
-                            attrIndex,
-                            "varientValue",
-                            e.target.value
-                          )
-                        }
-                        className="w-full border rounded px-2 py-1"
-                      />
-                    </td>
+                                <tbody>
+                                  {item.varientAttributes.map(
+                                    (attr, attrIndex) => (
+                                      <tr
+                                        key={attr.attributeID}
+                                        className="text-sm border-b last:border-b-0"
+                                      >
+                                        {/* Variant Value */}
+                                        <td className="px-4 py-2">
+                                          <input
+                                            type="text"
+                                            value={attr.varientValue}
+                                            onChange={(e) =>
+                                              handleVariantChange(
+                                                itemIndex,
+                                                attrIndex,
+                                                "varientValue",
+                                                e.target.value,
+                                              )
+                                            }
+                                            className="w-full border rounded px-2 py-1"
+                                          />
+                                        </td>
 
-                    {/* Barcode */}
-                    <td className="px-4 py-2">
-                      <input
-                        type="text"
-                        value={attr.barcode}
-                        onChange={(e) =>
-                          handleVariantChange(
-                            itemIndex,
-                            attrIndex,
-                            "barcode",
-                            e.target.value
-                          )
-                        }
-                        className="w-full border rounded px-2 py-1"
-                      />
-                    </td>
+                                        {/* Barcode */}
+                                        <td className="px-4 py-2">
+                                          <input
+                                            type="text"
+                                            value={attr.barcode}
+                                            onChange={(e) =>
+                                              handleVariantChange(
+                                                itemIndex,
+                                                attrIndex,
+                                                "barcode",
+                                                e.target.value,
+                                              )
+                                            }
+                                            className="w-full border rounded px-2 py-1"
+                                          />
+                                        </td>
 
-                    {/* Qty */}
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        value={attr.qty}
-                        onChange={(e) =>
-                          handleVariantChange(
-                            itemIndex,
-                            attrIndex,
-                            "qty",
-                            Number(e.target.value)
-                          )
-                        }
-                        className="w-full border rounded px-2 py-1"
-                      />
-                    </td>
+                                        {/* Qty */}
+                                        <td className="px-4 py-2">
+                                          <input
+                                            type="number"
+                                            value={attr.qty}
+                                            onChange={(e) =>
+                                              handleVariantChange(
+                                                itemIndex,
+                                                attrIndex,
+                                                "qty",
+                                                Number(e.target.value),
+                                              )
+                                            }
+                                            className="w-full border rounded px-2 py-1"
+                                          />
+                                        </td>
 
-                    {/* Cost Price */}
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        value={attr.costPrice}
-                        onChange={(e) =>
-                          handleVariantChange(
-                            itemIndex,
-                            attrIndex,
-                            "costPrice",
-                            Number(e.target.value)
-                          )
-                        }
-                        className="w-full border rounded px-2 py-1"
-                      />
-                    </td>
+                                        {/* Cost Price */}
+                                        <td className="px-4 py-2">
+                                          <input
+                                            type="number"
+                                            value={attr.costPrice}
+                                            onChange={(e) =>
+                                              handleVariantChange(
+                                                itemIndex,
+                                                attrIndex,
+                                                "costPrice",
+                                                Number(e.target.value),
+                                              )
+                                            }
+                                            className="w-full border rounded px-2 py-1"
+                                          />
+                                        </td>
 
-                    {/* Sale Price */}
-                    <td className="px-4 py-2">
-                      <input
-                        type="number"
-                        value={attr.salePrice}
-                        onChange={(e) =>
-                          handleVariantChange(
-                            itemIndex,
-                            attrIndex,
-                            "salePrice",
-                            Number(e.target.value)
-                          )
-                        }
-                        className="w-full border rounded px-2 py-1"
-                      />
-                    </td>
+                                        {/* Sale Price */}
+                                        <td className="px-4 py-2">
+                                          <input
+                                            type="number"
+                                            value={attr.salePrice}
+                                            onChange={(e) =>
+                                              handleVariantChange(
+                                                itemIndex,
+                                                attrIndex,
+                                                "salePrice",
+                                                Number(e.target.value),
+                                              )
+                                            }
+                                            className="w-full border rounded px-2 py-1"
+                                          />
+                                        </td>
 
-                    {/* Action Button */}
-                    <td className=" flex gap-2 px-4 py-2">
-                    <button onClick={()=>ModifyVarient(attr.attributeID, attr.barcode, attr.costPrice, attr.salePrice, attr.qty, attr.varientValue)} className="px-2 py-1 bg-yellow-600 text-white rounded"><Pencil/></button>
-                      <button
-                        className="px-2 py-1 bg-green-600 text-white rounded"
-                        onClick={() =>
-                          fetchDatafroProduct(
-                            attr.attributeID,
-                            attr.salePrice,
-                            attr.barcode
-                          )
-                        }
-                      >
-                        {Export ? <Spinner /> : <Download />}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
-    </div>
-  ) : (
-    <p className="text-center text-gray-500 mt-4">No Record Found</p>
-  )}
-</>
-
+                                        {/* Action Button */}
+                                        <td className=" flex gap-2 px-4 py-2">
+                                          <button
+                                            onClick={() =>
+                                              ModifyVarient(
+                                                attr.attributeID,
+                                                attr.barcode,
+                                                attr.costPrice,
+                                                attr.salePrice,
+                                                attr.qty,
+                                                attr.varientValue,
+                                              )
+                                            }
+                                            className="px-2 py-1 bg-yellow-600 text-white rounded"
+                                          >
+                                            <Pencil />
+                                          </button>
+                                          <button
+                                            className="px-2 py-1 bg-green-600 text-white rounded"
+                                            onClick={() =>
+                                              fetchDatafroProduct(
+                                                attr.attributeID,
+                                                attr.salePrice,
+                                                attr.barcode,
+                                              )
+                                            }
+                                          >
+                                            {Export ? (
+                                              <Spinner />
+                                            ) : (
+                                              <Download />
+                                            )}
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ),
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-gray-500 mt-4">
+                        No Record Found
+                      </p>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -2122,11 +2216,12 @@ const handleVariantChange = (
             {/* Close Button */}
             <div className="flex justify-end mb-4">
               <button
-                  onClick={() => {
-                    setImages([]);       // clear only new images
-                    setImageAbout(false);
-                  }}
-                >
+                onClick={() => {
+                  setImageList([]); // clear only new images
+                  setImages([]);
+                  setImageAbout(false);
+                }}
+              >
                 <X className="w-6 h-6 hover:text-red-600 transition" />
               </button>
             </div>
@@ -2134,7 +2229,10 @@ const handleVariantChange = (
             {/* Tabs */}
             <div className="sticky top-0 z-10 p-4 bg-white shadow-md flex justify-between items-center mb-4">
               <button
-                onClick={() => setShowList(true)}
+                onClick={() => {
+                  setShowList(true);
+                  setImages([]);
+                }}
                 className={`py-2 px-5 rounded-2xl font-semibold ${
                   showList
                     ? "bg-blue-700 text-white"
@@ -2423,136 +2521,170 @@ const handleVariantChange = (
                 Online Store / Both
               </h2>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                {onlineProducts.map((product) => {
-                  /* ---------------- PRICE CALCULATION ---------------- */
+              <div className="overflow-x-auto bg-white rounded-2xl shadow-lg">
+                <table className="min-w-full text-sm">
+                  {/* HEADER */}
+                  <thead className="sticky top-0 z-10 bg-slate-100">
+                    <tr className="text-slate-700">
+                      <th className="p-4 text-left font-semibold border-b border-slate-200">
+                        Images
+                      </th>
+                      <th className="p-4 text-left font-semibold border-b border-slate-200">
+                        Product Info
+                      </th>
+                      <th className="p-4 text-left font-semibold border-b border-slate-200">
+                        Variants
+                      </th>
+                      <th className="p-4 text-center font-semibold border-b border-slate-200">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
 
-                  let originalAmount = 0;
+                  {/* BODY */}
+                  <tbody>
+                    {onlineProducts.map((product, rowIdx) => {
+                      /* PRICE CALCULATION */
+                      let originalAmount = 0;
+                      product.variants?.forEach((variant, variantIdx) => {
+                        const key = `${product.productID}-${variantIdx}`;
+                        const selectedIdx = selectedVariantIndex[key] ?? 0;
+                        const selectedValue =
+                          variant.variantValues?.[selectedIdx];
+                        originalAmount += Number(selectedValue?.salePrice ?? 0);
+                      });
 
-                  product.variants?.forEach((variant, variantIdx) => {
-                    const key = `${product.productID}-${variantIdx}`;
-                    const selectedIdx = selectedVariantIndex[key] ?? 0;
-                    const selectedValue = variant.variantValues?.[selectedIdx];
+                      const discount = Number(product.discount ?? 0);
+                      const finalPrice =
+                        originalAmount - (originalAmount * discount) / 100;
 
-                    originalAmount += Number(selectedValue?.salePrice ?? 0);
-                  });
+                      const mainImageIndex =
+                        selectedProductImageIndex[product.productID] ?? 0;
 
-                  const discount = Number(product.discount ?? 0);
-                  const finalPrice =
-                    originalAmount - (originalAmount * discount) / 100;
+                      const mainImageUrl =
+                        product.images?.[mainImageIndex]?.url ||
+                        "/placeholder-image.jpg";
 
-                  /* ---------------- IMAGE ---------------- */
-
-                  const mainImageIndex =
-                    selectedProductImageIndex[product.productID] ?? 0;
-
-                  const mainImageUrl =
-                    product.images?.[mainImageIndex]?.url ||
-                    "/placeholder-image.jpg";
-
-                  return (
-                    <div
-                      key={product.productID}
-                      className="bg-white rounded-xl shadow hover:shadow-lg transition"
-                    >
-                      {/* IMAGE */}
-                      <div className="relative w-full h-64 bg-gray-50 rounded-t-xl overflow-hidden">
-                        <div className="w-full h-full flex items-center justify-center">
-                          <img
-                            src={mainImageUrl}
-                            alt={product.productName}
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            setImageAbout(true);
-                            getImage(product.productID);
-                            setID(product.productID);
-                          }}
-                          className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white p-2 rounded-full transition"
+                      return (
+                        <tr
+                          key={product.productID}
+                          className={`border-b border-slate-200 transition ${
+                            rowIdx % 2 === 0 ? "bg-white" : "bg-slate-50"
+                          } hover:bg-blue-50`}
                         >
-                          <Camera size={18} />
-                        </button>
-                      </div>
-
-                      {/* THUMBNAILS */}
-                      {product.images && product.images.length > 1 && (
-                        <div className="flex gap-2 p-2 justify-center">
-                          {product.images.map((img, idx) => (
-                            <button
-                              key={img.urlID}
-                              onClick={() =>
-                                setSelectedProductImageIndex((prev) => ({
-                                  ...prev,
-                                  [product.productID]: idx,
-                                }))
-                              }
-                              className={`border rounded-md p-1 ${
-                                (selectedProductImageIndex[product.productID] ??
-                                  0) === idx
-                                  ? "border-blue-600"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              <img
-                                src={img.url}
-                                alt="thumbnail"
-                                className="w-12 h-12 object-contain"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* CONTENT */}
-                      <div className="p-2">
-                        <fieldset className="p-2 border border-gray-300 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-800">
-                                {product.productName}
-                              </h3>
-                              <div
-                                className="text-gray-600 mt-1 text-sm prose prose-sm max-w-none"
-                                dangerouslySetInnerHTML={{
-                                  __html: product.description,
-                                }}
-                              />
-                              {/* <p>{product.description}</p> */}
-                              {/* PRICE */}
-                              <div className="mt-1 flex gap-2">
-                                {discount > 0 && (
-                                  <p className="text-sm text-gray-400 line-through">
-                                    {originalAmount.toFixed(2)}-/
-                                  </p>
-                                )}
-                                <p className="text-green-600 font-bold text-lg">
-                                  {finalPrice.toFixed(2)}-/
-                                </p>
+                          {/* IMAGES */}
+                          <td className="p-4 w-64">
+                            <div className="relative flex justify-center">
+                              <div className="bg-white p-2 rounded-xl shadow-sm">
+                                <img
+                                  src={mainImageUrl}
+                                  alt={product.productName}
+                                  className="w-28 h-28 object-cover"
+                                />
                               </div>
+
+                              <button
+                                title="Edit Images"
+                                onClick={() => {
+                                  setImageAbout(true);
+                                  getImage(product.productID);
+                                  setID(product.productID);
+                                }}
+                                className="absolute top-2 right-2 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-full shadow"
+                              >
+                                <Camera size={14} />
+                              </button>
                             </div>
 
-                            <button
-                              className="bg-yellow-500 p-2 rounded text-white hover:bg-yellow-600 transition"
-                              title="Edit Product"
-                              onClick={() => {
-                                setProductAbout(true);
-                                fetchData(product.productID);
-                                getCountry();
-                                getCategroyMain();
-                              }}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                          </div>
-                        </fieldset>
+                            {product.images?.length > 1 && (
+                              <div className="flex gap-2 justify-center mt-3 flex-wrap">
+                                {product.images.map((img, idx) => (
+                                  <button
+                                    key={img.urlID}
+                                    onClick={() =>
+                                      setSelectedProductImageIndex((prev) => ({
+                                        ...prev,
+                                        [product.productID]: idx,
+                                      }))
+                                    }
+                                    className={`p-1 rounded-lg border transition ${
+                                      mainImageIndex === idx
+                                        ? "border-blue-600"
+                                        : "border-slate-300 hover:border-slate-400"
+                                    }`}
+                                  >
+                                    <img
+                                      src={img.url}
+                                      className="w-9 h-9 object-conver"
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </td>
 
-                        {/* VARIANTS */}
-                        <fieldset className="mt-3 border border-gray-300 rounded-lg p-4 bg-white">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-4">
+                          {/* PRODUCT INFO */}
+                          <td className="p-4 max-w-lg">
+                            <div className="flex justify-between gap-4">
+                              <div>
+                                <h3 className="text-base font-semibold text-slate-800">
+                                  {product.productName}
+                                </h3>
+
+                                <div
+                                  className="mt-1 text-slate-600 prose prose-sm max-w-none"
+                                  dangerouslySetInnerHTML={{
+                                    __html: product.description,
+                                  }}
+                                />
+
+                                <div className="mt-3 flex items-center gap-2">
+                                  {discount > 0 && (
+                                    <span className="text-slate-400 line-through">
+                                      {originalAmount.toFixed(2)}-/
+                                    </span>
+                                  )}
+                                  <span className="text-emerald-600 font-bold text-base">
+                                    {finalPrice.toFixed(2)}-/
+                                  </span>
+                                </div>
+                              </div>
+                              {loading ?(
+                              <button
+                                title="Edit Product"
+                                // onClick={() => {
+                                //   setProductAbout(true);
+                                //   fetchData(product.productID);
+                                //   getCountry();
+                                //   getCategroyMain();
+                                // }}
+                                disabled
+                                className="h-fit bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl shadow"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              ):(
+                                <button
+                                title="Edit Product"
+                                onClick={() => {
+                                  setProductAbout(true);
+                                  fetchData(product.productID);
+                                  getCountry();
+                                  getCategroyMain();
+                                }}
+
+                                
+                                className="h-fit bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl shadow"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              ) }
+                            </div>
+                          </td>
+
+                          {/* VARIANTS */}
+                          <td className="p-4">
+                            <div className="space-y-3">
                               {product.variants?.map((variant, variantIdx) => {
                                 const key = `${product.productID}-${variantIdx}`;
                                 const selectedIdx =
@@ -2561,9 +2693,9 @@ const handleVariantChange = (
                                 return (
                                   <div
                                     key={variant.varientID}
-                                    className="p-3 border border-gray-200 rounded-md bg-gray-50"
+                                    className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"
                                   >
-                                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                                    <p className="font-semibold text-slate-700 mb-2">
                                       {variant.variantName}
                                     </p>
 
@@ -2578,12 +2710,12 @@ const handleVariantChange = (
                                             }))
                                           }
                                           disabled={v.qty <= 0}
-                                          className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
+                                          className={`px-3 py-1 rounded-full text-xs font-medium transition ${
                                             selectedIdx === idx
                                               ? "bg-blue-600 text-white"
                                               : v.qty > 0
-                                                ? "bg-gray-800 text-white hover:bg-gray-900"
-                                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                ? "bg-slate-800 text-white hover:bg-slate-900"
+                                                : "bg-slate-200 text-slate-400 cursor-not-allowed"
                                           }`}
                                         >
                                           {v.varientValue}
@@ -2594,44 +2726,48 @@ const handleVariantChange = (
                                 );
                               })}
                             </div>
+                          </td>
 
-                            <button
-                              onClick={() => {
-                                setVarinetAbout(true);
-                                fetchData(product.productID);
-                                setID(product.productID);
-                                setShowList(false);
-                                getVarient(product.productID);
-                              }}
-                              className="ml-4 h-fit bg-yellow-500 p-2 rounded-md text-white hover:bg-yellow-600 transition"
-                              title="Edit Variant"
-                            >
-                              {GettingVarinet ? (
-                                <Spinner />
-                              ) : (
-                                <Pencil size={16} />
-                              )}
-                            </button>
-                          </div>
-                        </fieldset>
+                          {/* ACTIONS */}
+                          <td className="p-4">
+                            <div className="flex justify-center gap-2">
+                              <button
+                                title="Variant"
+                                onClick={() => {
+                                  setVarinetAbout(true);
+                                  fetchData(product.productID);
+                                  setID(product.productID);
+                                  setShowList(false);
+                                  getVarient(product.productID);
+                                }}
+                                className="action-btn px-2 py-2 rounded-md  text-white bg-yellow-500 hover:bg-yellow-600"
+                              >
+                                {GettingVarinet ? (
+                                  <Spinner />
+                                ) : (
+                                  <Pencil size={20} />
+                                )}
+                              </button>
 
-                        {/* ACTIONS */}
-                        <div className="flex justify-end gap-3 mt-4">
-                          <button
-                            onClick={() => {
-                              setID(product.productID);
-                              setIsOpen(true);
-                            }}
-                            className="bg-red-500 p-2 rounded text-white"
-                          >
-                            <Trash size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                              <button
+                                title="Delete"
+                                onClick={() => {
+                                  setID(product.productID);
+                                  setIsOpen(true);
+                                }}
+                                className="action-btn px-2 py-2 rounded-md  text-white bg-red-500 hover:bg-red-600"
+                              >
+                                <Trash size={20} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
+
               <div className="w-full flex justify-center items-center gap-4 mt-4">
                 <button
                   disabled={currentPage === 1}
