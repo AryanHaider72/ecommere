@@ -355,52 +355,49 @@ export default function ProductCard({ storeID }: { storeID?: string }) {
   const handleDeleteImage = (indexToDelete: number) => {
     setImages((prev) => prev.filter((_, index) => index !== indexToDelete));
   };
-const fetchData = async (ID: string) => {
-  const data = productList.find((item) => item.productID === ID);
-  if (!data) return;
+  const fetchData = async (ID: string) => {
+    const data = productList.find((item) => item.productID === ID);
+    if (!data) return;
 
-  // ✅ Set basic form info first
-  setID(ID);
-  setProductName(data.productName);
-  setDescription(data.description);
-  setFeaturedProduct(data.feturedProduct ? "Yes" : "No");
-  setUnitID(data.unitID);
-  setWidth(String(data.width) || "");
-  setHeight(String(data.height) || "");
-  setDepth(String(data.depth) || "");
-  setWeight(String(data.weight) || "");
-  setTotalQuantity(String(data.currentStock) || "");
-  setThreshold(String(data.threshold) || "");
-  setDiscount(String(data.discount) || "");
+    // ✅ Set basic form info first
+    setID(ID);
+    setProductName(data.productName);
+    setDescription(data.description);
+    setFeaturedProduct(data.feturedProduct ? "Yes" : "No");
+    setUnitID(data.unitID);
+    setWidth(String(data.width) || "");
+    setHeight(String(data.height) || "");
+    setDepth(String(data.depth) || "");
+    setWeight(String(data.weight) || "");
+    setTotalQuantity(String(data.currentStock) || "");
+    setThreshold(String(data.threshold) || "");
+    setDiscount(String(data.discount) || "");
 
-  if (data.showinCountry) {
-    setSelectedOption("ShowinSomeCountry");
-    setCountryShowList(data.countryList);
-  } else if (data.notShowinCountry) {
-    setSelectedOption("HideinSomeCountry");
-    setCountryHideList(data.countryList);
-  } else {
-    setSelectedOption("ShowinAllCountry");
-  }
+    if (data.showinCountry) {
+      setSelectedOption("ShowinSomeCountry");
+      setCountryShowList(data.countryList);
+    } else if (data.notShowinCountry) {
+      setSelectedOption("HideinSomeCountry");
+      setCountryHideList(data.countryList);
+    } else {
+      setSelectedOption("ShowinAllCountry");
+    }
 
-  // ✅ Fetch categories and use returned arrays, not state
-  const mainCategories = await getCategroyMain(); // return list
-  setCategoryMainID(data.categoryID);
+    // ✅ Fetch categories and use returned arrays, not state
+    const mainCategories = await getCategroyMain(); // return list
+    setCategoryMainID(data.categoryID);
 
-  if (catgeoryMainList.length > 0) {
-    const subCategories = await getCategorySub(data.categoryID);
-setCategorySubID(data.subCategoryID);
+    if (catgeoryMainList.length > 0) {
+      const subCategories = await getCategorySub(data.categoryID);
+      setCategorySubID(data.subCategoryID);
 
-const furtherSubCategories = await getFurtherSub(data.subCategoryID);
-setFurtherCategorySubID(data.subCategoryDetailID);
+      const furtherSubCategories = await getFurtherSub(data.subCategoryID);
+      setFurtherCategorySubID(data.subCategoryDetailID);
 
-const units = await getUnits(data.subCategoryDetailID);
-setUnitID(data.unitID);
-
-  }
-};
-
-
+      const units = await getUnits(data.subCategoryDetailID);
+      setUnitID(data.unitID);
+    }
+  };
 
   const basicInfo = async () => {
     try {
@@ -446,7 +443,7 @@ setUnitID(data.unitID);
         //setProductList([])
         setLoading(true);
         await getProduct(1);
-        setLoading(false)
+        setLoading(false);
         setProductAbout(false);
         setCurrentStep(1);
         setProductName("");
@@ -880,7 +877,7 @@ setUnitID(data.unitID);
       setCatgeorySubList(data.categoryList);
       //setCategorySubID(data.categoryList[0].subCategoryID);
       //getFurtherSub(data.categoryList[0].subCategoryID);
-      return data.categoryList; 
+      return data.categoryList;
     } else if (response.status === 401) {
       router.push("/sellerlogin");
     }
@@ -2573,13 +2570,13 @@ setUnitID(data.unitID);
                           } hover:bg-blue-50`}
                         >
                           {/* IMAGES */}
-                          <td className="p-4 w-64">
+                          <td className="p-2 w-64">
                             <div className="relative flex justify-center">
-                              <div className="bg-white p-2 rounded-xl shadow-sm">
+                              <div className=" p-2 rounded-xl shadow-sm">
                                 <img
                                   src={mainImageUrl}
                                   alt={product.productName}
-                                  className="w-28 h-28 object-cover"
+                                  className="w-15 h-15 object-cover"
                                 />
                               </div>
 
@@ -2592,35 +2589,9 @@ setUnitID(data.unitID);
                                 }}
                                 className="absolute top-2 right-2 bg-slate-900/80 hover:bg-slate-900 text-white p-2 rounded-full shadow"
                               >
-                                <Camera size={14} />
+                                <Camera size={12} />
                               </button>
                             </div>
-
-                            {product.images?.length > 1 && (
-                              <div className="flex gap-2 justify-center mt-3 flex-wrap">
-                                {product.images.map((img, idx) => (
-                                  <button
-                                    key={img.urlID}
-                                    onClick={() =>
-                                      setSelectedProductImageIndex((prev) => ({
-                                        ...prev,
-                                        [product.productID]: idx,
-                                      }))
-                                    }
-                                    className={`p-1 rounded-lg border transition ${
-                                      mainImageIndex === idx
-                                        ? "border-blue-600"
-                                        : "border-slate-300 hover:border-slate-400"
-                                    }`}
-                                  >
-                                    <img
-                                      src={img.url}
-                                      className="w-9 h-9 object-conver"
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                            )}
                           </td>
 
                           {/* PRODUCT INFO */}
@@ -2632,7 +2603,7 @@ setUnitID(data.unitID);
                                 </h3>
 
                                 <div
-                                  className="mt-1 text-slate-600 prose prose-sm max-w-none"
+                                  className="mt-1 text-slate-600 w-80 prose prose-sm max-w-none h-5 overflow-y-hidden"
                                   dangerouslySetInnerHTML={{
                                     __html: product.description,
                                   }}
@@ -2649,36 +2620,34 @@ setUnitID(data.unitID);
                                   </span>
                                 </div>
                               </div>
-                              {loading ?(
-                              <button
-                                title="Edit Product"
-                                // onClick={() => {
-                                //   setProductAbout(true);
-                                //   fetchData(product.productID);
-                                //   getCountry();
-                                //   getCategroyMain();
-                                // }}
-                                disabled
-                                className="h-fit bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl shadow"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              ):(
+                              {loading ? (
                                 <button
-                                title="Edit Product"
-                                onClick={() => {
-                                  setProductAbout(true);
-                                  fetchData(product.productID);
-                                  getCountry();
-                                  getCategroyMain();
-                                }}
-
-                                
-                                className="h-fit bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl shadow"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              ) }
+                                  title="Edit Product"
+                                  // onClick={() => {
+                                  //   setProductAbout(true);
+                                  //   fetchData(product.productID);
+                                  //   getCountry();
+                                  //   getCategroyMain();
+                                  // }}
+                                  disabled
+                                  className="h-fit bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl shadow"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  title="Edit Product"
+                                  onClick={() => {
+                                    setProductAbout(true);
+                                    fetchData(product.productID);
+                                    getCountry();
+                                    getCategroyMain();
+                                  }}
+                                  className="h-fit bg-amber-500 hover:bg-amber-600 text-white p-2 rounded-xl shadow"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                              )}
                             </div>
                           </td>
 
@@ -2693,7 +2662,7 @@ setUnitID(data.unitID);
                                 return (
                                   <div
                                     key={variant.varientID}
-                                    className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm"
+                                    className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm"
                                   >
                                     <p className="font-semibold text-slate-700 mb-2">
                                       {variant.variantName}

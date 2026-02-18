@@ -100,6 +100,7 @@ interface historyData {
   customerID: string;
   customerName: string;
   saleID: string;
+  productID: string;
   productName: string;
   attributeID: string;
   saleDate: string;
@@ -138,7 +139,6 @@ export default function SaleForm() {
   const [salesmanList, setSalesmanList] = useState<Salesman[]>([]);
   const [productList2, setProductList2] = useState<Product[]>([]);
   const [productList3, setProductList3] = useState<BarcodeResposne[]>([]);
-  const [productList, setProductList] = useState<Product[]>([]);
   const [TillList, setTillList] = useState<TillList[]>([]);
   const [vareintList, setvareintList] = useState<VariantbyProductID[]>([]);
   const [InvocieHistory, setInvocieHistory] = useState<historyData[]>([]);
@@ -364,49 +364,49 @@ export default function SaleForm() {
       setVarintListInPopUp(data.variants);
     }
   };
-  const addItemForReturnListFromInvoice = (ID: string) => {
-    // Find the product containing the attributeID
-    const product = productList.find((item) =>
-      item.variants.some((v) =>
-        v.variantValues.some((val) => val.attributeID === ID),
-      ),
-    );
+  const addItemForReturnListFromInvoice = async (
+    ID: string,
+    attribuetID: string,
+  ) => {
+    // Make sure varinetList updates VarintListInPopUp
+    await varinetList(ID);
 
-    if (!product) return; // No product found
+    // Find the variant
+    const variantValueWithProduct = VarintListInPopUp.flatMap((item) =>
+      item.variantValues.map((variant) => ({
+        ...variant,
+        productName: item.productName,
+        discount: item.discount,
+      })),
+    ).find((v) => v.attributeID === attribuetID);
 
-    const variantValue = product.variants
-      .flatMap((v) => v.variantValues)
-      .find((val) => val.attributeID === ID);
-
-    if (!variantValue) return; // No variant found
+    if (!variantValueWithProduct) return;
 
     setNewItem((prev) => {
-      // **Make sure we only have one entry per attributeID**
       const existingItem = prev.find(
-        (item) => item.attributeID === variantValue.attributeID,
+        (item) => item.attributeID === variantValueWithProduct.attributeID,
       );
 
       if (existingItem) {
-        // Item exists → increment qty by 1
+        // Subtract quantity if it already exists
         return prev.map((item) =>
-          item.attributeID === variantValue.attributeID
-            ? { ...item, qty: item.qty + 1 }
+          item.attributeID === variantValueWithProduct.attributeID
+            ? { ...item, qty: item.qty - 1 }
             : item,
         );
       }
 
-      // Item does not exist → add new entry
+      // Otherwise, add new item normally
       const newEntry: newItem = {
-        attributeID: variantValue.attributeID,
-        productName: product.productName,
+        attributeID: variantValueWithProduct.attributeID,
+        productName: variantValueWithProduct.productName,
         qty: -1,
-        varientValue: variantValue.varientValue,
-        price: variantValue.salePrice,
-        barcode: variantValue.barcode,
-        stockQty: -variantValue.qty,
-        discount: 0,
+        varientValue: variantValueWithProduct.varientValue,
+        price: variantValueWithProduct.salePrice,
+        barcode: variantValueWithProduct.barcode,
+        stockQty: -variantValueWithProduct.qty,
+        discount: variantValueWithProduct.discount,
       };
-
       return [...prev, newEntry];
     });
   };
@@ -500,7 +500,7 @@ export default function SaleForm() {
       console.log(formData);
       const response = await AddSalePos(formData, String(token));
       if (response.status === 200 || response.status === 201) {
-        // saleGet();
+        saleGet();
         getTill();
         setProductName("");
         setCustomerName("");
@@ -722,7 +722,7 @@ export default function SaleForm() {
       )}
       {ReturnMenu && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-4xl">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-5xl">
             {/* Close Button */}
             <div className="flex justify-end mb-4">
               <span
@@ -874,6 +874,9 @@ export default function SaleForm() {
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                        Sale Date
+                      </th>
+                      <th className="px-4 py-2 text-left text-gray-700 font-medium">
                         Barcode
                       </th>
                       <th className="px-4 py-2 text-left text-gray-700 font-medium">
@@ -902,6 +905,9 @@ export default function SaleForm() {
                         key={item.attributeID}
                         className={`${item.maxQty < item.qty && "bg-red-200"}`}
                       >
+                        <td className="px-4 py-2 text-left text-gray-700 font-medium">
+                          {item.saleDate.split("T")[0]}
+                        </td>
                         <td className="px-4 py-2 text-left text-gray-700 font-medium">
                           {item.barcode}
                         </td>
@@ -942,7 +948,10 @@ export default function SaleForm() {
                         <td className="px-4 py-2 text-center text-gray-700 font-medium">
                           <button
                             onClick={() =>
-                              addItemForReturnListFromInvoice(item.attributeID)
+                              addItemForReturnListFromInvoice(
+                                item.productID,
+                                item.attributeID,
+                              )
                             }
                             className="px-2 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
                           >
@@ -971,350 +980,364 @@ export default function SaleForm() {
               Return Item
             </button>
           </div>
-          <div className="mt-2 w-full flex justify-center ">
-            <div className="flex flex-col lg:flex-row w-full min-w-md gap-6 items-start">
-              <div className="flex flex-col bg-white shadow-md p-5 rounded-md gap-2 w-full lg:flex-[4] min-w-0">
-                {/* Salesman */}
-                <h1 className="text-xl font-bold"> Sale Information</h1>
-                <div className="w-full">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Salesman <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 w-full">
-                    <User className="text-gray-400 mr-2" size={18} />
-                    <select
-                      value={selectedSalesman}
-                      onChange={(e) => setSelectedSalesman(e.target.value)}
-                      className="flex-1 bg-transparent outline-none text-gray-900 p-2"
-                    >
-                      {salesmanList.length > 0 ? (
-                        salesmanList.map((sm) => (
-                          <option key={sm.salesmanID} value={sm.salesmanID}>
-                            {sm.salesmanName}
-                          </option>
-                        ))
-                      ) : (
-                        <option>No Record Found</option>
-                      )}
-                    </select>
-                  </div>
-                </div>
+          <div className="mt-6 w-full flex justify-center">
+            <div className="w-full max-w-8xl px-4">
+              <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+                {/* ---------------- Left Card: Sale Information ---------------- */}
+                <div className="flex flex-col bg-white shadow-lg p-6 rounded-xl gap-4 w-full lg:flex-[6] min-w-0">
+                  <h1 className="text-lg font-semibold tracking-wide text-gray-800">
+                    Sale Information
+                  </h1>
 
-                {/* Sale Date & Customer */}
-                <div className="flex flex-col md:flex-row gap-4 w-full">
-                  {/* Sale Date */}
-                  <div className="flex-1">
+                  {/* Salesman */}
+                  <div className="w-full">
                     <label className="block text-gray-700 font-medium mb-2">
-                      Sale Date
+                      Salesman <span className="text-red-500">*</span>
                     </label>
                     <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 w-full">
-                      <Calendar className="text-gray-400 mr-2" size={18} />
-                      <input
-                        value={SaleDate}
-                        onChange={(e) => setSaleDate(e.target.value)}
-                        type="date"
-                        readOnly
-                        placeholder="Enter Purchase Date"
-                        className="flex-1 bg-transparent outline-none text-gray-900"
-                      />
+                      <User className="text-gray-400 mr-2" size={18} />
+                      <select
+                        value={selectedSalesman}
+                        onChange={(e) => setSelectedSalesman(e.target.value)}
+                        className="flex-1 bg-transparent outline-none text-gray-900 p-2"
+                      >
+                        {salesmanList.length > 0 ? (
+                          salesmanList.map((sm) => (
+                            <option key={sm.salesmanID} value={sm.salesmanID}>
+                              {sm.salesmanName}
+                            </option>
+                          ))
+                        ) : (
+                          <option>No Record Found</option>
+                        )}
+                      </select>
                     </div>
                   </div>
 
-                  {/* Customer */}
-                  <div className="flex-1">
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Customer Name
-                    </label>
-                    <div className="flex gap-2 w-full">
-                      <div className="flex-1 flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                        <User className="text-gray-400 mr-2" size={18} />
-                        <select
-                          value={Customer}
-                          onChange={(e) => {
-                            setDescription("");
-                            const value = e.target.value;
-                            setCustomer(value);
-                            const data = CustomerList.find(
-                              (item) => item.customerID === value,
-                            );
-                            if (data) setCustomerName(data.customerName);
-                          }}
-                          className="flex-1 p-1 bg-transparent outline-none text-gray-900"
-                        >
-                          {CustomerList.length !== 0 ? (
-                            <>
-                              {CustomerList.map((customer) => (
+                  {/* Sale Date & Customer */}
+                  <div className="flex flex-col md:flex-row gap-4 w-full">
+                    {/* Sale Date */}
+                    <div className="flex-1">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Sale Date
+                      </label>
+                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 w-full">
+                        <Calendar className="text-gray-400 mr-2" size={18} />
+                        <input
+                          value={SaleDate}
+                          onChange={(e) => setSaleDate(e.target.value)}
+                          type="date"
+                          readOnly
+                          placeholder="Enter Sale Date"
+                          className="flex-1 bg-transparent outline-none text-gray-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Customer */}
+                    <div className="flex-1">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Customer Name
+                      </label>
+                      <div className="flex gap-2 w-full">
+                        <div className="flex-1 flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                          <User className="text-gray-400 mr-2" size={18} />
+                          <select
+                            value={Customer}
+                            onChange={(e) => {
+                              setDescription("");
+                              const value = e.target.value;
+                              setCustomer(value);
+                              const data = CustomerList.find(
+                                (item) => item.customerID === value,
+                              );
+                              if (data) setCustomerName(data.customerName);
+                            }}
+                            className="flex-1 p-1 bg-transparent outline-none text-gray-900"
+                          >
+                            {CustomerList.length !== 0 ? (
+                              CustomerList.map((customer) => (
                                 <option
                                   key={customer.customerID}
                                   value={customer.customerID}
                                 >
                                   {customer.customerName}
                                 </option>
-                              ))}
-                            </>
-                          ) : (
-                            <option value="">No Record Found</option>
-                          )}
-                        </select>
+                              ))
+                            ) : (
+                              <option value="">No Record Found</option>
+                            )}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => setAddCustomerForm(true)}
+                          className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                        >
+                          <Plus />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => setAddCustomerForm(true)}
-                        className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
-                      >
-                        <Plus />
-                      </button>
                     </div>
                   </div>
-                </div>
-                {customerName === "Walk in Customer" && (
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Customer Name
-                    </label>
-                    <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                      <Tag className="text-gray-400 mr-2" size={18} />
-                      <input
-                        type="text"
-                        value={Description}
-                        placeholder="Enter Customer Name"
-                        onChange={(e) => {
-                          setDescription(e.target.value);
-                        }}
-                        className="flex-1 bg-transparent outline-none text-gray-900 p-1"
-                      />
-                    </div>
-                  </div>
-                )}
-                <div className="w-full flex-col gap-2 md:flex-row flex">
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Barcode
-                    </label>
-                    <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
-                      <Tag className="text-gray-400 mr-2" size={18} />
-                      <input
-                        type="text"
-                        value={Barcode}
-                        placeholder="Enter Barcode"
-                        onChange={(e) => {
-                          setBarcode(e.target.value);
-                          getProductBarcode(e.target.value);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            addInTheList(Barcode);
-                          }
-                        }}
-                        className="flex-1 bg-transparent outline-none text-gray-900 p-1"
-                      />
-                    </div>
-                  </div>
-                  <div className="w-full min-w-0">
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Product Name
-                    </label>
 
-                    <div className="flex  gap-1">
+                  {/* Walk-in Customer Name */}
+                  {customerName === "Walk in Customer" && (
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Customer Name
+                      </label>
                       <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
                         <Tag className="text-gray-400 mr-2" size={18} />
                         <input
                           type="text"
-                          list="productList"
-                          value={productName}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setProductName(value);
-                            const data = productList2.find(
-                              (item) => item.productName === value,
-                            );
-                            if (data) {
-                              setProductID(data.productID);
-                              varinetList(data.productID);
-                            }
-                          }}
-                          placeholder="Select Product"
-                          className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                          value={Description}
+                          placeholder="Enter Customer Name"
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="flex-1 bg-transparent outline-none text-gray-900 p-1"
                         />
-                        <datalist id="productList">
-                          {productList2.map((item) => (
-                            <option
-                              key={item.productID}
-                              value={item.productName}
-                            />
-                          ))}
-                        </datalist>
                       </div>
-                      <button
-                        onClick={() => {
-                          setProductName("");
-                          setVarintShowList(true);
-                        }}
-                        className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
-                      >
-                        <Notebook />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full border border-gray-50 rounded-lg overflow-hidden ">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                          Barcode
-                        </th>
-                        <th className="px-4 py-2 text-left text-gray-700 font-medium">
-                          Product Name
-                        </th>
-                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                          Variant
-                        </th>
-                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                          Quantity
-                        </th>
-                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                          Orignal Price
-                        </th>
-                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                          Discount Price
-                        </th>
-                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                          Total Bill
-                        </th>
-                        <th className="px-4 py-2 text-center text-gray-700 font-medium">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {newItem.map((item, index) => (
-                        <tr
-                          key={item.attributeID}
-                          className={`${item.stockQty < item.qty && "bg-red-200"}`}
-                        >
-                          <td className="px-4 py-2 text-left text-gray-700 font-medium">
-                            {item.barcode}
-                          </td>
-                          <td className="px-4 py-2 text-left text-gray-700 font-medium">
-                            {item.productName}
-                          </td>
-                          <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                            {item.varientValue}
-                          </td>
-
-                          {/* Editable Quantity */}
-                          <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                            <input
-                              type="number"
-                              className="w-16 text-center border rounded-md px-1 py-1"
-                              value={item.qty}
-                              onChange={(e) => {
-                                const value = Number(e.target.value);
-                                setNewItem((prev) =>
-                                  prev.map((itm, i) =>
-                                    i === index ? { ...itm, qty: value } : itm,
-                                  ),
-                                );
-                              }}
-                            />
-                          </td>
-
-                          {/* Editable Original Price */}
-                          <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                            <input
-                              type="number"
-                              className="w-20 text-center border rounded-md px-1 py-1"
-                              value={item.price}
-                              onChange={(e) => {
-                                const value = Number(e.target.value);
-                                setNewItem((prev) =>
-                                  prev.map((itm, i) =>
-                                    i === index
-                                      ? { ...itm, price: value }
-                                      : itm,
-                                  ),
-                                );
-                              }}
-                            />
-                          </td>
-
-                          {/* Discount */}
-                          <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                            {item.discount}%
-                          </td>
-
-                          {/* Total Bill */}
-                          <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                            {(item.price - (item.price * item.discount) / 100) *
-                              item.qty}
-                          </td>
-
-                          {/* Action */}
-                          <td className="px-4 py-2 text-center text-gray-700 font-medium">
-                            <button
-                              onClick={() =>
-                                DeletFromTableList(item.attributeID)
-                              }
-                              className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
-                            >
-                              <Trash />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {customerName !== "Walk in Customer" && (
-                  <div className="w-full">
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Description
-                    </label>
-                    <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                      <Notebook className="text-gray-400 mr-2 mt-1" size={18} />
-                      <textarea
-                        value={Description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        name="description"
-                        placeholder="Enter Description"
-                        className="w-full bg-transparent outline-none text-gray-900 resize-none"
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                )}
-                <div className="flex flex-col gap-6">
-                  {RescponseBack && (
-                    <div
-                      className={`w-full text-center px-4 py-3 mb-2 rounded ${
-                        ShowMessage
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {RescponseBack}
                     </div>
                   )}
 
-                  {/* ---------------------------- */}
-                  {/* Save Button */}
-                  <div className="w-full flex justify-end mt-4">
-                    <button
-                      onClick={SaleAdd}
-                      type="button"
-                      className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
-                    >
-                      {loading ? "Saving..." : "Save"}
-                    </button>
+                  {/* Barcode & Product */}
+                  <div className="w-full flex flex-col md:flex-row gap-4">
+                    {/* Barcode */}
+                    <div className="flex-1">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Barcode
+                      </label>
+                      <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                        <Tag className="text-gray-400 mr-2" size={18} />
+                        <input
+                          type="text"
+                          value={Barcode}
+                          placeholder="Enter Barcode"
+                          onChange={(e) => {
+                            setBarcode(e.target.value);
+                            getProductBarcode(e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") addInTheList(Barcode);
+                          }}
+                          className="flex-1 bg-transparent outline-none text-gray-900 p-1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Product Name */}
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Product Name
+                      </label>
+                      <div className="flex gap-1">
+                        <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                          <Tag className="text-gray-400 mr-2" size={18} />
+                          <input
+                            type="text"
+                            list="productList"
+                            value={productName}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setProductName(value);
+                              const data = productList2.find(
+                                (item) => item.productName === value,
+                              );
+                              if (data) {
+                                setProductID(data.productID);
+                                varinetList(data.productID);
+                              }
+                            }}
+                            placeholder="Select Product"
+                            className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                          />
+                          <datalist id="productList">
+                            {productList2.map((item) => (
+                              <option
+                                key={item.productID}
+                                value={item.productName}
+                              />
+                            ))}
+                          </datalist>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setProductName("");
+                            setVarintShowList(true);
+                          }}
+                          className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                        >
+                          <Notebook />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product Table */}
+                  <div className="w-full overflow-x-auto rounded-lg border border-gray-100">
+                    <table className="w-full text-sm border-collapse">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                            Barcode
+                          </th>
+                          <th className="px-4 py-2 text-left text-gray-700 font-medium">
+                            Product Name
+                          </th>
+                          <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                            Variant
+                          </th>
+                          <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                            Quantity
+                          </th>
+                          <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                            Original Price
+                          </th>
+                          <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                            Discount Price
+                          </th>
+                          <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                            Total Bill
+                          </th>
+                          <th className="px-4 py-2 text-center text-gray-700 font-medium">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {newItem.map((item, index) => (
+                          <tr
+                            key={item.attributeID}
+                            className={`${item.stockQty < item.qty && "bg-red-200"}`}
+                          >
+                            <td className="px-4 py-2 text-left text-gray-700 font-medium">
+                              {item.barcode}
+                            </td>
+                            <td className="px-4 py-2 text-left text-gray-700 font-medium">
+                              {item.productName}
+                            </td>
+                            <td className="px-4 py-2 text-center text-gray-700 font-medium">
+                              {item.varientValue}
+                            </td>
+                            <td className="px-4 py-2 text-center text-gray-700 font-medium">
+                              <input
+                                type="number"
+                                className="w-16 text-center border rounded-md px-1 py-1"
+                                value={item.qty}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  setNewItem((prev) =>
+                                    prev.map((itm, i) =>
+                                      i === index
+                                        ? { ...itm, qty: value }
+                                        : itm,
+                                    ),
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-center text-gray-700 font-medium">
+                              <input
+                                type="number"
+                                className="w-20 text-center border rounded-md px-1 py-1"
+                                value={item.price}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  setNewItem((prev) =>
+                                    prev.map((itm, i) =>
+                                      i === index
+                                        ? { ...itm, price: value }
+                                        : itm,
+                                    ),
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="px-4 py-2 text-center text-gray-700 font-medium">
+                              {item.discount}%
+                            </td>
+                            <td className="px-4 py-2 text-center text-gray-700 font-medium">
+                              {(item.price -
+                                (item.price * item.discount) / 100) *
+                                item.qty}
+                            </td>
+                            <td className="px-4 py-2 text-center text-gray-700 font-medium">
+                              <button
+                                onClick={() =>
+                                  DeletFromTableList(item.attributeID)
+                                }
+                                className="px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                              >
+                                <Trash />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Description */}
+                  {customerName !== "Walk in Customer" && (
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Description
+                      </label>
+                      <div className="flex items-start border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                        <Notebook
+                          className="text-gray-400 mr-2 mt-1"
+                          size={18}
+                        />
+                        <textarea
+                          value={Description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          name="description"
+                          placeholder="Enter Description"
+                          className="w-full bg-transparent outline-none text-gray-900 resize-none"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Save Button & Response */}
+                  <div className="flex flex-col gap-6 mt-4">
+                    {RescponseBack && (
+                      <div
+                        className={`w-full text-center px-4 py-3 mb-2 rounded ${
+                          ShowMessage
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {RescponseBack}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col bg-white shadow-md p-5 rounded-md gap-2 w-full lg:flex-[2] shrink-0">
-                <h1 className="text-xl font-bold"> Billing Detail</h1>
-                <div className="w-full md:w-full">
-                  <div className=" gap-4 mt-3">
+
+                {/* ---------------- Right Card: Billing Detail ---------------- */}
+                <div className="flex flex-col bg-white shadow-lg p-6 rounded-xl gap-4 w-full lg:flex-[2] min-w-[280px]">
+                  <h1 className="text-lg font-semibold tracking-wide text-gray-800">
+                    Billing Detail
+                  </h1>
+
+                  <div className="flex flex-col gap-4 mt-3">
                     {/* Amount Paid */}
-                    <div className="w-full ">
+                    <div className="w-full">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Discount
+                      </label>
+                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+                        <Coins className="text-gray-400 mr-2" size={18} />
+                        <input
+                          type="number"
+                          value={Discount || 0}
+                          onChange={(e) => setDiscount(Number(e.target.value))}
+                          placeholder="Enter Discount"
+                          className="w-full text-right bg-transparent outline-none text-gray-900"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full">
                       <label className="block text-gray-700 font-medium mb-2">
                         Amount Paid
                       </label>
@@ -1328,28 +1351,12 @@ export default function SaleForm() {
                           }
                           name="totalBill"
                           placeholder="Enter Amount Paid"
-                          className="w-full bg-transparent outline-none text-gray-900"
+                          className="w-full text-right bg-transparent outline-none text-gray-900"
                         />
                       </div>
                     </div>
 
                     {/* Discount */}
-                    <div className="w-full">
-                      <label className="block text-gray-700 font-medium mb-2">
-                        Discount
-                      </label>
-                      <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                        <Coins className="text-gray-400 mr-2" size={18} />
-                        <input
-                          value={Discount || 0}
-                          onChange={(e) => setDiscount(Number(e.target.value))}
-                          type="number"
-                          name="Discount"
-                          placeholder="Enter Discount"
-                          className="w-full bg-transparent outline-none text-gray-900"
-                        />
-                      </div>
-                    </div>
 
                     {/* Total Bill */}
                     <div className="w-full">
@@ -1360,7 +1367,6 @@ export default function SaleForm() {
                         <Coins className="text-gray-400 mr-2" size={18} />
                         <input
                           type="number"
-                          name="amountPaid"
                           value={totalSum || 0}
                           readOnly
                           className="w-full text-center bg-transparent outline-none text-gray-900"
@@ -1374,23 +1380,29 @@ export default function SaleForm() {
                         Remaining Balance
                       </label>
                       <div
-                        className={`flex items-center  ${
-                          totalSum - AmountPaid - Discount < 0 &&
-                          `text-red-100 border-red-200 bg-red-100`
-                        }  border border-gray-200 rounded-lg px-3 py-2 bg-gray-50`}
+                        className={`flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 ${
+                          totalSum - AmountPaid - Discount < 0
+                            ? "text-red-500"
+                            : ""
+                        }`}
                       >
                         <Coins className="text-gray-400 mr-2" size={18} />
                         <input
-                          value={totalSum - AmountPaid - Discount || 0}
                           type="number"
-                          name="remainingBalance"
-                          placeholder="Auto Calculated"
+                          value={totalSum - AmountPaid - Discount || 0}
                           readOnly
-                          className={`w-full text-center ${
-                            totalSum - AmountPaid - Discount < 0 &&
-                            `text-red-500`
-                          } bg-transparent outline-none text-gray-900`}
+                          placeholder="Auto Calculated"
+                          className="w-full text-center bg-transparent outline-none text-gray-900"
                         />
+                      </div>
+                      <div className="w-full mt-6 flex justify-end">
+                        <button
+                          onClick={SaleAdd}
+                          type="button"
+                          className="w-full  py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 transition"
+                        >
+                          {loading ? "Saving..." : "Save"}
+                        </button>
                       </div>
                     </div>
                   </div>

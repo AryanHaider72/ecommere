@@ -32,9 +32,12 @@ import GetProductSalesMan from "@/api/lib/PosIntegration/ProductGet/productsGetS
 import {
   Product,
   ProductApiResponseSalesMan,
+  varinetMessage,
 } from "@/api/types/product/getProduct";
 import GetTillForSalesMan from "@/api/lib/MainDashbaord/TillCreate/GetTillForSpecficSaleMan";
 import AddTillTransferPosSale from "@/api/lib/PosIntegration/TillTransfer/AddTill/AddTill";
+import GetProductVarient from "@/api/lib/PosIntegration/ProductGet/FecthProductVareint/FetchProductVareint";
+import { VariantList } from "@/api/types/product/getVarinet";
 interface RespiosneGet {
   message: string;
   tillList: TillList[];
@@ -62,9 +65,25 @@ interface variantValues {
   qty: number;
   barcode: string;
 }
+interface VarintList {
+  productName: string;
+  varientID: string;
+  variantName: string;
+  discount: number;
+  variantValues: variantValues[];
+}
+interface variantValues {
+  attributeID: string;
+  varientValue: string;
+  costPrice: number;
+  salePrice: number;
+  qty: number;
+  barcode: string;
+}
 export default function ItemTransferForm() {
   const router = useRouter();
   const [showList, setShowList] = useState(true);
+  const [productName, setProductName] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
   const [address, setAddress] = useState("");
@@ -80,12 +99,13 @@ export default function ItemTransferForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDelete, setIsDelete] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
   const [Update, setUpdate] = useState(false);
   const [VarinetID, setVarinetID] = useState("");
   const [SubVarinetID, setSubVarinetID] = useState("");
   const [TillID, setTillID] = useState("");
   const [SelectedTill, setSelectedTill] = useState("");
-
+  const [productList2, setProductList2] = useState<Product[]>([]);
   const [CustomerList, setCustomerList] = useState<CustomerData[]>([]);
 
   const [TillList, setTillList] = useState<TillList[]>([]);
@@ -93,6 +113,7 @@ export default function ItemTransferForm() {
   const [productList, setProductList] = useState<Product[]>([]);
   const [VarientsList, setVarientsList] = useState<VarientsList[]>([]);
   const [AttributeList, setAttributeList] = useState<variantValues[]>([]);
+  const [VarintListInPopUp, setVarintListInPopUp] = useState<VarintList[]>([]);
 
   const getTill = async () => {
     try {
@@ -143,7 +164,7 @@ export default function ItemTransferForm() {
 
     if (!token) return;
 
-    const response = await GetProductSalesMan(token, ID);
+    const response = await GetProductSalesMan(token, ID, productName);
 
     if (response.status === 200 || response.status === 201) {
       const data = response.data as ProductApiResponseSalesMan;
@@ -159,7 +180,15 @@ export default function ItemTransferForm() {
       }
     }
   };
-
+  const varinetList = async (ID: string) => {
+    const token = localStorage.getItem("tokenPosSale");
+    const response = await GetProductVarient(String(token), ID);
+    if (response.status === 200 || response.status === 201) {
+      const data = response.data as varinetMessage;
+      console.log(data);
+      setVarintListInPopUp(data.variants);
+    }
+  };
   const fetchDataVarientList = (productID: string) => {
     for (var products of productList) {
       if (products) {
@@ -170,6 +199,7 @@ export default function ItemTransferForm() {
       }
     }
   };
+
   const fetchDataAttributeList = (varientID: string) => {
     const data = VarientsList.find((p) => p.varientID === varientID);
     if (data) {
@@ -421,40 +451,45 @@ export default function ItemTransferForm() {
               </div>
             </div>
             <div className="flex gap-3">
-              <div className="w-full mt-2 ">
+              <div className="flex-1 min-w-0">
                 <label className="block text-gray-700 font-medium mb-2">
-                  Product <span className="text-red-500">*</span>
+                  Product Name
                 </label>
-                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
-                  <User className="text-gray-400 mr-2" size={18} />
-                  <select
-                    value={ProductID}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setProductID(value);
-                      const data = productList.find(
-                        (item) => item.productID === value,
-                      );
-                      if (data) {
-                        fetchDataVarientList(data.productID);
-                      }
+                <div className="flex gap-1">
+                  <div className="flex items-center w-full border border-gray-200 rounded-lg bg-gray-50 px-3 py-2">
+                    <Tag className="text-gray-400 mr-2" size={18} />
+                    <input
+                      type="text"
+                      list="productList"
+                      value={productName}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setProductName(value);
+                        const data = productList2.find(
+                          (item) => item.productName === value,
+                        );
+                        if (data) {
+                          setProductID(data.productID);
+                          varinetList(data.productID);
+                        }
+                      }}
+                      placeholder="Select Product"
+                      className="flex-1 bg-transparent outline-none text-gray-900 p-1 truncate"
+                    />
+                    <datalist id="productList">
+                      {productList2.map((item) => (
+                        <option key={item.productID} value={item.productName} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setProductName("");
                     }}
-                    name="name"
-                    className="w-full bg-transparent outline-none text-gray-900 p-1"
+                    className="px-2 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
                   >
-                    <option>Select Product</option>
-                    {productList.length > 0 ? (
-                      <>
-                        {productList.map((item) => (
-                          <option key={item.productID} value={item.productID}>
-                            {item.productName}
-                          </option>
-                        ))}
-                      </>
-                    ) : (
-                      <option>No Record Found</option>
-                    )}
-                  </select>
+                    <Notebook />
+                  </button>
                 </div>
               </div>
               <div className="w-full mt-2">
